@@ -16,6 +16,14 @@
       <nav class="mb-6 flex gap-2" id="tabs"></nav>
       <p id="flash" class="mb-4 hidden rounded-md border px-3 py-2 text-sm"></p>
       <section id="view"></section>
+
+      <footer class="mt-8 border-t border-slate-800 pt-4 text-sm text-slate-300">
+        <div class="flex flex-wrap items-center gap-3">
+          <button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Export JSON</button>
+          <button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Import JSON</button>
+          <input id="import-file" type="file" accept="application/json" class="hidden" />
+        </div>
+      </footer>
     </main>
 
     <script>
@@ -242,7 +250,7 @@
               <label class="mb-2 block text-sm">Client<select required name="clientId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.clients)}</select></label>
               <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" placeholder="2025-01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
               <label class="mb-2 block text-sm">End (yyyy-mm optional)<input name="endMonth" placeholder="2025-12" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-              <label class="mb-2 block text-sm">Budget in cents<input required name="budgetCents" type="number" min="0" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Budget in EUR<input required name="budgetEuros" type="number" min="0" step="0.01" placeholder="500000" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
               <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Project</button>
             </form>
 
@@ -260,7 +268,7 @@
             <h2 class="mb-3 text-lg font-semibold">Create Assignment</h2>
             <div class="grid gap-3 md:grid-cols-5">
               <label class="text-sm">Project<select required name="projectId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(projects)}</select></label>
-              <label class="text-sm">Challenge<select required name="challengeId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(challenges)}</select></label>
+              <label class="text-sm">Challenge<select required name="challengeId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(challenges.map((challenge) => ({ id: challenge.id, name: challenge.title })))}</select></label>
               <label class="text-sm">Person<select required name="personId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.people.map((person) => ({ id: person.id, name: `${person.first_name} ${person.last_name}` })))}</select></label>
               <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="isOwner" /> isOwner</label>
               <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="isLeader" /> isLeader</label>
@@ -366,6 +374,7 @@
           await action();
           await loadData();
           render();
+          bindFooterActions();
           showMessage(successMessage);
         } catch (error) {
           showMessage(error.message, 'error');
@@ -405,7 +414,7 @@
         form.clientId.value = project.client_id;
         form.startMonth.value = project.start_month;
         form.endMonth.value = project.end_month || '';
-        form.budgetCents.value = project.budget_cents;
+        form.budgetEuros.value = (Number(project.budget_cents) / 100).toFixed(2);
       };
 
       window.deleteProject = async function deleteProject(id) {
@@ -439,6 +448,53 @@
         await handleMutation(() => api(`/api/assignments/${id}`, { method: 'PUT', body: JSON.stringify(next) }), 'Assignment role updated.');
       };
 
+      async function exportData() {
+        try {
+          const payload = await api('/api/export');
+          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `projectory-export-${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          showMessage('Export completed.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      }
+
+      async function importData(file) {
+        try {
+          const text = await file.text();
+          const payload = JSON.parse(text);
+          await api('/api/import', { method: 'POST', body: JSON.stringify(payload) });
+          await loadData();
+          render();
+          bindFooterActions();
+          showMessage('Import completed.');
+        } catch (error) {
+          showMessage(`Import failed: ${error.message}`, 'error');
+        }
+      }
+
+      function bindFooterActions() {
+        const exportButton = document.getElementById('export-btn');
+        const importButton = document.getElementById('import-btn');
+        const importInput = document.getElementById('import-file');
+
+        exportButton?.addEventListener('click', exportData);
+        importButton?.addEventListener('click', () => importInput?.click());
+        importInput?.addEventListener('change', async (event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          await importData(file);
+          importInput.value = '';
+        });
+      }
+
       function render() {
         renderTabs();
         const view = document.getElementById('view');
@@ -458,6 +514,7 @@
         try {
           await loadData();
           render();
+          bindFooterActions();
         } catch (error) {
           showMessage(error.message, 'error');
         }

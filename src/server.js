@@ -295,10 +295,10 @@ app.get('/api/projects', async (_req, res) => {
 });
 
 app.post('/api/projects', async (req, res) => {
-  const { clientId, name, startMonth, endMonth, budgetCents } = req.body;
+  const { clientId, name, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
 
-  if (!clientId || !name || !startMonth || budgetCents === undefined || budgetCents === null) {
-    return badRequest(res, 'clientId, name, startMonth and budgetCents are required.');
+  if (!clientId || !name || !startMonth || (budgetEuros === undefined && budgetCents === undefined)) {
+    return badRequest(res, 'clientId, name, startMonth and budgetEuros are required.');
   }
 
   const startError = requireMonth(startMonth, 'startMonth');
@@ -311,11 +311,19 @@ app.post('/api/projects', async (req, res) => {
   }
 
   try {
+    const normalizedBudgetCents = budgetEuros !== undefined
+      ? Math.round(Number(budgetEuros) * 100)
+      : Number(budgetCents);
+
+    if (!Number.isFinite(normalizedBudgetCents) || normalizedBudgetCents < 0) {
+      return badRequest(res, 'budgetEuros must be a positive number.');
+    }
+
     const result = await pool.query(
       `INSERT INTO projects (client_id, name, start_month, end_month, budget_cents)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [clientId, name.trim(), startMonth, endMonth || null, Number(budgetCents)]
+      [clientId, name.trim(), startMonth, endMonth || null, normalizedBudgetCents]
     );
 
     return res.status(201).json({ id: result.rows[0].id });
@@ -325,10 +333,10 @@ app.post('/api/projects', async (req, res) => {
 });
 
 app.put('/api/projects/:id', async (req, res) => {
-  const { clientId, name, startMonth, endMonth, budgetCents } = req.body;
+  const { clientId, name, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
 
-  if (!clientId || !name || !startMonth || budgetCents === undefined || budgetCents === null) {
-    return badRequest(res, 'clientId, name, startMonth and budgetCents are required.');
+  if (!clientId || !name || !startMonth || (budgetEuros === undefined && budgetCents === undefined)) {
+    return badRequest(res, 'clientId, name, startMonth and budgetEuros are required.');
   }
 
   const startError = requireMonth(startMonth, 'startMonth');
@@ -341,11 +349,19 @@ app.put('/api/projects/:id', async (req, res) => {
   }
 
   try {
+    const normalizedBudgetCents = budgetEuros !== undefined
+      ? Math.round(Number(budgetEuros) * 100)
+      : Number(budgetCents);
+
+    if (!Number.isFinite(normalizedBudgetCents) || normalizedBudgetCents < 0) {
+      return badRequest(res, 'budgetEuros must be a positive number.');
+    }
+
     const result = await pool.query(
       `UPDATE projects
        SET client_id = $1, name = $2, start_month = $3, end_month = $4, budget_cents = $5
        WHERE id = $6`,
-      [clientId, name.trim(), startMonth, endMonth || null, Number(budgetCents), req.params.id]
+      [clientId, name.trim(), startMonth, endMonth || null, normalizedBudgetCents, req.params.id]
     );
 
     if (result.rowCount === 0) {
@@ -508,6 +524,141 @@ app.delete('/api/assignments/:id', async (req, res) => {
 
     await client.query('DELETE FROM assignments WHERE id = $1', [req.params.id]);
     await rebalancePersonAssignments(assignment.rows[0].person_id, client);
+
+    await client.query('COMMIT');
+    return res.json({ ok: true });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    return handleDbError(res, error);
+  } finally {
+    client.release();
+  }
+});
+
+
+app.get('/api/export', async (_req, res) => {
+  try {
+    const [
+      priorities,
+      trades,
+      levels,
+      clients,
+      projects,
+      people,
+      challenges,
+      assignments
+    ] = await Promise.all([
+      pool.query('SELECT id, name FROM priorities ORDER BY id'),
+      pool.query('SELECT id, name FROM trades ORDER BY id'),
+      pool.query('SELECT id, name FROM levels ORDER BY id'),
+      pool.query('SELECT id, name, location, since_month, priority_id FROM clients ORDER BY id'),
+      pool.query('SELECT id, client_id, name, start_month, end_month, budget_cents FROM projects ORDER BY id'),
+      pool.query('SELECT id, first_name, last_name, trade_id, level_id FROM people ORDER BY id'),
+      pool.query('SELECT id, project_id, title, description FROM challenges ORDER BY id'),
+      pool.query('SELECT id, project_id, challenge_id, person_id, is_owner, is_leader, quantity FROM assignments ORDER BY id')
+    ]);
+
+    res.json({
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      data: {
+        priorities: priorities.rows,
+        trades: trades.rows,
+        levels: levels.rows,
+        clients: clients.rows,
+        projects: projects.rows,
+        people: people.rows,
+        challenges: challenges.rows,
+        assignments: assignments.rows
+      }
+    });
+  } catch (error) {
+    handleDbError(res, error);
+  }
+});
+
+app.post('/api/import', async (req, res) => {
+  const payload = req.body?.data;
+
+  if (!payload) {
+    return badRequest(res, 'Import payload must contain a data object.');
+  }
+
+  const requiredArrays = ['priorities', 'trades', 'levels', 'clients', 'projects', 'people', 'challenges', 'assignments'];
+  for (const key of requiredArrays) {
+    if (!Array.isArray(payload[key])) {
+      return badRequest(res, `Import payload missing array: ${key}`);
+    }
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    await client.query('DELETE FROM assignments');
+    await client.query('DELETE FROM challenges');
+    await client.query('DELETE FROM projects');
+    await client.query('DELETE FROM people');
+    await client.query('DELETE FROM clients');
+    await client.query('DELETE FROM priorities');
+    await client.query('DELETE FROM trades');
+    await client.query('DELETE FROM levels');
+
+    for (const row of payload.priorities) {
+      await client.query('INSERT INTO priorities (id, name) VALUES ($1, $2)', [row.id, row.name]);
+    }
+
+    for (const row of payload.trades) {
+      await client.query('INSERT INTO trades (id, name) VALUES ($1, $2)', [row.id, row.name]);
+    }
+
+    for (const row of payload.levels) {
+      await client.query('INSERT INTO levels (id, name) VALUES ($1, $2)', [row.id, row.name]);
+    }
+
+    for (const row of payload.clients) {
+      await client.query(
+        'INSERT INTO clients (id, name, location, since_month, priority_id) VALUES ($1, $2, $3, $4, $5)',
+        [row.id, row.name, row.location, row.since_month, row.priority_id]
+      );
+    }
+
+    for (const row of payload.projects) {
+      await client.query(
+        'INSERT INTO projects (id, client_id, name, start_month, end_month, budget_cents) VALUES ($1, $2, $3, $4, $5, $6)',
+        [row.id, row.client_id, row.name, row.start_month, row.end_month || null, row.budget_cents]
+      );
+    }
+
+    for (const row of payload.people) {
+      await client.query(
+        'INSERT INTO people (id, first_name, last_name, trade_id, level_id) VALUES ($1, $2, $3, $4, $5)',
+        [row.id, row.first_name, row.last_name, row.trade_id, row.level_id]
+      );
+    }
+
+    for (const row of payload.challenges) {
+      await client.query(
+        'INSERT INTO challenges (id, project_id, title, description) VALUES ($1, $2, $3, $4)',
+        [row.id, row.project_id, row.title, row.description]
+      );
+    }
+
+    for (const row of payload.assignments) {
+      await client.query(
+        `INSERT INTO assignments (id, project_id, challenge_id, person_id, is_owner, is_leader, quantity)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [row.id, row.project_id, row.challenge_id, row.person_id, row.is_owner, row.is_leader, row.quantity]
+      );
+    }
+
+    const sequenceTables = ['priorities', 'trades', 'levels', 'clients', 'projects', 'people', 'challenges', 'assignments'];
+    for (const table of sequenceTables) {
+      await client.query(
+        `SELECT setval(pg_get_serial_sequence($1, 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1), true)`,
+        [table]
+      );
+    }
 
     await client.query('COMMIT');
     return res.json({ ok: true });

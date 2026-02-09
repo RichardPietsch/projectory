@@ -10,11 +10,12 @@ Browser-based resource planning tool with three management views:
 ### Entities
 - **Person**: first name, last name, trade, level
 - **Client**: name, location, since month (`yyyy-mm`), priority
-- **Project**: belongs to exactly one client, start/end month (`yyyy-mm`), budget in **euro cents**
+- **Project**: belongs to exactly one client, start/end month (`yyyy-mm`), budget entered in **euros** (stored as cents internally)
 - **Challenge**: belongs to a project
 - **Assignment**: links person + project + challenge with optional `isOwner` or `isLeader`
 
 ### Business rules implemented
+- Footer actions allow exporting all app data to JSON and importing it back from JSON.
 - Static lists are pre-seeded on DB startup:
   - Priorities: Prio 1..4
   - Trades: UX, UI, FE-DEV, BE-DEV, PM, TPM, COPY, CREATIVE, CONSULTANT, OTHER
