@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hello World App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <main class="mx-auto flex min-h-screen max-w-4xl items-center justify-center p-6">
+      <section class="w-full rounded-2xl border border-slate-800 bg-slate-900/70 p-10 shadow-2xl">
+        <p class="mb-3 inline-block rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-300">
+          Docker + Tailwind + Postgres
+        </p>
+        <h1 class="mb-3 text-4xl font-bold">Hello World</h1>
+        <p class="mb-8 text-slate-300">
+          This is your deployable boilerplate app.
+        </p>
+        <div class="rounded-lg border border-slate-700 bg-slate-950 p-4">
+          <p class="text-sm text-slate-400">Message from database:</p>
+          <p id="db-message" class="mt-2 text-xl font-semibold text-emerald-300">Loading...</p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      async function loadGreeting() {
+        const target = document.getElementById('db-message');
+        try {
+          const response = await fetch('/api/hello');
+          const data = await response.json();
+          target.textContent = data.message;
+        } catch (_error) {
+          target.textContent = 'Unable to reach backend API.';
+        }
+      }
+
+      loadGreeting();
+    </script>
+  </body>
+</html>
