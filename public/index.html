@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projectory Resource Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <main class="mx-auto max-w-7xl p-6">
+      <header class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <h1 class="text-2xl font-bold">Projectory Resource Planner</h1>
+        <p class="mt-2 text-sm text-slate-300">Manage people, clients, projects, challenges, and assignments.</p>
+      </header>
+
+      <nav class="mb-6 flex gap-2" id="tabs"></nav>
+      <p id="flash" class="mb-4 hidden rounded-md border px-3 py-2 text-sm"></p>
+      <section id="view"></section>
+    </main>
+
+    <script>
+      const state = {
+        tab: 'people',
+        meta: { trades: [], levels: [], priorities: [] },
+        people: [],
+        clients: [],
+        projectsPayload: { projects: [], challenges: [], assignments: [] }
+      };
+
+      const tabs = [
+        { id: 'people', label: 'People View' },
+        { id: 'clients', label: 'Client View' },
+        { id: 'projects', label: 'Project View' }
+      ];
+
+      function showMessage(message, type = 'ok') {
+        const flash = document.getElementById('flash');
+        flash.textContent = message;
+        flash.className = `mb-4 rounded-md border px-3 py-2 text-sm ${
+          type === 'error'
+            ? 'border-rose-500/50 bg-rose-500/10 text-rose-200'
+            : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-200'
+        }`;
+      }
+
+      function formatEuro(cents) {
+        return (Number(cents || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+      }
+
+      async function api(url, options = {}) {
+        const response = await fetch(url, {
+          headers: { 'Content-Type': 'application/json' },
+          ...options
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({ error: 'Request failed.' }));
+          throw new Error(data.error || 'Request failed.');
+        }
+
+        if (response.status === 204) {
+          return null;
+        }
+
+        return response.json();
+      }
+
+      async function loadData() {
+        state.meta = await api('/api/meta');
+        state.people = await api('/api/people');
+        state.clients = await api('/api/clients');
+        state.projectsPayload = await api('/api/projects');
+      }
+
+      function renderTabs() {
+        const tabsRoot = document.getElementById('tabs');
+        tabsRoot.innerHTML = tabs
+          .map(
+            (tab) => `<button
+              class="rounded-lg border px-4 py-2 text-sm font-semibold ${
+                state.tab === tab.id
+                  ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }"
+              data-tab="${tab.id}"
+            >${tab.label}</button>`
+          )
+          .join('');
+
+        tabsRoot.querySelectorAll('button').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.tab = button.dataset.tab;
+            render();
+          });
+        });
+      }
+
+      function optionList(items, selected) {
+        return items
+          .map((item) => `<option value="${item.id}" ${Number(selected) === Number(item.id) ? 'selected' : ''}>${item.name}</option>`)
+          .join('');
+      }
+
+      function peopleView() {
+        const rows = state.people
+          .map(
+            (person) => `<tr class="border-t border-slate-800">
+              <td class="p-2">${person.first_name} ${person.last_name}</td>
+              <td class="p-2">${person.trade_name}</td>
+              <td class="p-2">${person.level_name}</td>
+              <td class="p-2">${person.assignment_count}</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editPerson(${JSON.stringify(person)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button>
+              </td>
+            </tr>`
+          )
+          .join('');
+
+        return `
+          <div class="grid gap-6 lg:grid-cols-[1fr,2fr]">
+            <form id="person-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Person</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">First Name<input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Last Name<input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Trade<select required name="tradeId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.trades)}</select></label>
+              <label class="mb-2 block text-sm">Level<select required name="levelId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.levels)}</select></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Person</button>
+            </form>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">People</h2>
+              <table class="w-full text-left text-sm">
+                <thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Trade</th><th class="p-2">Level</th><th class="p-2">Assignments</th><th class="p-2">Actions</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      function clientsView() {
+        const clientOptions = state.clients.map((c) => ({ id: c.id, name: c.name }));
+        const projectRows = state.projectsPayload.projects
+          .map((project) => `<tr class="border-t border-slate-800"><td class="p-2">${project.name}</td><td class="p-2">${project.client_name}</td><td class="p-2">${project.start_month}</td></tr>`)
+          .join('');
+
+        const clientRows = state.clients
+          .map(
+            (client) => `<tr class="border-t border-slate-800">
+              <td class="p-2">${client.name}</td>
+              <td class="p-2">${client.location}</td>
+              <td class="p-2">${client.since_month}</td>
+              <td class="p-2">${client.priority_name}</td>
+              <td class="p-2">${client.project_count}</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editClient(${JSON.stringify(client)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteClient(${client.id})'>Delete</button>
+              </td>
+            </tr>`
+          )
+          .join('');
+
+        return `
+          <div class="grid gap-6 lg:grid-cols-2">
+            <form id="client-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Client</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Location<input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Since (yyyy-mm)<input required name="sinceMonth" placeholder="2025-01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Priority<select required name="priorityId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.priorities)}</select></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Client</button>
+            </form>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Clients</h2>
+              <table class="w-full text-left text-sm">
+                <thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Location</th><th class="p-2">Since</th><th class="p-2">Priority</th><th class="p-2">Projects</th><th class="p-2">Actions</th></tr></thead>
+                <tbody>${clientRows}</tbody>
+              </table>
+            </div>
+          </div>
+          <div class="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 class="mb-3 text-lg font-semibold">Project assignment overview</h3>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Project</th><th class="p-2">Client</th><th class="p-2">Start</th></tr></thead><tbody>${projectRows}</tbody></table>
+          </div>
+        `;
+      }
+
+      function projectsView() {
+        const projects = state.projectsPayload.projects;
+        const challenges = state.projectsPayload.challenges;
+        const assignments = state.projectsPayload.assignments;
+
+        const projectRows = projects
+          .map((project) => {
+            const linkedChallenges = challenges.filter((challenge) => Number(challenge.project_id) === Number(project.id));
+            return `<tr class="border-t border-slate-800">
+              <td class="p-2">${project.name}<div class="text-xs text-slate-400">${project.client_name}</div></td>
+              <td class="p-2">${project.start_month} → ${project.end_month || 'open'}</td>
+              <td class="p-2">${formatEuro(project.budget_cents)}</td>
+              <td class="p-2">${linkedChallenges.length}</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editProject(${JSON.stringify(project)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteProject(${project.id})'>Delete</button>
+              </td>
+            </tr>`;
+          })
+          .join('');
+
+        const challengeRows = challenges
+          .map((challenge) => `<tr class="border-t border-slate-800">
+            <td class="p-2">${challenge.title}</td>
+            <td class="p-2">${projects.find((project) => Number(project.id) === Number(challenge.project_id))?.name || '-'}</td>
+            <td class="p-2">${challenge.assignment_count}</td>
+            <td class="p-2">
+              <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editChallenge(${JSON.stringify(challenge)})'>Edit</button>
+              <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteChallenge(${challenge.id})'>Delete</button>
+            </td>
+          </tr>`)
+          .join('');
+
+        const assignmentRows = assignments
+          .map((assignment) => `<tr class="border-t border-slate-800">
+            <td class="p-2">${assignment.first_name} ${assignment.last_name}</td>
+            <td class="p-2">${projects.find((project) => Number(project.id) === Number(assignment.project_id))?.name || '-'}</td>
+            <td class="p-2">${assignment.challenge_title}</td>
+            <td class="p-2">${Number(assignment.quantity).toFixed(2)}%</td>
+            <td class="p-2">${assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor'}</td>
+            <td class="p-2">
+              <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='toggleAssignmentRole(${assignment.id}, ${assignment.is_owner}, ${assignment.is_leader})'>Toggle Role</button>
+              <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteAssignment(${assignment.id})'>Delete</button>
+            </td>
+          </tr>`)
+          .join('');
+
+        return `
+          <div class="grid gap-6 lg:grid-cols-2">
+            <form id="project-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Project</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Client<select required name="clientId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.clients)}</select></label>
+              <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" placeholder="2025-01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">End (yyyy-mm optional)<input name="endMonth" placeholder="2025-12" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Budget in cents<input required name="budgetCents" type="number" min="0" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Project</button>
+            </form>
+
+            <form id="challenge-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Challenge</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">Project<select required name="projectId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(projects)}</select></label>
+              <label class="mb-2 block text-sm">Title<input required name="title" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Description<textarea required name="description" class="mt-1 w-full rounded bg-slate-950 p-2"></textarea></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Challenge</button>
+            </form>
+          </div>
+
+          <form id="assignment-form" class="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h2 class="mb-3 text-lg font-semibold">Create Assignment</h2>
+            <div class="grid gap-3 md:grid-cols-5">
+              <label class="text-sm">Project<select required name="projectId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(projects)}</select></label>
+              <label class="text-sm">Challenge<select required name="challengeId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(challenges)}</select></label>
+              <label class="text-sm">Person<select required name="personId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.people.map((person) => ({ id: person.id, name: `${person.first_name} ${person.last_name}` })))}</select></label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="isOwner" /> isOwner</label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="isLeader" /> isLeader</label>
+            </div>
+            <p class="mt-2 text-xs text-slate-400">Quantities are automatically split equally across a person's assigned projects.</p>
+            <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Create Assignment</button>
+          </form>
+
+          <div class="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 class="mb-3 text-lg font-semibold">Projects</h3>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Project</th><th class="p-2">Dates</th><th class="p-2">Budget</th><th class="p-2">Challenges</th><th class="p-2">Actions</th></tr></thead><tbody>${projectRows}</tbody></table>
+          </div>
+
+          <div class="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 class="mb-3 text-lg font-semibold">Challenges</h3>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Title</th><th class="p-2">Project</th><th class="p-2">Assignments</th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
+          </div>
+
+          <div class="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 class="mb-3 text-lg font-semibold">Assignments</h3>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Person</th><th class="p-2">Project</th><th class="p-2">Challenge</th><th class="p-2">Quantity</th><th class="p-2">Role</th><th class="p-2">Actions</th></tr></thead><tbody>${assignmentRows}</tbody></table>
+          </div>
+        `;
+      }
+
+      function bindForms() {
+        const personForm = document.getElementById('person-form');
+        if (personForm) {
+          personForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(personForm);
+            const payload = Object.fromEntries(formData.entries());
+            const id = payload.id;
+            delete payload.id;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/people/${id}` : '/api/people';
+            await handleMutation(() => api(url, { method, body: JSON.stringify(payload) }), 'Person saved.');
+            personForm.reset();
+          });
+        }
+
+        const clientForm = document.getElementById('client-form');
+        if (clientForm) {
+          clientForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(clientForm).entries());
+            const id = payload.id;
+            delete payload.id;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/clients/${id}` : '/api/clients';
+            await handleMutation(() => api(url, { method, body: JSON.stringify(payload) }), 'Client saved.');
+            clientForm.reset();
+          });
+        }
+
+        const projectForm = document.getElementById('project-form');
+        if (projectForm) {
+          projectForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(projectForm).entries());
+            const id = payload.id;
+            delete payload.id;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/projects/${id}` : '/api/projects';
+            await handleMutation(() => api(url, { method, body: JSON.stringify(payload) }), 'Project saved.');
+            projectForm.reset();
+          });
+        }
+
+        const challengeForm = document.getElementById('challenge-form');
+        if (challengeForm) {
+          challengeForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(challengeForm).entries());
+            const id = payload.id;
+            if (id) {
+              delete payload.projectId;
+              delete payload.id;
+              await handleMutation(() => api(`/api/challenges/${id}`, { method: 'PUT', body: JSON.stringify(payload) }), 'Challenge saved.');
+            } else {
+              delete payload.id;
+              await handleMutation(() => api(`/api/projects/${payload.projectId}/challenges`, { method: 'POST', body: JSON.stringify(payload) }), 'Challenge saved.');
+            }
+            challengeForm.reset();
+          });
+        }
+
+        const assignmentForm = document.getElementById('assignment-form');
+        if (assignmentForm) {
+          assignmentForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(assignmentForm).entries());
+            payload.isOwner = Boolean(payload.isOwner);
+            payload.isLeader = Boolean(payload.isLeader);
+            await handleMutation(() => api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) }), 'Assignment created.');
+            assignmentForm.reset();
+          });
+        }
+      }
+
+      async function handleMutation(action, successMessage) {
+        try {
+          await action();
+          await loadData();
+          render();
+          showMessage(successMessage);
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      }
+
+      window.editPerson = function editPerson(person) {
+        const form = document.getElementById('person-form');
+        form.id.value = person.id;
+        form.firstName.value = person.first_name;
+        form.lastName.value = person.last_name;
+        form.tradeId.value = person.trade_id;
+        form.levelId.value = person.level_id;
+      };
+
+      window.deletePerson = async function deletePerson(id) {
+        await handleMutation(() => api(`/api/people/${id}`, { method: 'DELETE' }), 'Person deleted.');
+      };
+
+      window.editClient = function editClient(client) {
+        const form = document.getElementById('client-form');
+        form.id.value = client.id;
+        form.name.value = client.name;
+        form.location.value = client.location;
+        form.sinceMonth.value = client.since_month;
+        form.priorityId.value = client.priority_id;
+      };
+
+      window.deleteClient = async function deleteClient(id) {
+        await handleMutation(() => api(`/api/clients/${id}`, { method: 'DELETE' }), 'Client deleted.');
+      };
+
+      window.editProject = function editProject(project) {
+        const form = document.getElementById('project-form');
+        form.id.value = project.id;
+        form.name.value = project.name;
+        form.clientId.value = project.client_id;
+        form.startMonth.value = project.start_month;
+        form.endMonth.value = project.end_month || '';
+        form.budgetCents.value = project.budget_cents;
+      };
+
+      window.deleteProject = async function deleteProject(id) {
+        await handleMutation(() => api(`/api/projects/${id}`, { method: 'DELETE' }), 'Project deleted.');
+      };
+
+      window.editChallenge = function editChallenge(challenge) {
+        const form = document.getElementById('challenge-form');
+        form.id.value = challenge.id;
+        form.projectId.value = challenge.project_id;
+        form.title.value = challenge.title;
+        form.description.value = challenge.description;
+      };
+
+      window.deleteChallenge = async function deleteChallenge(id) {
+        await handleMutation(() => api(`/api/challenges/${id}`, { method: 'DELETE' }), 'Challenge deleted.');
+      };
+
+      window.deleteAssignment = async function deleteAssignment(id) {
+        await handleMutation(() => api(`/api/assignments/${id}`, { method: 'DELETE' }), 'Assignment deleted.');
+      };
+
+      window.toggleAssignmentRole = async function toggleAssignmentRole(id, isOwner, isLeader) {
+        let next = { isOwner: false, isLeader: false };
+        if (!isOwner && !isLeader) {
+          next = { isOwner: true, isLeader: false };
+        } else if (isOwner) {
+          next = { isOwner: false, isLeader: true };
+        }
+
+        await handleMutation(() => api(`/api/assignments/${id}`, { method: 'PUT', body: JSON.stringify(next) }), 'Assignment role updated.');
+      };
+
+      function render() {
+        renderTabs();
+        const view = document.getElementById('view');
+
+        if (state.tab === 'people') {
+          view.innerHTML = peopleView();
+        } else if (state.tab === 'clients') {
+          view.innerHTML = clientsView();
+        } else {
+          view.innerHTML = projectsView();
+        }
+
+        bindForms();
+      }
+
+      async function init() {
+        try {
+          await loadData();
+          render();
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>
