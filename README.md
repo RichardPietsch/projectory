@@ -1,80 +1,98 @@
-# Hello World Boilerplate (Docker + Tailwind + PostgreSQL)
+# Projectory Resource Planner (Docker + Tailwind + PostgreSQL)
 
-A minimal boilerplate project you can push to GitHub and run with Docker Desktop on macOS.
+Browser-based resource planning tool with three management views:
+- **People View**
+- **Client View**
+- **Project View**
 
-## Stack
+## What v1 includes
 
-- **Backend:** Node.js + Express
-- **Frontend:** Static HTML with TailwindCSS (CDN)
-- **Database:** PostgreSQL
-- **Local deployment:** Docker Compose
+### Entities
+- **Person**: first name, last name, trade, level
+- **Client**: name, location, since month (`yyyy-mm`), priority
+- **Project**: belongs to exactly one client, start/end month (`yyyy-mm`), budget in **euro cents**
+- **Challenge**: belongs to a project
+- **Assignment**: links person + project + challenge with optional `isOwner` or `isLeader`
 
-## Project structure
+### Business rules implemented
+- Static lists are pre-seeded on DB startup:
+  - Priorities: Prio 1..4
+  - Trades: UX, UI, FE-DEV, BE-DEV, PM, TPM, COPY, CREATIVE, CONSULTANT, OTHER
+  - Levels: JUNIOR, MIDWEIGHT, SENIOR, DIRECTOR, C-LEVEL
+- A project must belong to one client.
+- An assignment cannot be both owner and leader at once.
+- Multiple owners/leaders per project are allowed.
+- Deleting records is blocked if dependencies exist (FK restrict behavior).
+- Assignment `quantity` is auto-split equally across a person's assigned projects and always sums to 100%.
 
-```text
-.
-├── db/
-│   └── init.sql
-├── public/
-│   └── index.html
-├── src/
-│   └── server.js
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
-```
-
-## 1) Push to GitHub
-
-From this repository root:
-
-```bash
-git add .
-git commit -m "Initial hello-world docker boilerplate"
-git push origin <your-branch-or-main>
-```
-
-## 2) Run locally with Docker Desktop (Mac)
-
-1. Install and open **Docker Desktop**.
-2. In this folder run:
+## Run locally with Docker Desktop (recommended)
 
 ```bash
 docker compose up --build
 ```
 
-3. Open: <http://localhost:3000>
+Open: <http://localhost:3000>
 
-You should see the Hello World page and a greeting loaded from PostgreSQL.
+## No-clone run from GitHub (your repo)
 
-## 3) Useful Docker commands
+```bash
+curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.richard.yml \
+| docker compose -f - up --build
+```
+
+If raw GitHub file is missing, use this fallback:
+
+```bash
+cat <<'YAML' | docker compose -f - up --build
+services:
+  web:
+    build:
+      context: https://github.com/RichardPietsch/projectory.git#main
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: helloapp
+      DB_USER: hello
+      DB_PASSWORD: hello
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    build:
+      context: https://github.com/RichardPietsch/projectory.git#main:db
+    environment:
+      POSTGRES_DB: helloapp
+      POSTGRES_USER: hello
+      POSTGRES_PASSWORD: hello
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hello -d helloapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+YAML
+```
+
+## Useful commands
 
 ```bash
 # Start in background
 docker compose up -d --build
 
-# View logs
+# Logs
 docker compose logs -f
 
-# Stop and remove containers
+# Stop
 docker compose down
 
-# Stop and remove containers + database volume
+# Stop + wipe database volume
 docker compose down -v
 ```
-
-## 4) How it works
-
-- `db/init.sql` initializes a `greetings` table and inserts a starter message.
-- `src/server.js` exposes:
-  - `GET /` (static frontend)
-  - `GET /api/hello` (reads greeting from Postgres)
-  - `GET /health` (DB health check)
-
-## 5) Deploy on another machine
-
-1. Clone the GitHub repository.
-2. Install Docker Desktop.
-3. Run `docker compose up --build`.
-
-That's it — no local Node/Postgres install needed.
