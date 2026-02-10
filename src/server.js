@@ -103,7 +103,8 @@ app.get('/api/people', async (_req, res) => {
       `SELECT p.id, p.first_name, p.last_name,
               t.id AS trade_id, t.name AS trade_name,
               l.id AS level_id, l.name AS level_name,
-              COALESCE(COUNT(a.id), 0) AS assignment_count
+              COALESCE(COUNT(a.id), 0) AS assignment_count,
+              COALESCE(SUM(a.quantity), 0) AS assignment_quantity_total
        FROM people p
        JOIN trades t ON p.trade_id = t.id
        JOIN levels l ON p.level_id = l.id
@@ -267,7 +268,8 @@ app.get('/api/projects', async (_req, res) => {
 
     const challenges = await pool.query(
       `SELECT ch.id, ch.project_id, ch.title, ch.description,
-              COALESCE(COUNT(a.id), 0) AS assignment_count
+              COALESCE(COUNT(a.id), 0) AS assignment_count,
+              COALESCE(SUM(a.quantity), 0) AS assignment_quantity_total
        FROM challenges ch
        LEFT JOIN assignments a ON a.challenge_id = ch.id
        GROUP BY ch.id
