@@ -469,6 +469,27 @@ app.post('/api/assignments', async (req, res) => {
       return res.status(400).json({ error: 'Challenge must belong to the selected project.' });
     }
 
+    const existing = await client.query(
+      `SELECT id
+       FROM assignments
+       WHERE challenge_id = $1 AND person_id = $2
+       LIMIT 1`,
+      [challengeId, personId]
+    );
+
+    if (existing.rowCount > 0) {
+      await client.query(
+        `UPDATE assignments
+         SET is_owner = $1, is_leader = $2
+         WHERE id = $3`,
+        [Boolean(isOwner), Boolean(isLeader), existing.rows[0].id]
+      );
+
+      await rebalancePersonAssignments(personId, client);
+      await client.query('COMMIT');
+      return res.json({ id: existing.rows[0].id, deduplicated: true });
+    }
+
     const inserted = await client.query(
       `INSERT INTO assignments (project_id, challenge_id, person_id, is_owner, is_leader)
        VALUES ($1, $2, $3, $4, $5)

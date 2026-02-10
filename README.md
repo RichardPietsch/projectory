@@ -22,6 +22,7 @@ Browser-based resource planning tool with three management views:
   - Levels: JUNIOR, MIDWEIGHT, SENIOR, DIRECTOR, C-LEVEL
 - A project must belong to one client.
 - An assignment cannot be both owner and leader at once.
+- The same person cannot be assigned to the same challenge more than once.
 - Multiple owners/leaders per project are allowed.
 - Deleting records is blocked if dependencies exist (FK restrict behavior).
 - Assignment `quantity` is auto-split equally across a person's assigned projects and always sums to 100%.

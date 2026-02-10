@@ -115,7 +115,14 @@
         challengeModal: {
           open: false,
           challengeId: null
-        }
+        },
+        listenersBound: {
+          header: false,
+          footer: false,
+          assignModal: false,
+          challengeModal: false
+        },
+        assignSubmitting: false
       };
 
       const adminTabs = [
@@ -523,6 +530,8 @@ function filteredPeople() {
       }
 
       function bindFooterActions() {
+        if (state.listenersBound.footer) return;
+        state.listenersBound.footer = true;
         document.getElementById('export-btn')?.addEventListener('click', exportData);
 
         const importInput = document.getElementById('import-file');
@@ -537,6 +546,8 @@ function filteredPeople() {
       }
 
       function bindHeaderActions() {
+        if (state.listenersBound.header) return;
+        state.listenersBound.header = true;
         document.getElementById('admin-toggle')?.addEventListener('click', () => {
           state.showAdmin = true;
           render();
@@ -549,11 +560,15 @@ function filteredPeople() {
       }
 
       function bindChallengeModalActions() {
+        if (state.listenersBound.challengeModal) return;
+        state.listenersBound.challengeModal = true;
         document.getElementById('challenge-modal-close')?.addEventListener('click', closeChallengeModal);
         document.getElementById('challenge-cancel')?.addEventListener('click', closeChallengeModal);
       }
 
       function bindAssignModalActions() {
+        if (state.listenersBound.assignModal) return;
+        state.listenersBound.assignModal = true;
         document.getElementById('assign-modal-close')?.addEventListener('click', closeAssignModal);
         document.getElementById('assign-cancel')?.addEventListener('click', closeAssignModal);
 
@@ -567,6 +582,7 @@ function filteredPeople() {
         });
 
         document.getElementById('assign-confirm')?.addEventListener('click', async () => {
+          if (state.assignSubmitting) return;
           if (!state.assignModal.selectedPersonId || !state.assignModal.challengeId) {
             showMessage('Please select a person to assign.', 'error');
             return;
@@ -581,31 +597,40 @@ function filteredPeople() {
             isLeader: role === 'leader'
           };
 
-          if (!state.assignModal.assignmentId) {
-            await handleMutation(() => api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) }), 'Assignment created.');
+          state.assignSubmitting = true;
+          const confirmButton = document.getElementById('assign-confirm');
+          if (confirmButton) confirmButton.disabled = true;
+
+          try {
+            if (!state.assignModal.assignmentId) {
+              await handleMutation(() => api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) }), 'Assignment created.');
+              closeAssignModal();
+              return;
+            }
+
+            const existing = state.projectsPayload.assignments.find((assignment) => String(assignment.id) === String(state.assignModal.assignmentId));
+            if (!existing) {
+              showMessage('Current assignment could not be found.', 'error');
+              return;
+            }
+
+            if (String(existing.person_id) === String(state.assignModal.selectedPersonId)) {
+              await handleMutation(
+                () => api(`/api/assignments/${existing.id}`, { method: 'PUT', body: JSON.stringify({ isOwner: payload.isOwner, isLeader: payload.isLeader }) }),
+                'Assignment updated.'
+              );
+            } else {
+              await handleMutation(async () => {
+                await api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) });
+                await api(`/api/assignments/${existing.id}`, { method: 'DELETE' });
+              }, 'Assignee updated.');
+            }
+
             closeAssignModal();
-            return;
+          } finally {
+            state.assignSubmitting = false;
+            if (confirmButton) confirmButton.disabled = false;
           }
-
-          const existing = state.projectsPayload.assignments.find((assignment) => String(assignment.id) === String(state.assignModal.assignmentId));
-          if (!existing) {
-            showMessage('Current assignment could not be found.', 'error');
-            return;
-          }
-
-          if (String(existing.person_id) === String(state.assignModal.selectedPersonId)) {
-            await handleMutation(
-              () => api(`/api/assignments/${existing.id}`, { method: 'PUT', body: JSON.stringify({ isOwner: payload.isOwner, isLeader: payload.isLeader }) }),
-              'Assignment updated.'
-            );
-          } else {
-            await handleMutation(async () => {
-              await api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) });
-              await api(`/api/assignments/${existing.id}`, { method: 'DELETE' });
-            }, 'Assignee updated.');
-          }
-
-          closeAssignModal();
         });
       }
 
@@ -742,19 +767,19 @@ function filteredPeople() {
           document.getElementById('admin-tabs').innerHTML = '';
         }
 
-        bindHeaderActions();
         bindForms();
         renderChallengeModal();
-        bindChallengeModalActions();
         renderAssignModal();
-        bindAssignModalActions();
       }
 
       async function init() {
         try {
           await loadData();
-          render();
+          bindHeaderActions();
           bindFooterActions();
+          bindChallengeModalActions();
+          bindAssignModalActions();
+          render();
         } catch (error) {
           showMessage(error.message, 'error');
         }

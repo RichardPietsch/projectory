@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS assignments (
   is_leader BOOLEAN NOT NULL DEFAULT FALSE,
   quantity NUMERIC(5,2) NOT NULL DEFAULT 100.00 CHECK (quantity >= 0 AND quantity <= 100),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT owner_leader_not_both CHECK (NOT (is_owner AND is_leader))
+  CONSTRAINT owner_leader_not_both CHECK (NOT (is_owner AND is_leader)),
+  CONSTRAINT assignment_unique_challenge_person UNIQUE (challenge_id, person_id)
 );
 
 INSERT INTO priorities (name)
