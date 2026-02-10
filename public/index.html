@@ -388,7 +388,8 @@ function clientsView() {
               const personAssignments = assignmentsByPerson.get(personId) || [];
               if (personAssignments.length === 0) return '';
               const sample = personAssignments[0];
-              const quantity = Math.round(Number(sample.quantity || 0));
+              const totalQuantity = personAssignments.reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
+              const quantity = Math.round(totalQuantity);
               const name = `${sample.first_name} ${sample.last_name}`;
               return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}%)</button>`;
             })
@@ -830,7 +831,7 @@ function filteredPeople() {
           return;
         }
 
-        const currentQuantity = Math.round(Number(currentAssignments[0].quantity || 0));
+        const currentQuantity = Math.round(currentAssignments.reduce((sum, assignment) => sum + Number(assignment.quantity || 0), 0));
         const input = window.prompt('Set quantity (0-100 full percentage points):', String(currentQuantity));
         if (input === null) return;
 

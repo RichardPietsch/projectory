@@ -46,35 +46,45 @@ function requireMonth(value, fieldName) {
   return null;
 }
 
-async function rebalancePersonAssignments(personId, client = pool) {
-  const projectRows = await client.query(
-    `SELECT DISTINCT project_id
+async function getPersonProjectTotalQuantity(personId, projectId, client = pool) {
+  const result = await client.query(
+    `SELECT COALESCE(SUM(quantity), 0) AS total_quantity
      FROM assignments
-     WHERE person_id = $1
-     ORDER BY project_id`,
-    [personId]
+     WHERE person_id = $1 AND project_id = $2`,
+    [personId, projectId]
   );
 
-  const projectIds = projectRows.rows.map((row) => row.project_id);
-  const count = projectIds.length;
+  return Number(result.rows[0]?.total_quantity || 0);
+}
 
+async function distributeProjectQuantityAcrossAssignments(personId, projectId, totalQuantity, client = pool) {
+  const assignments = await client.query(
+    `SELECT id
+     FROM assignments
+     WHERE person_id = $1 AND project_id = $2
+     ORDER BY id`,
+    [personId, projectId]
+  );
+
+  const count = assignments.rowCount;
   if (count === 0) {
     return;
   }
 
-  const baseBps = Math.floor(10000 / count);
-  let remaining = 10000;
+  const totalBps = Math.round(Number(totalQuantity) * 100);
+  const baseBps = Math.floor(totalBps / count);
+  let remaining = totalBps;
 
-  for (let i = 0; i < projectIds.length; i += 1) {
-    const bps = i === projectIds.length - 1 ? remaining : baseBps;
+  for (let i = 0; i < count; i += 1) {
+    const bps = i === count - 1 ? remaining : baseBps;
     remaining -= bps;
     const quantity = (bps / 100).toFixed(2);
 
     await client.query(
       `UPDATE assignments
        SET quantity = $1
-       WHERE person_id = $2 AND project_id = $3`,
-      [quantity, personId, projectIds[i]]
+       WHERE id = $2`,
+      [quantity, assignments.rows[i].id]
     );
   }
 }
@@ -485,10 +495,11 @@ app.post('/api/assignments', async (req, res) => {
         [Boolean(isOwner), Boolean(isLeader), existing.rows[0].id]
       );
 
-      await rebalancePersonAssignments(personId, client);
       await client.query('COMMIT');
       return res.json({ id: existing.rows[0].id, deduplicated: true });
     }
+
+    const currentProjectTotal = await getPersonProjectTotalQuantity(personId, projectId, client);
 
     const inserted = await client.query(
       `INSERT INTO assignments (project_id, challenge_id, person_id, is_owner, is_leader)
@@ -497,7 +508,8 @@ app.post('/api/assignments', async (req, res) => {
       [projectId, challengeId, personId, Boolean(isOwner), Boolean(isLeader)]
     );
 
-    await rebalancePersonAssignments(personId, client);
+    const targetProjectTotal = currentProjectTotal > 0 ? currentProjectTotal : 100;
+    await distributeProjectQuantityAcrossAssignments(personId, projectId, targetProjectTotal, client);
 
     await client.query('COMMIT');
     return res.status(201).json({ id: inserted.rows[0].id });
@@ -542,21 +554,31 @@ app.put('/api/projects/:projectId/people/:personId/quantity', async (req, res) =
     return badRequest(res, 'quantity must be an integer between 0 and 100.');
   }
 
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
-      `UPDATE assignments
-       SET quantity = $1
-       WHERE project_id = $2 AND person_id = $3`,
-      [quantity, req.params.projectId, req.params.personId]
+    await client.query('BEGIN');
+
+    const assignments = await client.query(
+      `SELECT id
+       FROM assignments
+       WHERE project_id = $1 AND person_id = $2`,
+      [req.params.projectId, req.params.personId]
     );
 
-    if (result.rowCount === 0) {
+    if (assignments.rowCount === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'No assignments found for this person in the selected project.' });
     }
 
-    return res.json({ ok: true, updated: result.rowCount });
+    await distributeProjectQuantityAcrossAssignments(req.params.personId, req.params.projectId, quantity, client);
+
+    await client.query('COMMIT');
+    return res.json({ ok: true, updated: assignments.rowCount, projectQuantity: quantity });
   } catch (error) {
+    await client.query('ROLLBACK');
     return handleDbError(res, error);
+  } finally {
+    client.release();
   }
 });
 
@@ -565,14 +587,21 @@ app.delete('/api/assignments/:id', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    const assignment = await client.query('SELECT person_id FROM assignments WHERE id = $1', [req.params.id]);
+    const assignment = await client.query(
+      'SELECT person_id, project_id FROM assignments WHERE id = $1',
+      [req.params.id]
+    );
     if (assignment.rowCount === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Assignment not found.' });
     }
 
+    const personId = assignment.rows[0].person_id;
+    const projectId = assignment.rows[0].project_id;
+    const projectTotalBeforeDelete = await getPersonProjectTotalQuantity(personId, projectId, client);
+
     await client.query('DELETE FROM assignments WHERE id = $1', [req.params.id]);
-    await rebalancePersonAssignments(assignment.rows[0].person_id, client);
+    await distributeProjectQuantityAcrossAssignments(personId, projectId, projectTotalBeforeDelete, client);
 
     await client.query('COMMIT');
     return res.json({ ok: true });
