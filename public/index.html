@@ -351,6 +351,66 @@ function clientsView() {
           assignmentsByChallenge.get(key).push(assignment);
         }
 
+        const assignmentsByPerson = new Map();
+        for (const assignment of projectAssignments) {
+          const key = String(assignment.person_id);
+          if (!assignmentsByPerson.has(key)) assignmentsByPerson.set(key, []);
+          assignmentsByPerson.get(key).push(assignment);
+        }
+
+        const ownerIds = new Set();
+        const leaderIds = new Set();
+        const contributorIds = new Set();
+
+        for (const assignment of projectAssignments) {
+          const personId = String(assignment.person_id);
+          if (assignment.is_owner) {
+            ownerIds.add(personId);
+          } else if (assignment.is_leader) {
+            leaderIds.add(personId);
+          } else {
+            contributorIds.add(personId);
+          }
+        }
+
+        for (const personId of ownerIds) {
+          leaderIds.delete(personId);
+          contributorIds.delete(personId);
+        }
+
+        for (const personId of leaderIds) {
+          contributorIds.delete(personId);
+        }
+
+        function renderTierPeople(ids, tierLabel, tierClass) {
+          const entries = Array.from(ids)
+            .map((personId) => {
+              const personAssignments = assignmentsByPerson.get(personId) || [];
+              if (personAssignments.length === 0) return '';
+              const sample = personAssignments[0];
+              const quantity = Math.round(Number(sample.quantity || 0));
+              const name = `${sample.first_name} ${sample.last_name}`;
+              return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}%)</button>`;
+            })
+            .filter(Boolean)
+            .join(' ');
+
+          return `<div class="rounded border border-slate-700 bg-slate-950/60 p-3">
+            <h4 class="mb-2 text-sm font-semibold text-slate-200">${tierLabel}</h4>
+            <div class="flex flex-wrap gap-2">${entries || '<span class="text-xs text-slate-400">None</span>'}</div>
+          </div>`;
+        }
+
+        const projectPeopleOverview = `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <h3 class="mb-3 text-lg font-semibold">People overview (project-level)</h3>
+          <p class="mb-3 text-xs text-slate-400">Click a name to change quantity in full percentage points for all their assignments in this project.</p>
+          <div class="space-y-3">
+            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-500/50 text-blue-300')}
+            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-500/50 text-emerald-300')}
+            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-600 text-slate-200')}
+          </div>
+        </div>`;
+
         const challengeRows = projectChallenges
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
@@ -367,7 +427,6 @@ function clientsView() {
                   })
                   .join('')
               : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
-            const quantities = assignments.length ? assignments.map((a) => `${Math.round(Number(a.quantity || 0))}%`).join(', ') : '-';
             const unassignButtons = assignments
               .map((assignment) => `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteAssignment(${assignment.id})'>Unassign ${assignment.first_name}</button>`)
               .join(' ');
@@ -376,7 +435,6 @@ function clientsView() {
               <td class="p-2">${challenge.title}</td>
               <td class="p-2">${challenge.description}</td>
               <td class="p-2">${assignees}</td>
-              <td class="p-2">${quantities}</td>
               <td class="p-2">
                 <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openChallengeModal(${JSON.stringify(challenge)})'>Edit</button>
                 <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteChallenge(${challenge.id})'>Delete</button>
@@ -395,12 +453,14 @@ function clientsView() {
             </div>
           </div>
 
+          ${projectPeopleOverview}
+
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3 flex items-center justify-between">
               <h3 class="text-lg font-semibold">Challenges in selected project</h3>
               <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>Add Challenge</button>
             </div>
-            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Title</th><th class="p-2">Description</th><th class="p-2">Assignee</th><th class="p-2">Quantity</th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Title</th><th class="p-2">Description</th><th class="p-2">Assignee</th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
           </div>`;
       }
 
@@ -756,6 +816,31 @@ function filteredPeople() {
 
       window.deleteProject = async function deleteProject(id) {
         await handleMutation(() => api(`/api/projects/${id}`, { method: 'DELETE' }), 'Project deleted.');
+      };
+
+      window.adjustProjectPersonQuantity = async function adjustProjectPersonQuantity(projectId, personId) {
+        const currentAssignments = state.projectsPayload.assignments.filter(
+          (assignment) => String(assignment.project_id) === String(projectId) && String(assignment.person_id) === String(personId)
+        );
+        if (currentAssignments.length === 0) {
+          showMessage('No assignments found for this person in this project.', 'error');
+          return;
+        }
+
+        const currentQuantity = Math.round(Number(currentAssignments[0].quantity || 0));
+        const input = window.prompt('Set quantity (0-100 full percentage points):', String(currentQuantity));
+        if (input === null) return;
+
+        const quantity = Number(input);
+        if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100) {
+          showMessage('Quantity must be an integer between 0 and 100.', 'error');
+          return;
+        }
+
+        await handleMutation(
+          () => api(`/api/projects/${projectId}/people/${personId}/quantity`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
+          'Quantity updated.'
+        );
       };
 
       function renderChallengeModal() {

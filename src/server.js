@@ -534,6 +534,32 @@ app.put('/api/assignments/:id', async (req, res) => {
   }
 });
 
+
+app.put('/api/projects/:projectId/people/:personId/quantity', async (req, res) => {
+  const quantity = Number(req.body.quantity);
+
+  if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100) {
+    return badRequest(res, 'quantity must be an integer between 0 and 100.');
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE assignments
+       SET quantity = $1
+       WHERE project_id = $2 AND person_id = $3`,
+      [quantity, req.params.projectId, req.params.personId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'No assignments found for this person in the selected project.' });
+    }
+
+    return res.json({ ok: true, updated: result.rowCount });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
 app.delete('/api/assignments/:id', async (req, res) => {
   const client = await pool.connect();
   try {
