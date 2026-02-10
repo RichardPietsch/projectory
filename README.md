@@ -15,7 +15,7 @@ Browser-based resource planning tool with three management views:
 - **Assignment**: links person + project + challenge with optional `isOwner` or `isLeader`
 
 ### Business rules implemented
-- Footer actions allow exporting all app data to JSON and importing it back from JSON.
+- Footer actions export/import operational data as JSON (clients, projects, people, challenges, assignments). Static lists (priorities, trades, levels) are excluded and cannot be changed via import/export.
 - Static lists are pre-seeded on DB startup:
   - Priorities: Prio 1..4
   - Trades: UX, UI, FE-DEV, BE-DEV, PM, TPM, COPY, CREATIVE, CONSULTANT, OTHER

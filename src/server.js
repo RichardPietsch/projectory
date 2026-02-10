@@ -538,19 +538,7 @@ app.delete('/api/assignments/:id', async (req, res) => {
 
 app.get('/api/export', async (_req, res) => {
   try {
-    const [
-      priorities,
-      trades,
-      levels,
-      clients,
-      projects,
-      people,
-      challenges,
-      assignments
-    ] = await Promise.all([
-      pool.query('SELECT id, name FROM priorities ORDER BY id'),
-      pool.query('SELECT id, name FROM trades ORDER BY id'),
-      pool.query('SELECT id, name FROM levels ORDER BY id'),
+    const [clients, projects, people, challenges, assignments] = await Promise.all([
       pool.query('SELECT id, name, location, since_month, priority_id FROM clients ORDER BY id'),
       pool.query('SELECT id, client_id, name, start_month, end_month, budget_cents FROM projects ORDER BY id'),
       pool.query('SELECT id, first_name, last_name, trade_id, level_id FROM people ORDER BY id'),
@@ -562,9 +550,6 @@ app.get('/api/export', async (_req, res) => {
       exportedAt: new Date().toISOString(),
       version: 1,
       data: {
-        priorities: priorities.rows,
-        trades: trades.rows,
-        levels: levels.rows,
         clients: clients.rows,
         projects: projects.rows,
         people: people.rows,
@@ -584,7 +569,7 @@ app.post('/api/import', async (req, res) => {
     return badRequest(res, 'Import payload must contain a data object.');
   }
 
-  const requiredArrays = ['priorities', 'trades', 'levels', 'clients', 'projects', 'people', 'challenges', 'assignments'];
+  const requiredArrays = ['clients', 'projects', 'people', 'challenges', 'assignments'];
   for (const key of requiredArrays) {
     if (!Array.isArray(payload[key])) {
       return badRequest(res, `Import payload missing array: ${key}`);
@@ -600,21 +585,6 @@ app.post('/api/import', async (req, res) => {
     await client.query('DELETE FROM projects');
     await client.query('DELETE FROM people');
     await client.query('DELETE FROM clients');
-    await client.query('DELETE FROM priorities');
-    await client.query('DELETE FROM trades');
-    await client.query('DELETE FROM levels');
-
-    for (const row of payload.priorities) {
-      await client.query('INSERT INTO priorities (id, name) VALUES ($1, $2)', [row.id, row.name]);
-    }
-
-    for (const row of payload.trades) {
-      await client.query('INSERT INTO trades (id, name) VALUES ($1, $2)', [row.id, row.name]);
-    }
-
-    for (const row of payload.levels) {
-      await client.query('INSERT INTO levels (id, name) VALUES ($1, $2)', [row.id, row.name]);
-    }
 
     for (const row of payload.clients) {
       await client.query(
@@ -652,7 +622,7 @@ app.post('/api/import', async (req, res) => {
       );
     }
 
-    const sequenceTables = ['priorities', 'trades', 'levels', 'clients', 'projects', 'people', 'challenges', 'assignments'];
+    const sequenceTables = ['clients', 'projects', 'people', 'challenges', 'assignments'];
     for (const table of sequenceTables) {
       await client.query(
         `SELECT setval(pg_get_serial_sequence($1, 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1), true)`,
