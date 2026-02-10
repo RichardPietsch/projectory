@@ -562,6 +562,103 @@ app.get('/api/export', async (_req, res) => {
   }
 });
 
+function isPositiveInteger(value) {
+  return Number.isInteger(value) && value > 0;
+}
+
+function isNonNegativeInteger(value) {
+  return Number.isInteger(value) && value >= 0;
+}
+
+function ensureNoDuplicateIds(rows, entityName) {
+  const ids = rows.map((row) => row.id);
+  if (new Set(ids).size !== ids.length) {
+    return `${entityName} contains duplicate ids.`;
+  }
+  return null;
+}
+
+function validateImportPayload(payload) {
+  const requiredArrays = ['clients', 'projects', 'people', 'challenges', 'assignments'];
+  for (const key of requiredArrays) {
+    if (!Array.isArray(payload[key])) {
+      return `Import payload missing array: ${key}`;
+    }
+  }
+
+  const duplicateChecks = [
+    ['clients', payload.clients],
+    ['projects', payload.projects],
+    ['people', payload.people],
+    ['challenges', payload.challenges],
+    ['assignments', payload.assignments]
+  ];
+
+  for (const [entityName, rows] of duplicateChecks) {
+    const duplicateError = ensureNoDuplicateIds(rows, entityName);
+    if (duplicateError) {
+      return duplicateError;
+    }
+  }
+
+  const clientIds = new Set(payload.clients.map((row) => row.id));
+  const projectIds = new Set(payload.projects.map((row) => row.id));
+  const peopleIds = new Set(payload.people.map((row) => row.id));
+  const challengeIds = new Set(payload.challenges.map((row) => row.id));
+
+  for (const row of payload.clients) {
+    if (!isPositiveInteger(row.id) || !row.name || !row.location || !MONTH_REGEX.test(row.since_month || '') || !isPositiveInteger(row.priority_id)) {
+      return `Invalid client row with id ${row.id}.`;
+    }
+  }
+
+  for (const row of payload.projects) {
+    if (!isPositiveInteger(row.id) || !clientIds.has(row.client_id) || !row.name || !MONTH_REGEX.test(row.start_month || '') || !isNonNegativeInteger(row.budget_cents)) {
+      return `Invalid project row with id ${row.id}.`;
+    }
+
+    if (row.end_month && !MONTH_REGEX.test(row.end_month)) {
+      return `Invalid end_month in project id ${row.id}.`;
+    }
+  }
+
+  for (const row of payload.people) {
+    if (!isPositiveInteger(row.id) || !row.first_name || !row.last_name || !isPositiveInteger(row.trade_id) || !isPositiveInteger(row.level_id)) {
+      return `Invalid person row with id ${row.id}.`;
+    }
+  }
+
+  for (const row of payload.challenges) {
+    if (!isPositiveInteger(row.id) || !projectIds.has(row.project_id) || !row.title || !row.description) {
+      return `Invalid challenge row with id ${row.id}.`;
+    }
+  }
+
+  for (const row of payload.assignments) {
+    if (!isPositiveInteger(row.id) || !projectIds.has(row.project_id) || !challengeIds.has(row.challenge_id) || !peopleIds.has(row.person_id)) {
+      return `Invalid assignment row with id ${row.id}.`;
+    }
+
+    if (typeof row.is_owner !== 'boolean' || typeof row.is_leader !== 'boolean' || (row.is_owner && row.is_leader)) {
+      return `Invalid owner/leader flags in assignment id ${row.id}.`;
+    }
+
+    const quantity = Number(row.quantity);
+    if (!Number.isFinite(quantity) || quantity < 0 || quantity > 100) {
+      return `Invalid quantity in assignment id ${row.id}.`;
+    }
+  }
+
+  const challengeProjectMap = new Map(payload.challenges.map((row) => [row.id, row.project_id]));
+  for (const row of payload.assignments) {
+    if (challengeProjectMap.get(row.challenge_id) !== row.project_id) {
+      return `Assignment id ${row.id} links challenge to a different project.`;
+    }
+  }
+
+  return null;
+}
+
 app.post('/api/import', async (req, res) => {
   const payload = req.body?.data;
 
@@ -569,11 +666,9 @@ app.post('/api/import', async (req, res) => {
     return badRequest(res, 'Import payload must contain a data object.');
   }
 
-  const requiredArrays = ['clients', 'projects', 'people', 'challenges', 'assignments'];
-  for (const key of requiredArrays) {
-    if (!Array.isArray(payload[key])) {
-      return badRequest(res, `Import payload missing array: ${key}`);
-    }
+  const validationError = validateImportPayload(payload);
+  if (validationError) {
+    return badRequest(res, validationError);
   }
 
   const client = await pool.connect();
@@ -625,8 +720,7 @@ app.post('/api/import', async (req, res) => {
     const sequenceTables = ['clients', 'projects', 'people', 'challenges', 'assignments'];
     for (const table of sequenceTables) {
       await client.query(
-        `SELECT setval(pg_get_serial_sequence($1, 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1), true)`,
-        [table]
+        `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1), true)`
       );
     }
 

@@ -26,13 +26,15 @@
       <p id="flash" class="mb-4 hidden rounded-md border px-3 py-2 text-sm"></p>
       <section id="view"></section>
 
-      <section id="admin-panel" class="mt-8 hidden rounded-xl border border-slate-700 bg-slate-900 p-4">
-        <div class="mb-4 flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Administration Mode</h2>
-          <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+      <section id="admin-panel" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 p-4">
+        <div class="h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Administration Mode</h2>
+            <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+          </div>
+          <nav class="mb-6 flex gap-2" id="admin-tabs"></nav>
+          <section id="admin-view"></section>
         </div>
-        <nav class="mb-6 flex gap-2" id="admin-tabs"></nav>
-        <section id="admin-view"></section>
       </section>
 
       <footer class="mt-8 border-t border-slate-800 pt-4 text-sm text-slate-300">
@@ -87,6 +89,7 @@
           open: false,
           challengeId: null,
           challengeTitle: '',
+          assignmentId: null,
           selectedPersonId: '',
           search: '',
           role: 'contributor'
@@ -272,34 +275,33 @@
         const projectChallenges = state.projectsPayload.challenges.filter((challenge) => Number(challenge.project_id) === Number(selectedProject.id));
         const projectAssignments = state.projectsPayload.assignments.filter((assignment) => Number(assignment.project_id) === Number(selectedProject.id));
 
+        const challengeAssignmentMap = new Map();
+        for (const assignment of projectAssignments) {
+          const existing = challengeAssignmentMap.get(assignment.challenge_id);
+          if (!existing || Number(assignment.id) < Number(existing.id)) {
+            challengeAssignmentMap.set(assignment.challenge_id, assignment);
+          }
+        }
+
         const challengeRows = projectChallenges
-          .map(
-            (challenge) => `<tr class="border-t border-slate-800">
+          .map((challenge) => {
+            const assignment = challengeAssignmentMap.get(challenge.id);
+            const assigneeCell = assignment
+              ? `<button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name} (${assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor'})</button>`
+              : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
+
+            return `<tr class="border-t border-slate-800">
               <td class="p-2">${challenge.title}</td>
               <td class="p-2">${challenge.description}</td>
-              <td class="p-2">${challenge.assignment_count}</td>
+              <td class="p-2">${assigneeCell}</td>
+              <td class="p-2">${assignment ? `${Number(assignment.quantity).toFixed(2)}%` : '-'}</td>
               <td class="p-2">
-                <button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>
                 <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editChallenge(${JSON.stringify(challenge)})'>Edit</button>
                 <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteChallenge(${challenge.id})'>Delete</button>
+                ${assignment ? `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteAssignment(${assignment.id})'>Unassign</button>` : ''}
               </td>
-            </tr>`
-          )
-          .join('');
-
-        const assignmentRows = projectAssignments
-          .map(
-            (assignment) => `<tr class="border-t border-slate-800">
-              <td class="p-2">${assignment.first_name} ${assignment.last_name}</td>
-              <td class="p-2">${assignment.challenge_title}</td>
-              <td class="p-2">${Number(assignment.quantity).toFixed(2)}%</td>
-              <td class="p-2">${assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor'}</td>
-              <td class="p-2">
-                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='toggleAssignmentRole(${assignment.id}, ${assignment.is_owner}, ${assignment.is_leader})'>Toggle Role</button>
-                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteAssignment(${assignment.id})'>Delete</button>
-              </td>
-            </tr>`
-          )
+            </tr>`;
+          })
           .join('');
 
         return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
@@ -320,16 +322,11 @@
 
           <div class="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
             <h3 class="mb-3 text-lg font-semibold">Challenges in selected project</h3>
-            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Title</th><th class="p-2">Description</th><th class="p-2">Assignments</th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
-          </div>
-
-          <div class="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h3 class="mb-3 text-lg font-semibold">Assignments in selected project</h3>
-            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Person</th><th class="p-2">Challenge</th><th class="p-2">Quantity</th><th class="p-2">Role</th><th class="p-2">Actions</th></tr></thead><tbody>${assignmentRows}</tbody></table>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Title</th><th class="p-2">Description</th><th class="p-2">Assignee</th><th class="p-2">Quantity</th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
           </div>`;
       }
 
-      function filteredPeople() {
+function filteredPeople() {
         const search = state.assignModal.search.trim().toLowerCase();
         if (!search) {
           return state.people;
@@ -347,7 +344,9 @@
           return;
         }
 
-        document.getElementById('assign-modal-title').textContent = `Assign People · ${state.assignModal.challengeTitle}`;
+        document.getElementById('assign-modal-title').textContent = `${state.assignModal.assignmentId ? 'Change Assignment' : 'Assign People'} · ${state.assignModal.challengeTitle}`;
+        document.getElementById('assign-search').value = state.assignModal.search;
+        document.getElementById('assign-role').value = state.assignModal.role;
         const people = filteredPeople();
         const list = document.getElementById('assign-people-list');
 
@@ -552,7 +551,30 @@
             isLeader: role === 'leader'
           };
 
-          await handleMutation(() => api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) }), 'Assignment created.');
+          if (!state.assignModal.assignmentId) {
+            await handleMutation(() => api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) }), 'Assignment created.');
+            closeAssignModal();
+            return;
+          }
+
+          const existing = state.projectsPayload.assignments.find((assignment) => String(assignment.id) === String(state.assignModal.assignmentId));
+          if (!existing) {
+            showMessage('Current assignment could not be found.', 'error');
+            return;
+          }
+
+          if (String(existing.person_id) === String(state.assignModal.selectedPersonId)) {
+            await handleMutation(
+              () => api(`/api/assignments/${existing.id}`, { method: 'PUT', body: JSON.stringify({ isOwner: payload.isOwner, isLeader: payload.isLeader }) }),
+              'Assignment updated.'
+            );
+          } else {
+            await handleMutation(async () => {
+              await api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) });
+              await api(`/api/assignments/${existing.id}`, { method: 'DELETE' });
+            }, 'Assignee updated.');
+          }
+
           closeAssignModal();
         });
       }
@@ -563,18 +585,25 @@
         state.assignModal.selectedPersonId = '';
         state.assignModal.challengeId = null;
         state.assignModal.challengeTitle = '';
+        state.assignModal.assignmentId = null;
         state.assignModal.role = 'contributor';
         renderAssignModal();
       }
 
-      window.openAssignModal = function openAssignModal(challengeId, challengeTitle) {
+      window.openAssignModal = function openAssignModal(challengeId, challengeTitle, assignment = null) {
         state.assignModal.open = true;
         state.assignModal.challengeId = String(challengeId);
         state.assignModal.challengeTitle = challengeTitle;
         state.assignModal.search = '';
-        state.assignModal.role = 'contributor';
-        const people = filteredPeople();
-        state.assignModal.selectedPersonId = people[0] ? String(people[0].id) : '';
+        state.assignModal.assignmentId = assignment ? String(assignment.id) : null;
+        if (assignment) {
+          state.assignModal.selectedPersonId = String(assignment.person_id);
+          state.assignModal.role = assignment.is_owner ? 'owner' : assignment.is_leader ? 'leader' : 'contributor';
+        } else {
+          state.assignModal.role = 'contributor';
+          const people = filteredPeople();
+          state.assignModal.selectedPersonId = people[0] ? String(people[0].id) : '';
+        }
         renderAssignModal();
       };
 
@@ -646,6 +675,7 @@
         const panel = document.getElementById('admin-panel');
         const adminView = document.getElementById('admin-view');
         panel.classList.toggle('hidden', !state.showAdmin);
+        panel.classList.toggle('flex', state.showAdmin);
 
         if (state.showAdmin) {
           renderAdminTabs();
