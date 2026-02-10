@@ -23,7 +23,6 @@
         </button>
       </header>
 
-      <p id="flash" class="mb-4 hidden rounded-md border px-3 py-2 text-sm"></p>
       <section id="view"></section>
 
       <section id="admin-panel" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 p-4">
@@ -45,6 +44,8 @@
         </div>
       </footer>
     </main>
+
+    <div id="toast-container" class="fixed right-4 top-4 z-[70] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"></div>
 
     <div id="assign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
@@ -133,14 +134,51 @@
         { id: 'projects', label: 'Project View' }
       ];
 
-      function showMessage(message, type = 'ok') {
-        const flash = document.getElementById('flash');
-        flash.textContent = message;
-        flash.className = `mb-4 rounded-md border px-3 py-2 text-sm ${
+      function showMessage(message, type = 'ok', options = {}) {
+        const { actionLabel, onAction } = options;
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto rounded-md border px-3 py-2 text-sm shadow-lg transition duration-300 ${
           type === 'error'
             ? 'border-rose-500/50 bg-rose-500/10 text-rose-200'
-            : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-200'
+            : type === 'warning'
+              ? 'border-amber-500/50 bg-amber-500/10 text-amber-200'
+              : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-200'
         }`;
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-4px)';
+        const text = document.createElement('span');
+        text.textContent = message;
+        toast.appendChild(text);
+
+        if (actionLabel && typeof onAction === 'function') {
+          toast.classList.add('flex', 'items-center', 'justify-between', 'gap-2');
+
+          const actionButton = document.createElement('button');
+          actionButton.type = 'button';
+          actionButton.className = 'rounded border border-current/40 px-2 py-1 text-xs font-semibold hover:bg-slate-900/60';
+          actionButton.textContent = actionLabel;
+          actionButton.addEventListener('click', async () => {
+            actionButton.disabled = true;
+            await onAction();
+            toast.remove();
+          });
+          toast.appendChild(actionButton);
+        }
+
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateY(0)';
+        });
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(-4px)';
+          setTimeout(() => toast.remove(), 300);
+        }, 3500);
       }
 
       function formatEuro(cents) {
@@ -753,7 +791,39 @@ function filteredPeople() {
       };
 
       window.deleteChallenge = async function deleteChallenge(id) {
-        await handleMutation(() => api(`/api/challenges/${id}`, { method: 'DELETE' }), 'Challenge deleted.');
+        const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(id));
+        if (!challenge) {
+          showMessage('Challenge not found.', 'error');
+          return;
+        }
+
+        try {
+          await api(`/api/challenges/${id}`, { method: 'DELETE' });
+          await loadData();
+          render();
+
+          showMessage('Challenge deleted.', 'warning', {
+            actionLabel: 'Undo',
+            onAction: async () => {
+              try {
+                await api(`/api/projects/${challenge.project_id}/challenges`, {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    title: challenge.title,
+                    description: challenge.description
+                  })
+                });
+                await loadData();
+                render();
+                showMessage('Challenge restored.');
+              } catch (error) {
+                showMessage(`Undo failed: ${error.message}`, 'error');
+              }
+            }
+          });
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
       };
 
       window.deleteAssignment = async function deleteAssignment(id) {
