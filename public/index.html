@@ -390,7 +390,7 @@ function clientsView() {
               const sample = personAssignments[0];
               const quantity = Math.round(Number(sample.quantity || 0));
               const name = `${sample.first_name} ${sample.last_name}`;
-              return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}%)</button>`;
+              return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}%)</button>`;
             })
             .filter(Boolean)
             .join(' ');
@@ -405,9 +405,9 @@ function clientsView() {
           <h3 class="mb-3 text-lg font-semibold">People overview (project-level)</h3>
           <p class="mb-3 text-xs text-slate-400">Click a name to change quantity in full percentage points for all their assignments in this project.</p>
           <div class="space-y-3">
-            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-500/50 text-blue-300')}
-            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-500/50 text-emerald-300')}
-            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-600 text-slate-200')}
+            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50')}
+            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50')}
+            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-500 bg-slate-700 text-slate-100')}
           </div>
         </div>`;
 
@@ -418,12 +418,12 @@ function clientsView() {
               ? assignments
                   .map((assignment) => {
                     const roleClass = assignment.is_owner
-                      ? 'border-blue-500/50 text-blue-300'
+                      ? 'border-blue-400/70 bg-blue-600 text-blue-50'
                       : assignment.is_leader
-                        ? 'border-emerald-500/50 text-emerald-300'
-                        : 'border-slate-600 text-slate-200';
+                        ? 'border-emerald-400/70 bg-emerald-600 text-emerald-50'
+                        : 'border-slate-500 bg-slate-700 text-slate-100';
                     const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
-                    return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name} (${roleLabel})</button>`;
+                    return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name} (${roleLabel})</button>`;
                   })
                   .join('')
               : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
