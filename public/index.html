@@ -453,15 +453,15 @@ function clientsView() {
             </div>
           </div>
 
-          ${projectPeopleOverview}
-
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3 flex items-center justify-between">
               <h3 class="text-lg font-semibold">Challenges in selected project</h3>
               <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>Add Challenge</button>
             </div>
             <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Title</th><th class="p-2">Description</th><th class="p-2">Assignee</th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
-          </div>`;
+          </div>
+
+          ${projectPeopleOverview}`;
       }
 
 function filteredPeople() {
