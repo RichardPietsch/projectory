@@ -410,7 +410,7 @@ function clientsView() {
         }
 
         const projectPeopleOverview = `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <h3 class="mb-3 text-lg font-semibold">People overview (project-level)</h3>
+          <h3 class="mb-3 text-lg font-semibold">People Overview</h3>
           <p class="mb-3 text-xs text-slate-400">Click a name to change quantity in full percentage points for all their assignments in this project.</p>
           <div class="space-y-3">
             ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50')}
@@ -463,7 +463,10 @@ function clientsView() {
 
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3 flex items-center justify-between">
-              <h3 class="text-lg font-semibold">Challenges in selected project</h3>
+              <div>
+              <h3 class="text-lg font-semibold">Challenges & Success Factors</h3>
+              <p class="mb-3 text-xs text-slate-400">These are the main challenges / requirements we need to fulfill for a successful client relationship</p>
+              </div>
               <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>Add Challenge</button>
             </div>
             <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Title</th><th class="p-2">Description</th><th class="p-2">Assignee</th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
