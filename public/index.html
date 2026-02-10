@@ -1,0 +1,964 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projectory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <main class="mx-auto max-w-7xl p-6">
+      <header class="mb-6 flex items-start justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div>
+          <h1 class="text-2xl font-bold">Projectory</h1>
+          <p class="mt-2 text-sm text-slate-300">Ownership-first workflow for challenges and assignments.</p>
+        </div>
+        <button
+          id="admin-toggle"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+          title="Open Administration"
+        >
+          <span aria-hidden="true">⚙️</span>
+          <span>Admin</span>
+        </button>
+      </header>
+
+      <section id="view"></section>
+
+      <section id="admin-panel" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 p-4">
+        <div class="h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Administration Mode</h2>
+            <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+          </div>
+          <nav class="mb-6 flex gap-2" id="admin-tabs"></nav>
+          <section id="admin-view"></section>
+        </div>
+      </section>
+
+      <footer class="mt-8 border-t border-slate-800 pt-4 text-sm text-slate-300">
+        <div class="flex flex-wrap items-center gap-3">
+          <button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Export JSON</button>
+          <button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Import JSON</button>
+          <input id="import-file" type="file" accept="application/json" class="hidden" />
+        </div>
+      </footer>
+    </main>
+
+    <div id="toast-container" class="fixed right-4 top-4 z-[70] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"></div>
+
+    <div id="assign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="assign-modal-title" class="text-lg font-semibold">Assign People</h3>
+          <button id="assign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+
+        <label class="mb-3 block text-sm">
+          Search people
+          <input id="assign-search" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="Type a name..." />
+        </label>
+
+        <label class="mb-3 block text-sm">
+          Role
+          <select id="assign-role" class="mt-1 w-full rounded bg-slate-950 p-2">
+            <option value="contributor">Contributor</option>
+            <option value="owner">Owner</option>
+            <option value="leader">Leader</option>
+          </select>
+        </label>
+
+        <div id="assign-people-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2"></div>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="assign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="assign-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Assign</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="challenge-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="challenge-modal-title" class="text-lg font-semibold">Add Challenge</h3>
+          <button id="challenge-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+        <form id="challenge-modal-form">
+          <input type="hidden" name="id" />
+          <label class="mb-2 block text-sm">Title<input required name="title" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Description<textarea required name="description" class="mt-1 w-full rounded bg-slate-950 p-2"></textarea></label>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" id="challenge-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+            <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Challenge</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const state = {
+        showAdmin: false,
+        adminTab: 'people',
+        selectedProjectId: '',
+        meta: { trades: [], levels: [], priorities: [] },
+        people: [],
+        clients: [],
+        projectsPayload: { projects: [], challenges: [], assignments: [] },
+        assignModal: {
+          open: false,
+          challengeId: null,
+          challengeTitle: '',
+          assignmentId: null,
+          selectedPersonId: '',
+          search: '',
+          role: 'contributor'
+        },
+        challengeModal: {
+          open: false,
+          challengeId: null
+        },
+        listenersBound: {
+          header: false,
+          footer: false,
+          assignModal: false,
+          challengeModal: false,
+          challengeModalForm: false
+        },
+        assignSubmitting: false,
+        challengeSubmitting: false
+      };
+
+      const adminTabs = [
+        { id: 'people', label: 'People View' },
+        { id: 'clients', label: 'Client View' },
+        { id: 'projects', label: 'Project View' }
+      ];
+
+      function showMessage(message, type = 'ok', options = {}) {
+        const { actionLabel, onAction } = options;
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto rounded-md border px-3 py-2 text-sm shadow-lg transition duration-300 ${
+          type === 'error'
+            ? 'border-rose-500/50 bg-rose-500/10 text-rose-200'
+            : type === 'warning'
+              ? 'border-amber-500/50 bg-amber-500/10 text-amber-200'
+              : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-200'
+        }`;
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-4px)';
+        const text = document.createElement('span');
+        text.textContent = message;
+        toast.appendChild(text);
+
+        if (actionLabel && typeof onAction === 'function') {
+          toast.classList.add('flex', 'items-center', 'justify-between', 'gap-2');
+
+          const actionButton = document.createElement('button');
+          actionButton.type = 'button';
+          actionButton.className = 'rounded border border-current/40 px-2 py-1 text-xs font-semibold hover:bg-slate-900/60';
+          actionButton.textContent = actionLabel;
+          actionButton.addEventListener('click', async () => {
+            actionButton.disabled = true;
+            await onAction();
+            toast.remove();
+          });
+          toast.appendChild(actionButton);
+        }
+
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateY(0)';
+        });
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(-4px)';
+          setTimeout(() => toast.remove(), 300);
+        }, 3500);
+      }
+
+      function formatEuro(cents) {
+        return (Number(cents || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+      }
+
+      async function api(url, options = {}) {
+        const response = await fetch(url, {
+          headers: { 'Content-Type': 'application/json' },
+          ...options
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({ error: 'Request failed.' }));
+          throw new Error(data.error || 'Request failed.');
+        }
+
+        if (response.status === 204) {
+          return null;
+        }
+
+        return response.json();
+      }
+
+      async function loadData() {
+        state.meta = await api('/api/meta');
+        state.people = await api('/api/people');
+        state.clients = await api('/api/clients');
+        state.projectsPayload = await api('/api/projects');
+
+        if (!state.selectedProjectId && state.projectsPayload.projects.length > 0) {
+          state.selectedProjectId = String(state.projectsPayload.projects[0].id);
+        }
+      }
+
+      function optionList(items, selected) {
+        return items
+          .map((item) => `<option value="${item.id}" ${String(selected) === String(item.id) ? 'selected' : ''}>${item.name}</option>`)
+          .join('');
+      }
+
+      function peopleView() {
+        const rows = state.people
+          .map(
+            (person) => `<tr class="border-t border-slate-800">
+              <td class="p-2">${person.first_name} ${person.last_name}</td>
+              <td class="p-2">${person.trade_name}</td>
+              <td class="p-2">${person.level_name}</td>
+              <td class="p-2">${person.assignment_count}</td>
+              <td class="p-2">${Math.round(Number(person.assignment_quantity_total || 0))}%</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editPerson(${JSON.stringify(person)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button>
+              </td>
+            </tr>`
+          )
+          .join('');
+
+        return `<div class="space-y-6">
+            <form id="person-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Person</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">First Name<input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Last Name<input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Trade<select required name="tradeId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.trades)}</select></label>
+              <label class="mb-2 block text-sm">Level<select required name="levelId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.levels)}</select></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Person</button>
+            </form>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">People</h2>
+              <table class="w-full text-left text-sm">
+                <thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Trade</th><th class="p-2">Level</th><th class="p-2">Assignments</th><th class="p-2">Quantity</th><th class="p-2">Actions</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+function clientsView() {
+        const rows = state.clients
+          .map(
+            (client) => `<tr class="border-t border-slate-800">
+              <td class="p-2">${client.name}</td>
+              <td class="p-2">${client.location}</td>
+              <td class="p-2">${client.since_month}</td>
+              <td class="p-2">${client.priority_name}</td>
+              <td class="p-2">${client.project_count}</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editClient(${JSON.stringify(client)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteClient(${client.id})'>Delete</button>
+              </td>
+            </tr>`
+          )
+          .join('');
+
+        return `<div class="space-y-6">
+            <form id="client-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Client</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Location<input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Since (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Priority<select required name="priorityId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.priorities)}</select></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Client</button>
+            </form>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Clients</h2>
+              <table class="w-full text-left text-sm">
+                <thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Location</th><th class="p-2">Since</th><th class="p-2">Priority</th><th class="p-2">Projects</th><th class="p-2">Actions</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      function administrationProjectsView() {
+        const projects = state.projectsPayload.projects;
+        const rows = projects
+          .map(
+            (project) => `<tr class="border-t border-slate-800">
+              <td class="p-2">${project.name}<div class="text-xs text-slate-400">${project.client_name}</div></td>
+              <td class="p-2">${project.start_month} → ${project.end_month || 'open'}</td>
+              <td class="p-2">€ ${Math.round(Number(project.budget_cents || 0) / 100).toLocaleString('de-DE')}</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editProject(${JSON.stringify(project)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteProject(${project.id})'>Delete</button>
+              </td>
+            </tr>`
+          )
+          .join('');
+
+        return `<div class="space-y-6">
+            <form id="project-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Project</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Client<select required name="clientId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.clients)}</select></label>
+              <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">End (yyyy-mm optional)<input name="endMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Budget in EUR<input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Project</button>
+            </form>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Projects</h2>
+              <table class="w-full text-left text-sm">
+                <thead><tr class="text-slate-400"><th class="p-2">Project</th><th class="p-2">Dates</th><th class="p-2">Budget</th><th class="p-2">Actions</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      function ownershipView() {
+        const projects = state.projectsPayload.projects;
+
+        if (projects.length === 0) {
+          return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-300">No projects available yet. Ask an admin to create one first.</div>`;
+        }
+
+        const selectedProjectId = Number(state.selectedProjectId || projects[0].id);
+        const selectedProject = projects.find((project) => Number(project.id) === selectedProjectId) || projects[0];
+        state.selectedProjectId = String(selectedProject.id);
+
+        const projectChallenges = state.projectsPayload.challenges.filter((challenge) => Number(challenge.project_id) === Number(selectedProject.id));
+        const projectAssignments = state.projectsPayload.assignments.filter((assignment) => Number(assignment.project_id) === Number(selectedProject.id));
+        const assignmentsByChallenge = new Map();
+        for (const assignment of projectAssignments) {
+          const key = String(assignment.challenge_id);
+          if (!assignmentsByChallenge.has(key)) assignmentsByChallenge.set(key, []);
+          assignmentsByChallenge.get(key).push(assignment);
+        }
+
+        const assignmentsByPerson = new Map();
+        for (const assignment of projectAssignments) {
+          const key = String(assignment.person_id);
+          if (!assignmentsByPerson.has(key)) assignmentsByPerson.set(key, []);
+          assignmentsByPerson.get(key).push(assignment);
+        }
+
+        const ownerIds = new Set();
+        const leaderIds = new Set();
+        const contributorIds = new Set();
+
+        for (const assignment of projectAssignments) {
+          const personId = String(assignment.person_id);
+          if (assignment.is_owner) {
+            ownerIds.add(personId);
+          } else if (assignment.is_leader) {
+            leaderIds.add(personId);
+          } else {
+            contributorIds.add(personId);
+          }
+        }
+
+        for (const personId of ownerIds) {
+          leaderIds.delete(personId);
+          contributorIds.delete(personId);
+        }
+
+        for (const personId of leaderIds) {
+          contributorIds.delete(personId);
+        }
+
+        function renderTierPeople(ids, tierLabel, tierClass) {
+          const entries = Array.from(ids)
+            .map((personId) => {
+              const personAssignments = assignmentsByPerson.get(personId) || [];
+              if (personAssignments.length === 0) return '';
+              const sample = personAssignments[0];
+              const quantity = Math.round(Number(sample.quantity || 0));
+              const name = `${sample.first_name} ${sample.last_name}`;
+              return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}%)</button>`;
+            })
+            .filter(Boolean)
+            .join(' ');
+
+          return `<div class="rounded border border-slate-700 bg-slate-950/60 p-3">
+            <h4 class="mb-2 text-sm font-semibold text-slate-200">${tierLabel}</h4>
+            <div class="flex flex-wrap gap-2">${entries || '<span class="text-xs text-slate-400">None</span>'}</div>
+          </div>`;
+        }
+
+        const projectPeopleOverview = `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <h3 class="mb-3 text-lg font-semibold">People overview (project-level)</h3>
+          <p class="mb-3 text-xs text-slate-400">Click a name to change quantity in full percentage points for all their assignments in this project.</p>
+          <div class="space-y-3">
+            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-500/50 text-blue-300')}
+            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-500/50 text-emerald-300')}
+            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-600 text-slate-200')}
+          </div>
+        </div>`;
+
+        const challengeRows = projectChallenges
+          .map((challenge) => {
+            const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
+            const assignees = assignments.length
+              ? assignments
+                  .map((assignment) => {
+                    const roleClass = assignment.is_owner
+                      ? 'border-blue-500/50 text-blue-300'
+                      : assignment.is_leader
+                        ? 'border-emerald-500/50 text-emerald-300'
+                        : 'border-slate-600 text-slate-200';
+                    const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+                    return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name} (${roleLabel})</button>`;
+                  })
+                  .join('')
+              : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
+            const unassignButtons = assignments
+              .map((assignment) => `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteAssignment(${assignment.id})'>Unassign ${assignment.first_name}</button>`)
+              .join(' ');
+
+            return `<tr class="border-t border-slate-800">
+              <td class="p-2">${challenge.title}</td>
+              <td class="p-2">${challenge.description}</td>
+              <td class="p-2">${assignees}</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openChallengeModal(${JSON.stringify(challenge)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteChallenge(${challenge.id})'>Delete</button>
+                ${unassignButtons}
+              </td>
+            </tr>`;
+          })
+          .join('');
+
+        return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div class="flex flex-wrap items-end gap-3">
+              <label class="block flex-1 text-sm">Selected Project
+                <select id="ownership-project-select" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(projects.map((project) => ({ id: project.id, name: `${project.name} (${project.client_name})` })), selectedProject.id)}</select>
+              </label>
+              
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="text-lg font-semibold">Challenges in selected project</h3>
+              <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>Add Challenge</button>
+            </div>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Title</th><th class="p-2">Description</th><th class="p-2">Assignee</th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
+          </div>
+
+          ${projectPeopleOverview}`;
+      }
+
+function filteredPeople() {
+        const search = state.assignModal.search.trim().toLowerCase();
+        if (!search) {
+          return state.people;
+        }
+
+        return state.people.filter((person) => `${person.first_name} ${person.last_name}`.toLowerCase().includes(search));
+      }
+
+      function renderAssignModal() {
+        const modal = document.getElementById('assign-modal');
+        modal.classList.toggle('hidden', !state.assignModal.open);
+        modal.classList.toggle('flex', state.assignModal.open);
+
+        if (!state.assignModal.open) {
+          return;
+        }
+
+        document.getElementById('assign-modal-title').textContent = `${state.assignModal.assignmentId ? 'Change Assignment' : 'Assign People'} · ${state.assignModal.challengeTitle}`;
+        document.getElementById('assign-search').value = state.assignModal.search;
+        document.getElementById('assign-role').value = state.assignModal.role;
+        const people = filteredPeople();
+        const list = document.getElementById('assign-people-list');
+
+        if (people.length === 0) {
+          list.innerHTML = '<p class="p-2 text-sm text-slate-400">No matching people found.</p>';
+          state.assignModal.selectedPersonId = '';
+          return;
+        }
+
+        if (!people.some((person) => String(person.id) === String(state.assignModal.selectedPersonId))) {
+          state.assignModal.selectedPersonId = String(people[0].id);
+        }
+
+        list.innerHTML = people
+          .map(
+            (person) => `<label class="mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-900">
+              <input type="radio" name="assign-person" value="${person.id}" ${String(state.assignModal.selectedPersonId) === String(person.id) ? 'checked' : ''} />
+              <span>${person.first_name} ${person.last_name} <span class="text-xs text-slate-400">(${person.trade_name})</span></span>
+            </label>`
+          )
+          .join('');
+
+        list.querySelectorAll('input[name="assign-person"]').forEach((input) => {
+          input.addEventListener('change', () => {
+            state.assignModal.selectedPersonId = input.value;
+          });
+        });
+      }
+
+      async function handleMutation(action, successMessage) {
+        try {
+          await action();
+          await loadData();
+          render();
+          showMessage(successMessage);
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      }
+
+      function renderAdminTabs() {
+        const root = document.getElementById('admin-tabs');
+        root.innerHTML = adminTabs
+          .map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" data-admin-tab="${tab.id}">${tab.label}</button>`)
+          .join('');
+
+        root.querySelectorAll('button').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.adminTab = button.dataset.adminTab;
+            render();
+          });
+        });
+      }
+
+      function bindForms() {
+        const personForm = document.getElementById('person-form');
+        if (personForm) {
+          personForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(personForm).entries());
+            const id = payload.id;
+            delete payload.id;
+            await handleMutation(() => api(id ? `/api/people/${id}` : '/api/people', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Person saved.');
+            personForm.reset();
+          });
+        }
+
+        const clientForm = document.getElementById('client-form');
+        if (clientForm) {
+          clientForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(clientForm).entries());
+            const id = payload.id;
+            delete payload.id;
+            await handleMutation(() => api(id ? `/api/clients/${id}` : '/api/clients', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Client saved.');
+            clientForm.reset();
+          });
+        }
+
+        const projectForm = document.getElementById('project-form');
+        if (projectForm) {
+          projectForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(projectForm).entries());
+            const id = payload.id;
+            delete payload.id;
+            await handleMutation(() => api(id ? `/api/projects/${id}` : '/api/projects', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Project saved.');
+            projectForm.reset();
+          });
+        }
+
+        const challengeModalForm = document.getElementById('challenge-modal-form');
+        if (challengeModalForm && !state.listenersBound.challengeModalForm) {
+          state.listenersBound.challengeModalForm = true;
+          challengeModalForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (state.challengeSubmitting) return;
+
+            const payload = Object.fromEntries(new FormData(challengeModalForm).entries());
+            const id = payload.id;
+            delete payload.id;
+
+            state.challengeSubmitting = true;
+            const submitButton = challengeModalForm.querySelector('button[type="submit"], button:not([type])');
+            if (submitButton) submitButton.disabled = true;
+
+            try {
+              if (id) {
+                await handleMutation(() => api(`/api/challenges/${id}`, { method: 'PUT', body: JSON.stringify(payload) }), 'Challenge saved.');
+              } else {
+                await handleMutation(() => api(`/api/projects/${state.selectedProjectId}/challenges`, { method: 'POST', body: JSON.stringify(payload) }), 'Challenge saved.');
+              }
+              closeChallengeModal();
+            } finally {
+              state.challengeSubmitting = false;
+              if (submitButton) submitButton.disabled = false;
+            }
+          });
+        }
+
+        const projectSelect = document.getElementById('ownership-project-select');
+        if (projectSelect) {
+          projectSelect.addEventListener('change', () => {
+            state.selectedProjectId = projectSelect.value;
+            render();
+          });
+        }
+      }
+
+      async function exportData() {
+        try {
+          const payload = await api('/api/export');
+          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `projectory-export-${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          showMessage('Export completed.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      }
+
+      async function importData(file) {
+        try {
+          const text = await file.text();
+          const payload = JSON.parse(text);
+          await api('/api/import', { method: 'POST', body: JSON.stringify(payload) });
+          await loadData();
+          render();
+          showMessage('Import completed.');
+        } catch (error) {
+          showMessage(`Import failed: ${error.message}`, 'error');
+        }
+      }
+
+      function bindFooterActions() {
+        if (state.listenersBound.footer) return;
+        state.listenersBound.footer = true;
+        document.getElementById('export-btn')?.addEventListener('click', exportData);
+
+        const importInput = document.getElementById('import-file');
+        document.getElementById('import-btn')?.addEventListener('click', () => importInput?.click());
+
+        importInput?.addEventListener('change', async (event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          await importData(file);
+          importInput.value = '';
+        });
+      }
+
+      function bindHeaderActions() {
+        if (state.listenersBound.header) return;
+        state.listenersBound.header = true;
+        document.getElementById('admin-toggle')?.addEventListener('click', () => {
+          state.showAdmin = true;
+          render();
+        });
+
+        document.getElementById('admin-close')?.addEventListener('click', () => {
+          state.showAdmin = false;
+          render();
+        });
+      }
+
+      function bindChallengeModalActions() {
+        if (state.listenersBound.challengeModal) return;
+        state.listenersBound.challengeModal = true;
+        document.getElementById('challenge-modal-close')?.addEventListener('click', closeChallengeModal);
+        document.getElementById('challenge-cancel')?.addEventListener('click', closeChallengeModal);
+      }
+
+      function bindAssignModalActions() {
+        if (state.listenersBound.assignModal) return;
+        state.listenersBound.assignModal = true;
+        document.getElementById('assign-modal-close')?.addEventListener('click', closeAssignModal);
+        document.getElementById('assign-cancel')?.addEventListener('click', closeAssignModal);
+
+        document.getElementById('assign-search')?.addEventListener('input', (event) => {
+          state.assignModal.search = event.target.value;
+          renderAssignModal();
+        });
+
+        document.getElementById('assign-role')?.addEventListener('change', (event) => {
+          state.assignModal.role = event.target.value;
+        });
+
+        document.getElementById('assign-confirm')?.addEventListener('click', async () => {
+          if (state.assignSubmitting) return;
+          if (!state.assignModal.selectedPersonId || !state.assignModal.challengeId) {
+            showMessage('Please select a person to assign.', 'error');
+            return;
+          }
+
+          const role = state.assignModal.role;
+          const payload = {
+            projectId: state.selectedProjectId,
+            challengeId: state.assignModal.challengeId,
+            personId: state.assignModal.selectedPersonId,
+            isOwner: role === 'owner',
+            isLeader: role === 'leader'
+          };
+
+          state.assignSubmitting = true;
+          const confirmButton = document.getElementById('assign-confirm');
+          if (confirmButton) confirmButton.disabled = true;
+
+          try {
+            if (!state.assignModal.assignmentId) {
+              await handleMutation(() => api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) }), 'Assignment created.');
+              closeAssignModal();
+              return;
+            }
+
+            const existing = state.projectsPayload.assignments.find((assignment) => String(assignment.id) === String(state.assignModal.assignmentId));
+            if (!existing) {
+              showMessage('Current assignment could not be found.', 'error');
+              return;
+            }
+
+            if (String(existing.person_id) === String(state.assignModal.selectedPersonId)) {
+              await handleMutation(
+                () => api(`/api/assignments/${existing.id}`, { method: 'PUT', body: JSON.stringify({ isOwner: payload.isOwner, isLeader: payload.isLeader }) }),
+                'Assignment updated.'
+              );
+            } else {
+              await handleMutation(async () => {
+                await api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) });
+                await api(`/api/assignments/${existing.id}`, { method: 'DELETE' });
+              }, 'Assignee updated.');
+            }
+
+            closeAssignModal();
+          } finally {
+            state.assignSubmitting = false;
+            if (confirmButton) confirmButton.disabled = false;
+          }
+        });
+      }
+
+      function closeAssignModal() {
+        state.assignModal.open = false;
+        state.assignModal.search = '';
+        state.assignModal.selectedPersonId = '';
+        state.assignModal.challengeId = null;
+        state.assignModal.challengeTitle = '';
+        state.assignModal.assignmentId = null;
+        state.assignModal.role = 'contributor';
+        renderAssignModal();
+      }
+
+      window.openAssignModal = function openAssignModal(challengeId, challengeTitle, assignment = null) {
+        state.assignModal.open = true;
+        state.assignModal.challengeId = String(challengeId);
+        state.assignModal.challengeTitle = challengeTitle;
+        state.assignModal.search = '';
+        state.assignModal.assignmentId = assignment ? String(assignment.id) : null;
+        if (assignment) {
+          state.assignModal.selectedPersonId = String(assignment.person_id);
+          state.assignModal.role = assignment.is_owner ? 'owner' : assignment.is_leader ? 'leader' : 'contributor';
+        } else {
+          state.assignModal.role = 'contributor';
+          const people = filteredPeople();
+          state.assignModal.selectedPersonId = people[0] ? String(people[0].id) : '';
+        }
+        renderAssignModal();
+      };
+
+      window.editPerson = function editPerson(person) {
+        const form = document.getElementById('person-form');
+        form.id.value = person.id;
+        form.firstName.value = person.first_name;
+        form.lastName.value = person.last_name;
+        form.tradeId.value = person.trade_id;
+        form.levelId.value = person.level_id;
+      };
+
+      window.deletePerson = async function deletePerson(id) {
+        await handleMutation(() => api(`/api/people/${id}`, { method: 'DELETE' }), 'Person deleted.');
+      };
+
+      window.editClient = function editClient(client) {
+        const form = document.getElementById('client-form');
+        form.id.value = client.id;
+        form.name.value = client.name;
+        form.location.value = client.location;
+        form.sinceMonth.value = client.since_month;
+        form.priorityId.value = client.priority_id;
+      };
+
+      window.deleteClient = async function deleteClient(id) {
+        await handleMutation(() => api(`/api/clients/${id}`, { method: 'DELETE' }), 'Client deleted.');
+      };
+
+      window.editProject = function editProject(project) {
+        const form = document.getElementById('project-form');
+        form.id.value = project.id;
+        form.name.value = project.name;
+        form.clientId.value = project.client_id;
+        form.startMonth.value = project.start_month;
+        form.endMonth.value = project.end_month || '';
+        form.budgetEuros.value = (Number(project.budget_cents) / 100).toFixed(2);
+      };
+
+      window.deleteProject = async function deleteProject(id) {
+        await handleMutation(() => api(`/api/projects/${id}`, { method: 'DELETE' }), 'Project deleted.');
+      };
+
+      window.adjustProjectPersonQuantity = async function adjustProjectPersonQuantity(projectId, personId) {
+        const currentAssignments = state.projectsPayload.assignments.filter(
+          (assignment) => String(assignment.project_id) === String(projectId) && String(assignment.person_id) === String(personId)
+        );
+        if (currentAssignments.length === 0) {
+          showMessage('No assignments found for this person in this project.', 'error');
+          return;
+        }
+
+        const currentQuantity = Math.round(Number(currentAssignments[0].quantity || 0));
+        const input = window.prompt('Set quantity (0-100 full percentage points):', String(currentQuantity));
+        if (input === null) return;
+
+        const quantity = Number(input);
+        if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100) {
+          showMessage('Quantity must be an integer between 0 and 100.', 'error');
+          return;
+        }
+
+        await handleMutation(
+          () => api(`/api/projects/${projectId}/people/${personId}/quantity`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
+          'Quantity updated.'
+        );
+      };
+
+      function renderChallengeModal() {
+        const modal = document.getElementById('challenge-modal');
+        modal.classList.toggle('hidden', !state.challengeModal.open);
+        modal.classList.toggle('flex', state.challengeModal.open);
+      }
+
+      function closeChallengeModal() {
+        state.challengeModal.open = false;
+        state.challengeModal.challengeId = null;
+        const form = document.getElementById('challenge-modal-form');
+        if (form) form.reset();
+        renderChallengeModal();
+      }
+
+      window.openChallengeModal = function openChallengeModal(challenge = null) {
+        state.challengeModal.open = true;
+        state.challengeModal.challengeId = challenge ? String(challenge.id) : null;
+        const title = document.getElementById('challenge-modal-title');
+        title.textContent = challenge ? 'Edit Challenge' : 'Add Challenge';
+        const form = document.getElementById('challenge-modal-form');
+        if (form) {
+          form.id.value = challenge ? challenge.id : '';
+          form.title.value = challenge ? challenge.title : '';
+          form.description.value = challenge ? challenge.description : '';
+        }
+        renderChallengeModal();
+      };
+
+      window.editChallenge = function editChallenge(challenge) {
+        window.openChallengeModal(challenge);
+      };
+
+      window.deleteChallenge = async function deleteChallenge(id) {
+        const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(id));
+        if (!challenge) {
+          showMessage('Challenge not found.', 'error');
+          return;
+        }
+
+        try {
+          await api(`/api/challenges/${id}`, { method: 'DELETE' });
+          await loadData();
+          render();
+
+          showMessage('Challenge deleted.', 'warning', {
+            actionLabel: 'Undo',
+            onAction: async () => {
+              try {
+                await api(`/api/projects/${challenge.project_id}/challenges`, {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    title: challenge.title,
+                    description: challenge.description
+                  })
+                });
+                await loadData();
+                render();
+                showMessage('Challenge restored.');
+              } catch (error) {
+                showMessage(`Undo failed: ${error.message}`, 'error');
+              }
+            }
+          });
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+      window.deleteAssignment = async function deleteAssignment(id) {
+        await handleMutation(() => api(`/api/assignments/${id}`, { method: 'DELETE' }), 'Assignment deleted.');
+      };
+
+      window.toggleAssignmentRole = async function toggleAssignmentRole(id, isOwner, isLeader) {
+        let next = { isOwner: false, isLeader: false };
+        if (!isOwner && !isLeader) next = { isOwner: true, isLeader: false };
+        else if (isOwner) next = { isOwner: false, isLeader: true };
+        await handleMutation(() => api(`/api/assignments/${id}`, { method: 'PUT', body: JSON.stringify(next) }), 'Assignment role updated.');
+      };
+
+      function render() {
+        document.getElementById('view').innerHTML = ownershipView();
+
+        const panel = document.getElementById('admin-panel');
+        const adminView = document.getElementById('admin-view');
+        panel.classList.toggle('hidden', !state.showAdmin);
+        panel.classList.toggle('flex', state.showAdmin);
+
+        if (state.showAdmin) {
+          renderAdminTabs();
+          if (state.adminTab === 'people') adminView.innerHTML = peopleView();
+          else if (state.adminTab === 'clients') adminView.innerHTML = clientsView();
+          else adminView.innerHTML = administrationProjectsView();
+        } else {
+          adminView.innerHTML = '';
+          document.getElementById('admin-tabs').innerHTML = '';
+        }
+
+        bindForms();
+        renderChallengeModal();
+        renderAssignModal();
+      }
+
+      async function init() {
+        try {
+          await loadData();
+          bindHeaderActions();
+          bindFooterActions();
+          bindChallengeModalActions();
+          bindAssignModalActions();
+          render();
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>
