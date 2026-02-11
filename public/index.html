@@ -281,6 +281,36 @@
         });
       }
 
+
+      function getPriorityPresentation(priorityName) {
+        const normalized = String(priorityName || '').toLowerCase();
+        if (normalized.includes('hero')) {
+          return { rank: 0, classes: 'border-yellow-300/70 bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-900', label: '⭐️ Hero' };
+        }
+        if (normalized.includes('rising star')) {
+          return { rank: 1, classes: 'border-slate-300/70 bg-gradient-to-r from-slate-400 to-slate-200 text-slate-900', label: '✨ Rising Star' };
+        }
+        if (normalized.includes('solid')) {
+          return { rank: 2, classes: 'border-slate-300/70 bg-gradient-to-r from-white to-slate-200 text-slate-900', label: '☑️ Solid' };
+        }
+        if (normalized.includes('maintenance')) {
+          return { rank: 3, classes: 'border-slate-500/70 bg-gradient-to-r from-slate-600 to-slate-500 text-slate-100', label: '🛠️ Maintenance' };
+        }
+        if (normalized.includes('small client')) {
+          return { rank: 4, classes: 'border-slate-700/70 bg-gradient-to-r from-slate-800 to-slate-700 text-slate-100', label: '🔬 Small Client' };
+        }
+        if (normalized.includes('outphasing')) {
+          return { rank: 5, classes: 'border-rose-400/70 bg-gradient-to-r from-rose-700 to-rose-500 text-rose-50', label: '❌ Outphasing' };
+        }
+
+        return { rank: 99, classes: 'border-slate-500/70 bg-slate-700 text-slate-100', label: String(priorityName || 'Unknown') };
+      }
+
+      function renderPriorityPill(priorityName) {
+        const priority = getPriorityPresentation(priorityName);
+        return `<span class="inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${priority.classes}">${priority.label}</span>`;
+      }
+
       async function api(url, options = {}) {
         const response = await fetch(url, {
           headers: { 'Content-Type': 'application/json' },
@@ -458,7 +488,7 @@ function clientsView() {
               <td class="p-2">${client.name}</td>
               <td class="p-2">${client.location}</td>
               <td class="p-2">${client.since_month}</td>
-              <td class="p-2">${client.priority_name}</td>
+              <td class="p-2">${renderPriorityPill(client.priority_name)}</td>
               <td class="p-2">${client.project_count}</td>
               <td class="p-2">
                 <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editClient(${JSON.stringify(client)})'>Edit</button>
@@ -596,7 +626,8 @@ function clientsView() {
               leaderSort: leaderNames.join(', ').toLowerCase(),
               productSort: String(project.name || '').toLowerCase(),
               clientSort: String(project.client_name || '').toLowerCase(),
-              budgetSort: Number(project.budget_cents || 0)
+              budgetSort: Number(project.budget_cents || 0),
+              prioritySort: getPriorityPresentation(project.priority_name).rank
             };
           });
 
@@ -616,6 +647,10 @@ function clientsView() {
                 return a.leaderSort.localeCompare(b.leaderSort) || a.productSort.localeCompare(b.productSort);
               case 'leaders_desc':
                 return b.leaderSort.localeCompare(a.leaderSort) || a.productSort.localeCompare(b.productSort);
+              case 'priority_asc':
+                return a.prioritySort - b.prioritySort || a.productSort.localeCompare(b.productSort);
+              case 'priority_desc':
+                return b.prioritySort - a.prioritySort || a.productSort.localeCompare(b.productSort);
               case 'product_asc':
               default:
                 return a.productSort.localeCompare(b.productSort) || a.clientSort.localeCompare(b.clientSort);
@@ -638,6 +673,7 @@ function clientsView() {
                   <div class="text-xs text-slate-400">${project.client_name}</div>
                 </td>
                 <td class="p-2 text-slate-300">${formatEuroWhole(project.budget_cents)}</td>
+                <td class="p-2 text-slate-300">${renderPriorityPill(project.priority_name)}</td>
                 <td class="p-2 text-slate-300">${ownerPills}</td>
                 <td class="p-2 text-slate-300">${leaderPills}</td>
               </tr>`;
@@ -654,6 +690,7 @@ function clientsView() {
                 <tr class="text-slate-400">
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('product')">Product ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('budget')">Budget ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('priority')">Priority ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('owner')">Owner ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">Leaders ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                 </tr>

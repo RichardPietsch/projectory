@@ -270,9 +270,11 @@ app.get('/api/projects', async (_req, res) => {
   try {
     const projects = await pool.query(
       `SELECT p.id, p.name, p.start_month, p.end_month, p.budget_cents,
-              c.id AS client_id, c.name AS client_name
+              c.id AS client_id, c.name AS client_name,
+              pr.id AS priority_id, pr.name AS priority_name
        FROM projects p
        JOIN clients c ON p.client_id = c.id
+       JOIN priorities pr ON c.priority_id = pr.id
        ORDER BY p.created_at DESC`
     );
 

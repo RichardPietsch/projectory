@@ -63,7 +63,13 @@ CREATE TABLE IF NOT EXISTS assignments (
 );
 
 INSERT INTO priorities (name)
-VALUES ('Prio 1'), ('Prio 2'), ('Prio 3'), ('Prio 4')
+VALUES
+  ('⭐️ Hero'),
+  ('✨ Rising Star'),
+  ('☑️ Solid'),
+  ('🛠️ Maintenance'),
+  ('🔬 Small Client'),
+  ('❌ Outphasing')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO trades (name)
