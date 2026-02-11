@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Projectory</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
   </head>
   <body class="min-h-screen bg-slate-950 text-slate-100">
     <main class="mx-auto max-w-7xl p-6">
@@ -1802,7 +1803,7 @@ function filteredPeople() {
       };
 
       function render() {
-        const homeTabs = `<div class="mb-4 flex gap-2"><button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setHomeTab('client-teams')">Client Teams</button><button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setHomeTab('people-overview')">People Overview</button></div>`;
+        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>Client Teams</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>People Overview</span></button></nav></div>`;
         const homeContent = state.homeTab === 'people-overview' ? peopleOverviewView() : ownershipView();
         document.getElementById('view').innerHTML = homeTabs + homeContent;
 
