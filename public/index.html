@@ -306,6 +306,20 @@
       }
 
       function peopleView() {
+        function assignmentWarningClass(count) {
+          if (count === 0) return 'text-slate-100';
+          if (count <= 2) return 'text-emerald-300';
+          if (count <= 4) return 'text-amber-300';
+          return 'text-rose-300';
+        }
+
+        function quantityWarningClass(quantity) {
+          if (quantity === 0) return 'text-slate-100';
+          if (quantity < 100) return 'text-amber-300';
+          if (quantity === 100) return 'text-emerald-300';
+          return 'text-rose-300';
+        }
+
         const levelOrder = new Map(state.meta.levels.map((level, index) => [String(level.name || '').toLowerCase(), index]));
         const sortedPeople = [...state.people].sort((a, b) => {
           const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
@@ -345,19 +359,22 @@
         });
 
         const rows = sortedPeople
-          .map(
-            (person) => `<tr class="border-t border-slate-800">
+          .map((person) => {
+            const assignmentsCount = Number(person.assignment_count || 0);
+            const quantityValue = Math.round(Number(person.assignment_quantity_total || 0));
+
+            return `<tr class="border-t border-slate-800">
               <td class="p-2">${person.first_name} ${person.last_name}</td>
               <td class="p-2">${person.trade_name}</td>
               <td class="p-2">${person.level_name}</td>
-              <td class="p-2">${person.assignment_count}</td>
-              <td class="p-2">${Math.round(Number(person.assignment_quantity_total || 0))}%</td>
+              <td class="p-2 font-semibold ${assignmentWarningClass(assignmentsCount)}">${assignmentsCount}</td>
+              <td class="p-2 font-semibold ${quantityWarningClass(quantityValue)}">${quantityValue}%</td>
               <td class="p-2">
                 <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editPerson(${JSON.stringify(person)})'>Edit</button>
                 <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button>
               </td>
-            </tr>`
-          )
+            </tr>`;
+          })
           .join('');
 
         return `<div class="space-y-6">
@@ -597,7 +614,7 @@ function clientsView() {
         }
 
         const projectPeopleOverview = `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <h3 class="mb-3 text-lg font-semibold">People Overview</h3>
+          <h3 class="mb-3 text-lg font-semibold">People overview (project-level)</h3>
           <p class="mb-3 text-xs text-slate-400">Click a name to change quantity in full percentage points for all their assignments in this project.</p>
           <div class="space-y-3">
             ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50')}
