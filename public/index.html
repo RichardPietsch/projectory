@@ -46,14 +46,60 @@
 
       <footer class="mt-8 border-t border-slate-800 pt-4 text-sm text-slate-300">
         <div class="flex flex-wrap items-center gap-3">
-          <button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Export JSON</button>
-          <button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Import JSON</button>
-          <input id="import-file" type="file" accept="application/json" class="hidden" />
+          <button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Export</button>
+          <button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Import</button>
         </div>
       </footer>
     </main>
 
     <div id="toast-container" class="fixed right-4 top-4 z-[70] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"></div>
+
+    <div id="export-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Export data</h3>
+          <button id="export-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+        <label class="mb-4 block text-sm">Format
+          <select id="export-format" class="mt-1 w-full rounded bg-slate-950 p-2">
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+        </label>
+        <div class="flex justify-end gap-2">
+          <button id="export-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="export-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Export</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="import-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Import data</h3>
+          <button id="import-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+
+        <input id="import-file" type="file" accept=".json,.csv,application/json,text/csv" class="mb-3 block w-full text-sm" />
+
+        <div id="import-preview" class="hidden rounded border border-slate-700 bg-slate-950/60 p-3 text-sm">
+          <p class="mb-2 text-amber-300">⚠️ Warning: importing will replace and permanently delete all current data.</p>
+          <p class="mb-2 text-slate-300">Import summary:</p>
+          <ul class="list-disc pl-5 text-slate-200">
+            <li>People: <span id="import-count-people">0</span></li>
+            <li>Clients: <span id="import-count-clients">0</span></li>
+            <li>Projects: <span id="import-count-projects">0</span></li>
+            <li>Challenges: <span id="import-count-challenges">0</span></li>
+            <li>Assignments: <span id="import-count-assignments">0</span></li>
+          </ul>
+        </div>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="import-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="import-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold" disabled>Confirm Import</button>
+        </div>
+      </div>
+    </div>
 
     <div id="assign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
@@ -130,10 +176,15 @@
           footer: false,
           assignModal: false,
           challengeModal: false,
-          challengeModalForm: false
+          challengeModalForm: false,
+          exportModal: false,
+          importModal: false
         },
         assignSubmitting: false,
-        challengeSubmitting: false
+        challengeSubmitting: false,
+        exportModalOpen: false,
+        importModalOpen: false,
+        importPreviewData: null
       };
 
       const adminTabs = [
@@ -626,50 +677,183 @@ function filteredPeople() {
         }
       }
 
-      async function exportData() {
-        try {
-          const payload = await api('/api/export');
-          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      async function downloadExport(format) {
+        if (format === 'csv') {
+          const response = await fetch('/api/export?format=csv');
+          if (!response.ok) {
+            throw new Error('CSV export failed.');
+          }
+          const csv = await response.text();
+          const blob = new Blob([csv], { type: 'text/csv' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `projectory-export-${new Date().toISOString().slice(0, 10)}.json`;
+          link.download = `projectory-export-${new Date().toISOString().slice(0, 10)}.csv`;
           document.body.appendChild(link);
           link.click();
           link.remove();
           URL.revokeObjectURL(url);
-          showMessage('Export completed.');
-        } catch (error) {
-          showMessage(error.message, 'error');
+          return;
         }
+
+        const payload = await api('/api/export');
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `projectory-export-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
       }
 
-      async function importData(file) {
-        try {
-          const text = await file.text();
-          const payload = JSON.parse(text);
-          await api('/api/import', { method: 'POST', body: JSON.stringify(payload) });
-          await loadData();
-          render();
-          showMessage('Import completed.');
-        } catch (error) {
-          showMessage(`Import failed: ${error.message}`, 'error');
+      function renderExportModal() {
+        const modal = document.getElementById('export-modal');
+        modal.classList.toggle('hidden', !state.exportModalOpen);
+        modal.classList.toggle('flex', state.exportModalOpen);
+      }
+
+      function closeExportModal() {
+        state.exportModalOpen = false;
+        renderExportModal();
+      }
+
+      function openExportModal() {
+        state.exportModalOpen = true;
+        renderExportModal();
+      }
+
+      function renderImportModal() {
+        const modal = document.getElementById('import-modal');
+        modal.classList.toggle('hidden', !state.importModalOpen);
+        modal.classList.toggle('flex', state.importModalOpen);
+
+        const preview = document.getElementById('import-preview');
+        const confirmButton = document.getElementById('import-confirm');
+
+        if (!state.importPreviewData) {
+          preview.classList.add('hidden');
+          if (confirmButton) confirmButton.disabled = true;
+          return;
         }
+
+        preview.classList.remove('hidden');
+        document.getElementById('import-count-people').textContent = state.importPreviewData.summary.people;
+        document.getElementById('import-count-clients').textContent = state.importPreviewData.summary.clients;
+        document.getElementById('import-count-projects').textContent = state.importPreviewData.summary.projects;
+        document.getElementById('import-count-challenges').textContent = state.importPreviewData.summary.challenges;
+        document.getElementById('import-count-assignments').textContent = state.importPreviewData.summary.assignments;
+        if (confirmButton) confirmButton.disabled = false;
+      }
+
+      function closeImportModal() {
+        state.importModalOpen = false;
+        state.importPreviewData = null;
+        const input = document.getElementById('import-file');
+        if (input) input.value = '';
+        renderImportModal();
+      }
+
+      function openImportModal() {
+        state.importModalOpen = true;
+        state.importPreviewData = null;
+        renderImportModal();
+      }
+
+      function detectImportFormat(file) {
+        const name = file.name.toLowerCase();
+        if (name.endsWith('.csv')) return 'csv';
+        return 'json';
+      }
+
+      async function previewImportFile(file) {
+        const format = detectImportFormat(file);
+        const text = await file.text();
+
+        if (format === 'json') {
+          const payload = JSON.parse(text);
+          const preview = await api('/api/import/preview', {
+            method: 'POST',
+            body: JSON.stringify({ format: 'json', data: payload.data })
+          });
+          state.importPreviewData = preview;
+          renderImportModal();
+          return;
+        }
+
+        const preview = await api('/api/import/preview', {
+          method: 'POST',
+          body: JSON.stringify({ format: 'csv', content: text })
+        });
+        state.importPreviewData = preview;
+        renderImportModal();
+      }
+
+      async function confirmImport() {
+        if (!state.importPreviewData?.data) {
+          showMessage('Please choose a valid JSON or CSV file first.', 'error');
+          return;
+        }
+
+        await api('/api/import', { method: 'POST', body: JSON.stringify({ data: state.importPreviewData.data }) });
+        await loadData();
+        render();
+        closeImportModal();
+        showMessage('Import completed.');
       }
 
       function bindFooterActions() {
         if (state.listenersBound.footer) return;
         state.listenersBound.footer = true;
-        document.getElementById('export-btn')?.addEventListener('click', exportData);
+        document.getElementById('export-btn')?.addEventListener('click', openExportModal);
+        document.getElementById('import-btn')?.addEventListener('click', openImportModal);
+      }
 
-        const importInput = document.getElementById('import-file');
-        document.getElementById('import-btn')?.addEventListener('click', () => importInput?.click());
+      function bindExportModalActions() {
+        if (state.listenersBound.exportModal) return;
+        state.listenersBound.exportModal = true;
 
-        importInput?.addEventListener('change', async (event) => {
+        document.getElementById('export-modal-close')?.addEventListener('click', closeExportModal);
+        document.getElementById('export-cancel')?.addEventListener('click', closeExportModal);
+        document.getElementById('export-confirm')?.addEventListener('click', async () => {
+          try {
+            const format = document.getElementById('export-format').value;
+            await downloadExport(format);
+            closeExportModal();
+            showMessage('Export completed.');
+          } catch (error) {
+            showMessage(error.message, 'error');
+          }
+        });
+      }
+
+      function bindImportModalActions() {
+        if (state.listenersBound.importModal) return;
+        state.listenersBound.importModal = true;
+
+        document.getElementById('import-modal-close')?.addEventListener('click', closeImportModal);
+        document.getElementById('import-cancel')?.addEventListener('click', closeImportModal);
+
+        document.getElementById('import-file')?.addEventListener('change', async (event) => {
           const file = event.target.files?.[0];
           if (!file) return;
-          await importData(file);
-          importInput.value = '';
+
+          try {
+            await previewImportFile(file);
+          } catch (error) {
+            state.importPreviewData = null;
+            renderImportModal();
+            showMessage(`Import preview failed: ${error.message}`, 'error');
+          }
+        });
+
+        document.getElementById('import-confirm')?.addEventListener('click', async () => {
+          try {
+            await confirmImport();
+          } catch (error) {
+            showMessage(`Import failed: ${error.message}`, 'error');
+          }
         });
       }
 
@@ -955,6 +1139,8 @@ function filteredPeople() {
         bindForms();
         renderChallengeModal();
         renderAssignModal();
+        renderExportModal();
+        renderImportModal();
       }
 
       async function init() {
@@ -964,6 +1150,8 @@ function filteredPeople() {
           bindFooterActions();
           bindChallengeModalActions();
           bindAssignModalActions();
+          bindExportModalActions();
+          bindImportModalActions();
           render();
         } catch (error) {
           showMessage(error.message, 'error');

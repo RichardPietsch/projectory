@@ -614,7 +614,7 @@ app.delete('/api/assignments/:id', async (req, res) => {
 });
 
 
-app.get('/api/export', async (_req, res) => {
+app.get('/api/export', async (req, res) => {
   try {
     const [clients, projects, people, challenges, assignments] = await Promise.all([
       pool.query('SELECT id, name, location, since_month, priority_id FROM clients ORDER BY id'),
@@ -624,7 +624,7 @@ app.get('/api/export', async (_req, res) => {
       pool.query('SELECT id, project_id, challenge_id, person_id, is_owner, is_leader, quantity FROM assignments ORDER BY id')
     ]);
 
-    res.json({
+    const payload = {
       exportedAt: new Date().toISOString(),
       version: 1,
       data: {
@@ -634,9 +634,18 @@ app.get('/api/export', async (_req, res) => {
         challenges: challenges.rows,
         assignments: assignments.rows
       }
-    });
+    };
+
+    if ((req.query.format || '').toLowerCase() === 'csv') {
+      const csv = payloadToCsv(payload.data);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="projectory-export-${new Date().toISOString().slice(0, 10)}.csv"`);
+      return res.send(csv);
+    }
+
+    return res.json(payload);
   } catch (error) {
-    handleDbError(res, error);
+    return handleDbError(res, error);
   }
 });
 
@@ -737,6 +746,244 @@ function validateImportPayload(payload) {
   return null;
 }
 
+function csvEscape(value) {
+  const raw = value === null || value === undefined ? '' : String(value);
+  if (raw.includes('"') || raw.includes(',') || raw.includes('\n') || raw.includes('\r')) {
+    return `"${raw.replace(/"/g, '""')}"`;
+  }
+  return raw;
+}
+
+function payloadToCsv(payload) {
+  const headers = [
+    'entity', 'id', 'client_id', 'project_id', 'challenge_id', 'person_id', 'name', 'location', 'since_month', 'priority_id',
+    'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade_id', 'level_id', 'title', 'description',
+    'is_owner', 'is_leader', 'quantity'
+  ];
+
+  const rows = [headers.join(',')];
+
+  function pushRow(entity, row) {
+    const values = headers.map((header) => {
+      if (header === 'entity') return entity;
+      return row[header];
+    });
+    rows.push(values.map(csvEscape).join(','));
+  }
+
+  payload.clients.forEach((row) => pushRow('clients', row));
+  payload.projects.forEach((row) => pushRow('projects', row));
+  payload.people.forEach((row) => pushRow('people', row));
+  payload.challenges.forEach((row) => pushRow('challenges', row));
+  payload.assignments.forEach((row) => pushRow('assignments', row));
+
+  return rows.join('\n');
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+      continue;
+    }
+
+    if (char === ',') {
+      row.push(field);
+      field = '';
+      continue;
+    }
+
+    if (char === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+      continue;
+    }
+
+    if (char === '\r') {
+      continue;
+    }
+
+    field += char;
+  }
+
+  if (inQuotes) {
+    throw new Error('CSV parse error: unclosed quote.');
+  }
+
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function parseCsvBoolean(value) {
+  if (value === 'true' || value === 'TRUE' || value === '1') return true;
+  if (value === 'false' || value === 'FALSE' || value === '0') return false;
+  return null;
+}
+
+function parseCsvInteger(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const num = Number(value);
+  return Number.isInteger(num) ? num : null;
+}
+
+function parseCsvNumber(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function csvToPayload(text) {
+  const rows = parseCsv(text);
+  if (rows.length === 0) {
+    throw new Error('CSV file is empty.');
+  }
+
+  const headers = rows[0];
+  const requiredHeaders = ['entity', 'id'];
+  for (const header of requiredHeaders) {
+    if (!headers.includes(header)) {
+      throw new Error(`CSV missing required header: ${header}`);
+    }
+  }
+
+  const payload = {
+    clients: [],
+    projects: [],
+    people: [],
+    challenges: [],
+    assignments: []
+  };
+
+  for (let i = 1; i < rows.length; i += 1) {
+    const line = rows[i];
+    if (line.every((cell) => !String(cell).trim())) {
+      continue;
+    }
+
+    const record = {};
+    for (let h = 0; h < headers.length; h += 1) {
+      record[headers[h]] = line[h] ?? '';
+    }
+
+    const entity = (record.entity || '').trim();
+    if (!payload[entity]) {
+      throw new Error(`CSV contains unknown entity '${entity}' on row ${i + 1}.`);
+    }
+
+    if (entity === 'clients') {
+      payload.clients.push({
+        id: parseCsvInteger(record.id),
+        name: record.name,
+        location: record.location,
+        since_month: record.since_month,
+        priority_id: parseCsvInteger(record.priority_id)
+      });
+    } else if (entity === 'projects') {
+      payload.projects.push({
+        id: parseCsvInteger(record.id),
+        client_id: parseCsvInteger(record.client_id),
+        name: record.name,
+        start_month: record.start_month,
+        end_month: record.end_month || null,
+        budget_cents: parseCsvInteger(record.budget_cents)
+      });
+    } else if (entity === 'people') {
+      payload.people.push({
+        id: parseCsvInteger(record.id),
+        first_name: record.first_name,
+        last_name: record.last_name,
+        trade_id: parseCsvInteger(record.trade_id),
+        level_id: parseCsvInteger(record.level_id)
+      });
+    } else if (entity === 'challenges') {
+      payload.challenges.push({
+        id: parseCsvInteger(record.id),
+        project_id: parseCsvInteger(record.project_id),
+        title: record.title,
+        description: record.description
+      });
+    } else if (entity === 'assignments') {
+      payload.assignments.push({
+        id: parseCsvInteger(record.id),
+        project_id: parseCsvInteger(record.project_id),
+        challenge_id: parseCsvInteger(record.challenge_id),
+        person_id: parseCsvInteger(record.person_id),
+        is_owner: parseCsvBoolean(record.is_owner),
+        is_leader: parseCsvBoolean(record.is_leader),
+        quantity: parseCsvNumber(record.quantity)
+      });
+    }
+  }
+
+  return payload;
+}
+
+function summarizeImportPayload(payload) {
+  return {
+    clients: payload.clients.length,
+    projects: payload.projects.length,
+    people: payload.people.length,
+    challenges: payload.challenges.length,
+    assignments: payload.assignments.length
+  };
+}
+
+app.post('/api/import/preview', async (req, res) => {
+  const format = String(req.body?.format || '').toLowerCase();
+
+  try {
+    let payload;
+    if (format === 'json') {
+      payload = req.body?.data;
+      if (!payload) return badRequest(res, 'Import payload must contain a data object.');
+    } else if (format === 'csv') {
+      const content = req.body?.content;
+      if (typeof content !== 'string') return badRequest(res, 'CSV preview requires a content string.');
+      payload = csvToPayload(content);
+    } else {
+      return badRequest(res, 'Unsupported import format.');
+    }
+
+    const validationError = validateImportPayload(payload);
+    if (validationError) return badRequest(res, validationError);
+
+    return res.json({
+      ok: true,
+      summary: summarizeImportPayload(payload),
+      data: payload
+    });
+  } catch (error) {
+    return badRequest(res, error.message || 'Invalid import payload.');
+  }
+});
+
 app.post('/api/import', async (req, res) => {
   const payload = req.body?.data;
 
@@ -803,7 +1050,7 @@ app.post('/api/import', async (req, res) => {
     }
 
     await client.query('COMMIT');
-    return res.json({ ok: true });
+    return res.json({ ok: true, summary: summarizeImportPayload(payload) });
   } catch (error) {
     await client.query('ROLLBACK');
     return handleDbError(res, error);
