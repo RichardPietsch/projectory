@@ -460,12 +460,14 @@
           const assignmentCount = assignments.length;
           const ownershipCount = assignments.filter((a) => a.is_owner).length;
           const leadershipCount = assignments.filter((a) => a.is_leader).length;
+          const contributionsCount = assignments.filter((a) => !a.is_owner && !a.is_leader).length;
           const workloadTotal = Math.round(assignments.reduce((sum, a) => sum + Number(a.quantity || 0), 0));
           return {
             ...person,
             assignmentCount,
             ownershipCount,
             leadershipCount,
+            contributionsCount,
             workloadTotal,
             nameSort: `${person.first_name} ${person.last_name}`.toLowerCase(),
             tradeSort: String(person.trade_name || '').toLowerCase(),
@@ -497,6 +499,10 @@
               return a.leadershipCount - b.leadershipCount || a.nameSort.localeCompare(b.nameSort);
             case 'leaderships_desc':
               return b.leadershipCount - a.leadershipCount || a.nameSort.localeCompare(b.nameSort);
+            case 'contributions_asc':
+              return a.contributionsCount - b.contributionsCount || a.nameSort.localeCompare(b.nameSort);
+            case 'contributions_desc':
+              return b.contributionsCount - a.contributionsCount || a.nameSort.localeCompare(b.nameSort);
             case 'quantity_asc':
               return a.workloadTotal - b.workloadTotal || a.nameSort.localeCompare(b.nameSort);
             case 'quantity_desc':
@@ -514,6 +520,7 @@
             <td class="p-2 font-semibold ${assignmentsWarningClass(person.assignmentCount)}">${person.assignmentCount}</td>
             <td class="p-2 font-semibold ${roleCountWarningClass(person.ownershipCount)}">${person.ownershipCount}</td>
             <td class="p-2 font-semibold ${roleCountWarningClass(person.leadershipCount)}">${person.leadershipCount}</td>
+            <td class="p-2 font-semibold ${assignmentsWarningClass(person.contributionsCount)}">${person.contributionsCount}</td>
             <td class="p-2 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}%</td>
           </tr>`).join('');
 
@@ -530,6 +537,7 @@
               <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">Assignments ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
               <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">Ownerships ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
               <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">Leaderships ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('contributions')">Constributions ${state.peopleOverviewSort.startsWith('contributions_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
               <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">Workload ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
             </tr></thead>
             <tbody>${rows}</tbody>
