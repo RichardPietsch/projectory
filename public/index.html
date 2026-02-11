@@ -183,6 +183,9 @@
         assignSubmitting: false,
         challengeSubmitting: false,
         peopleSort: 'name_asc',
+        clientsSort: 'name_asc',
+        adminProjectsSort: 'project_asc',
+        challengesSort: 'title_asc',
         exportModalOpen: false,
         importModalOpen: false,
         importPreviewData: null
@@ -365,7 +368,44 @@
       }
 
 function clientsView() {
-        const rows = state.clients
+        const sortedClients = [...state.clients].sort((a, b) => {
+          const nameA = String(a.name || '').toLowerCase();
+          const nameB = String(b.name || '').toLowerCase();
+          const locationA = String(a.location || '').toLowerCase();
+          const locationB = String(b.location || '').toLowerCase();
+          const sinceA = String(a.since_month || '');
+          const sinceB = String(b.since_month || '');
+          const priorityA = String(a.priority_name || '').toLowerCase();
+          const priorityB = String(b.priority_name || '').toLowerCase();
+          const projectsA = Number(a.project_count || 0);
+          const projectsB = Number(b.project_count || 0);
+
+          switch (state.clientsSort) {
+            case 'name_desc':
+              return nameB.localeCompare(nameA);
+            case 'location_asc':
+              return locationA.localeCompare(locationB) || nameA.localeCompare(nameB);
+            case 'location_desc':
+              return locationB.localeCompare(locationA) || nameA.localeCompare(nameB);
+            case 'since_asc':
+              return sinceA.localeCompare(sinceB) || nameA.localeCompare(nameB);
+            case 'since_desc':
+              return sinceB.localeCompare(sinceA) || nameA.localeCompare(nameB);
+            case 'priority_asc':
+              return priorityA.localeCompare(priorityB) || nameA.localeCompare(nameB);
+            case 'priority_desc':
+              return priorityB.localeCompare(priorityA) || nameA.localeCompare(nameB);
+            case 'projects_asc':
+              return projectsA - projectsB || nameA.localeCompare(nameB);
+            case 'projects_desc':
+              return projectsB - projectsA || nameA.localeCompare(nameB);
+            case 'name_asc':
+            default:
+              return nameA.localeCompare(nameB);
+          }
+        });
+
+        const rows = sortedClients
           .map(
             (client) => `<tr class="border-t border-slate-800">
               <td class="p-2">${client.name}</td>
@@ -394,7 +434,7 @@ function clientsView() {
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
               <h2 class="mb-3 text-lg font-semibold">Clients</h2>
               <table class="w-full text-left text-sm">
-                <thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Location</th><th class="p-2">Since</th><th class="p-2">Priority</th><th class="p-2">Projects</th><th class="p-2">Actions</th></tr></thead>
+                <thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('name')">Name ${state.clientsSort.startsWith('name_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('location')">Location ${state.clientsSort.startsWith('location_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('since')">Since ${state.clientsSort.startsWith('since_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('priority')">Priority ${state.clientsSort.startsWith('priority_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('projects')">Projects ${state.clientsSort.startsWith('projects_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
             </div>
@@ -403,7 +443,32 @@ function clientsView() {
 
       function administrationProjectsView() {
         const projects = state.projectsPayload.projects;
-        const rows = projects
+        const sortedProjects = [...projects].sort((a, b) => {
+          const projectA = String(a.name || '').toLowerCase();
+          const projectB = String(b.name || '').toLowerCase();
+          const datesA = `${a.start_month || ''}-${a.end_month || ''}`;
+          const datesB = `${b.start_month || ''}-${b.end_month || ''}`;
+          const budgetA = Number(a.budget_cents || 0);
+          const budgetB = Number(b.budget_cents || 0);
+
+          switch (state.adminProjectsSort) {
+            case 'project_desc':
+              return projectB.localeCompare(projectA);
+            case 'dates_asc':
+              return datesA.localeCompare(datesB) || projectA.localeCompare(projectB);
+            case 'dates_desc':
+              return datesB.localeCompare(datesA) || projectA.localeCompare(projectB);
+            case 'budget_asc':
+              return budgetA - budgetB || projectA.localeCompare(projectB);
+            case 'budget_desc':
+              return budgetB - budgetA || projectA.localeCompare(projectB);
+            case 'project_asc':
+            default:
+              return projectA.localeCompare(projectB);
+          }
+        });
+
+        const rows = sortedProjects
           .map(
             (project) => `<tr class="border-t border-slate-800">
               <td class="p-2">${project.name}<div class="text-xs text-slate-400">${project.client_name}</div></td>
@@ -431,7 +496,7 @@ function clientsView() {
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
               <h2 class="mb-3 text-lg font-semibold">Projects</h2>
               <table class="w-full text-left text-sm">
-                <thead><tr class="text-slate-400"><th class="p-2">Project</th><th class="p-2">Dates</th><th class="p-2">Budget</th><th class="p-2">Actions</th></tr></thead>
+                <thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setAdminProjectsSortField('project')">Project ${state.adminProjectsSort.startsWith('project_') ? (state.adminProjectsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setAdminProjectsSortField('dates')">Dates ${state.adminProjectsSort.startsWith('dates_') ? (state.adminProjectsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setAdminProjectsSortField('budget')">Budget ${state.adminProjectsSort.startsWith('budget_') ? (state.adminProjectsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
             </div>
@@ -519,7 +584,32 @@ function clientsView() {
           </div>
         </div>`;
 
-        const challengeRows = projectChallenges
+        const sortedChallenges = [...projectChallenges].sort((a, b) => {
+          const titleA = String(a.title || '').toLowerCase();
+          const titleB = String(b.title || '').toLowerCase();
+          const descriptionA = String(a.description || '').toLowerCase();
+          const descriptionB = String(b.description || '').toLowerCase();
+          const assigneesA = Number(a.assignment_count || 0);
+          const assigneesB = Number(b.assignment_count || 0);
+
+          switch (state.challengesSort) {
+            case 'title_desc':
+              return titleB.localeCompare(titleA);
+            case 'description_asc':
+              return descriptionA.localeCompare(descriptionB) || titleA.localeCompare(titleB);
+            case 'description_desc':
+              return descriptionB.localeCompare(descriptionA) || titleA.localeCompare(titleB);
+            case 'assignees_asc':
+              return assigneesA - assigneesB || titleA.localeCompare(titleB);
+            case 'assignees_desc':
+              return assigneesB - assigneesA || titleA.localeCompare(titleB);
+            case 'title_asc':
+            default:
+              return titleA.localeCompare(titleB);
+          }
+        });
+
+        const challengeRows = sortedChallenges
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
             const assignees = assignments.length
@@ -563,13 +653,10 @@ function clientsView() {
 
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3 flex items-center justify-between">
-              <div>
-              <h3 class="text-lg font-semibold">Challenges & Success Factors</h3>
-              <p class="mb-3 text-xs text-slate-400">These are the main challenges / requirements we need to fulfill for a successful client relationship</p>
-              </div>
+              <h3 class="text-lg font-semibold">Challenges in selected project</h3>
               <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>Add Challenge</button>
             </div>
-            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Title</th><th class="p-2">Description</th><th class="p-2">Assignee</th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('title')">Title ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('description')">Description ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('assignees')">Assignee ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
           </div>
 
           ${projectPeopleOverview}`;
@@ -1033,6 +1120,27 @@ function filteredPeople() {
           state.peopleSort = asc;
         }
 
+        render();
+      };
+
+      window.setClientsSortField = function setClientsSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+        state.clientsSort = state.clientsSort === asc ? desc : asc;
+        render();
+      };
+
+      window.setAdminProjectsSortField = function setAdminProjectsSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+        state.adminProjectsSort = state.adminProjectsSort === asc ? desc : asc;
+        render();
+      };
+
+      window.setChallengesSortField = function setChallengesSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+        state.challengesSort = state.challengesSort === asc ? desc : asc;
         render();
       };
 
