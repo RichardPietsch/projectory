@@ -426,17 +426,24 @@
       }
 
       function peopleOverviewView() {
-        function assignmentWarningClass(count) {
+        function assignmentsWarningClass(count) {
+          if (count === 0) return 'text-slate-100';
+          if (count <= 5) return 'text-emerald-300';
+          if (count <= 8) return 'text-amber-300';
+          return 'text-rose-300';
+        }
+
+        function roleCountWarningClass(count) {
           if (count === 0) return 'text-slate-100';
           if (count <= 2) return 'text-emerald-300';
           if (count <= 4) return 'text-amber-300';
           return 'text-rose-300';
         }
 
-        function quantityWarningClass(quantity) {
-          if (quantity === 0) return 'text-slate-100';
-          if (quantity < 100) return 'text-amber-300';
-          if (quantity === 100) return 'text-emerald-300';
+        function workloadWarningClass(workload) {
+          if (workload === 0) return 'text-slate-100';
+          if (workload < 100) return 'text-amber-300';
+          if (workload === 100) return 'text-emerald-300';
           return 'text-rose-300';
         }
 
@@ -453,13 +460,13 @@
           const assignmentCount = assignments.length;
           const ownershipCount = assignments.filter((a) => a.is_owner).length;
           const leadershipCount = assignments.filter((a) => a.is_leader).length;
-          const quantityTotal = Math.round(assignments.reduce((sum, a) => sum + Number(a.quantity || 0), 0));
+          const workloadTotal = Math.round(assignments.reduce((sum, a) => sum + Number(a.quantity || 0), 0));
           return {
             ...person,
             assignmentCount,
             ownershipCount,
             leadershipCount,
-            quantityTotal,
+            workloadTotal,
             nameSort: `${person.first_name} ${person.last_name}`.toLowerCase(),
             tradeSort: String(person.trade_name || '').toLowerCase(),
             levelSort: levelOrder.get(String(person.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER
@@ -491,37 +498,29 @@
             case 'leaderships_desc':
               return b.leadershipCount - a.leadershipCount || a.nameSort.localeCompare(b.nameSort);
             case 'quantity_asc':
-              return a.quantityTotal - b.quantityTotal || a.nameSort.localeCompare(b.nameSort);
+              return a.workloadTotal - b.workloadTotal || a.nameSort.localeCompare(b.nameSort);
             case 'quantity_desc':
-              return b.quantityTotal - a.quantityTotal || a.nameSort.localeCompare(b.nameSort);
+              return b.workloadTotal - a.workloadTotal || a.nameSort.localeCompare(b.nameSort);
             case 'name_asc':
             default:
               return a.nameSort.localeCompare(b.nameSort);
           }
         });
 
-        const statButton = (personId, value, className, label) => {
-          if (!value) {
-            return `<span class="font-semibold ${className}">${label}</span>`;
-          }
-
-          return `<button class="font-semibold underline decoration-dotted ${className}" onclick="openPeopleOverviewModal(${personId})">${label}</button>`;
-        };
-
-        const rows = sorted.map((person) => `<tr class="border-t border-slate-800">
+        const rows = sorted.map((person) => `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openPeopleOverviewModal(${person.id})">
             <td class="p-2">${person.first_name} ${person.last_name}</td>
             <td class="p-2">${person.trade_name}</td>
             <td class="p-2">${person.level_name}</td>
-            <td class="p-2">${statButton(person.id, person.assignmentCount, assignmentWarningClass(person.assignmentCount), person.assignmentCount)}</td>
-            <td class="p-2">${statButton(person.id, person.ownershipCount, 'text-blue-300', person.ownershipCount)}</td>
-            <td class="p-2">${statButton(person.id, person.leadershipCount, 'text-emerald-300', person.leadershipCount)}</td>
-            <td class="p-2">${statButton(person.id, person.quantityTotal, quantityWarningClass(person.quantityTotal), `${person.quantityTotal}%`)}</td>
+            <td class="p-2 font-semibold ${assignmentsWarningClass(person.assignmentCount)}">${person.assignmentCount}</td>
+            <td class="p-2 font-semibold ${roleCountWarningClass(person.ownershipCount)}">${person.ownershipCount}</td>
+            <td class="p-2 font-semibold ${roleCountWarningClass(person.leadershipCount)}">${person.leadershipCount}</td>
+            <td class="p-2 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}%</td>
           </tr>`).join('');
 
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
           <div class="mb-3">
             <h3 class="text-lg font-semibold">People Overview</h3>
-            <p class="text-xs text-slate-400">Organization-wide assignment, role and quantity insights.</p>
+            <p class="text-xs text-slate-400">Organization-wide assignment, role and workload insights.</p>
           </div>
           <table class="w-full text-left text-sm">
             <thead><tr class="text-slate-400">
@@ -531,7 +530,7 @@
               <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">Assignments ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
               <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">Ownerships ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
               <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">Leaderships ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">Quantity ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">Workload ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
             </tr></thead>
             <tbody>${rows}</tbody>
           </table>
@@ -864,7 +863,7 @@ function clientsView() {
 
         const projectPeopleOverview = `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
           <h3 class="mb-3 text-lg font-semibold">Project Team Overview</h3>
-          <p class="mb-3 text-xs text-slate-400">Click a name to change quantity in full percentage points for all their assignments in this project.</p>
+          <p class="mb-3 text-xs text-slate-400">Click a name to change workload in full percentage points for all their assignments in this project.</p>
           <div class="space-y-3">
             ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50')}
             ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50')}
@@ -1621,18 +1620,18 @@ function filteredPeople() {
         }
 
         const currentQuantity = Math.round(currentAssignments.reduce((sum, assignment) => sum + Number(assignment.quantity || 0), 0));
-        const input = window.prompt('Set quantity (0-100 full percentage points):', String(currentQuantity));
+        const input = window.prompt('Set workload (0-100 full percentage points):', String(currentQuantity));
         if (input === null) return;
 
         const quantity = Number(input);
         if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100) {
-          showMessage('Quantity must be an integer between 0 and 100.', 'error');
+          showMessage('Workload must be an integer between 0 and 100.', 'error');
           return;
         }
 
         await handleMutation(
           () => api(`/api/projects/${projectId}/people/${personId}/quantity`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
-          'Quantity updated.'
+          'Workload updated.'
         );
 
         if (keepModalOpen) {
@@ -1667,6 +1666,7 @@ function filteredPeople() {
         }
 
         const projectById = new Map(state.projectsPayload.projects.map((project) => [String(project.id), project]));
+        const challengeById = new Map(state.projectsPayload.challenges.map((challenge) => [String(challenge.id), challenge]));
         const grouped = new Map();
         for (const assignment of assignments) {
           const key = String(assignment.project_id);
@@ -1682,8 +1682,13 @@ function filteredPeople() {
             const rows = projectAssignments
               .map((assignment) => {
                 const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+                const challenge = challengeById.get(String(assignment.challenge_id));
+                const challengeDescription = challenge?.description || 'No description available.';
                 return `<tr class="border-t border-slate-800">
-                  <td class="p-2">${assignment.challenge_title}</td>
+                  <td class="p-2">
+                    <div class="font-medium text-slate-100">${assignment.challenge_title}</div>
+                    <div class="text-slate-400">${challengeDescription}</div>
+                  </td>
                   <td class="p-2">${roleLabel}</td>
                   <td class="p-2">${Math.round(Number(assignment.quantity || 0))}%</td>
                 </tr>`;
@@ -1693,10 +1698,10 @@ function filteredPeople() {
             return `<section class="mb-4 rounded border border-slate-700 bg-slate-950/50 p-3">
               <div class="mb-2 flex items-center justify-between gap-2">
                 <h4 class="font-semibold text-slate-100">${projectName}</h4>
-                <button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust quantity (${projectQuantity}%)</button>
+                <button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust workload (${projectQuantity}%)</button>
               </div>
               <table class="w-full text-left text-xs">
-                <thead><tr class="text-slate-400"><th class="p-2">Challenge</th><th class="p-2">Role</th><th class="p-2">Quantity</th></tr></thead>
+                <thead><tr class="text-slate-400"><th class="p-2">Challenge</th><th class="p-2">Role</th><th class="p-2">Workload</th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
             </section>`;
