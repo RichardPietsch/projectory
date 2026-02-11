@@ -1,0 +1,34 @@
+services:
+  web:
+    build:
+      context: https://github.com/RichardPietsch/projectory.git#main
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: helloapp
+      DB_USER: hello
+      DB_PASSWORD: hello
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    build:
+      context: https://github.com/RichardPietsch/projectory.git#main:db
+    environment:
+      POSTGRES_DB: helloapp
+      POSTGRES_USER: hello
+      POSTGRES_PASSWORD: hello
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hello -d helloapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
