@@ -663,25 +663,31 @@ function clientsView() {
                   })
                   .join('')
               : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
-            const addAssigneeButton = assignments.length >= 1
-              ? `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Add additional assignee</button>`
-              : '';
-            const unassignAction = assignments.length === 1
-              ? `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteAssignment(${assignments[0].id})'>Unassign ${assignments[0].first_name}</button>`
-              : assignments.length > 1
-                ? `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='openUnassignModal(${challenge.id})'>Unassign</button>`
-                : '';
+            const actionItems = [
+              `<button class="w-full rounded border border-slate-600 px-2 py-1 text-left text-xs hover:bg-slate-800" onclick='openChallengeModal(${JSON.stringify(challenge)})'>Edit</button>`,
+              `<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteChallenge(${challenge.id})'>Delete</button>`
+            ];
+
+            if (assignments.length >= 1) {
+              actionItems.push(`<button class="w-full rounded border border-emerald-500/50 px-2 py-1 text-left text-xs text-emerald-300 hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Add additional assignee</button>`);
+            }
+
+            if (assignments.length === 1) {
+              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteAssignment(${assignments[0].id})'>Unassign ${assignments[0].first_name}</button>`);
+            } else if (assignments.length > 1) {
+              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='openUnassignModal(${challenge.id})'>Unassign</button>`);
+            }
+
+            const actionsMenu = `<details class="relative inline-block">
+              <summary class="list-none cursor-pointer rounded border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800">...</summary>
+              <div class="absolute right-0 z-30 mt-1 w-52 space-y-1 rounded border border-slate-700 bg-slate-900 p-2 shadow-xl">${actionItems.join('')}</div>
+            </details>`;
 
             return `<tr class="border-t border-slate-800">
               <td class="p-2">${challenge.title}</td>
               <td class="p-2">${challenge.description}</td>
               <td class="p-2">${assignees}</td>
-              <td class="p-2">
-                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openChallengeModal(${JSON.stringify(challenge)})'>Edit</button>
-                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteChallenge(${challenge.id})'>Delete</button>
-                ${addAssigneeButton}
-                ${unassignAction}
-              </td>
+              <td class="p-2">${actionsMenu}</td>
             </tr>`;
           })
           .join('');
