@@ -182,6 +182,7 @@
         },
         assignSubmitting: false,
         challengeSubmitting: false,
+        peopleSort: 'name_asc',
         exportModalOpen: false,
         importModalOpen: false,
         importPreviewData: null
@@ -280,7 +281,45 @@
       }
 
       function peopleView() {
-        const rows = state.people
+        const levelOrder = new Map(state.meta.levels.map((level, index) => [String(level.name || '').toLowerCase(), index]));
+        const sortedPeople = [...state.people].sort((a, b) => {
+          const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+          const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+          const tradeA = String(a.trade_name || '').toLowerCase();
+          const tradeB = String(b.trade_name || '').toLowerCase();
+          const levelA = levelOrder.get(String(a.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+          const levelB = levelOrder.get(String(b.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+          const assignmentsA = Number(a.assignment_count || 0);
+          const assignmentsB = Number(b.assignment_count || 0);
+          const quantityA = Number(a.assignment_quantity_total || 0);
+          const quantityB = Number(b.assignment_quantity_total || 0);
+
+          switch (state.peopleSort) {
+            case 'name_desc':
+              return nameB.localeCompare(nameA);
+            case 'trade_asc':
+              return tradeA.localeCompare(tradeB) || nameA.localeCompare(nameB);
+            case 'trade_desc':
+              return tradeB.localeCompare(tradeA) || nameA.localeCompare(nameB);
+            case 'level_asc':
+              return levelA - levelB || nameA.localeCompare(nameB);
+            case 'level_desc':
+              return levelB - levelA || nameA.localeCompare(nameB);
+            case 'assignments_asc':
+              return assignmentsA - assignmentsB || nameA.localeCompare(nameB);
+            case 'assignments_desc':
+              return assignmentsB - assignmentsA || nameA.localeCompare(nameB);
+            case 'quantity_asc':
+              return quantityA - quantityB || nameA.localeCompare(nameB);
+            case 'quantity_desc':
+              return quantityB - quantityA || nameA.localeCompare(nameB);
+            case 'name_asc':
+            default:
+              return nameA.localeCompare(nameB);
+          }
+        });
+
+        const rows = sortedPeople
           .map(
             (person) => `<tr class="border-t border-slate-800">
               <td class="p-2">${person.first_name} ${person.last_name}</td>
@@ -307,9 +346,18 @@
               <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Person</button>
             </form>
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <h2 class="mb-3 text-lg font-semibold">People</h2>
+              <div class="mb-3">
+                <h2 class="text-lg font-semibold">People</h2>
+              </div>
               <table class="w-full text-left text-sm">
-                <thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Trade</th><th class="p-2">Level</th><th class="p-2">Assignments</th><th class="p-2">Quantity</th><th class="p-2">Actions</th></tr></thead>
+                <thead><tr class="text-slate-400">
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('name')">Name ${state.peopleSort.startsWith('name_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('trade')">Trade ${state.peopleSort.startsWith('trade_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('level')">Level ${state.peopleSort.startsWith('level_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('assignments')">Assignments ${state.peopleSort.startsWith('assignments_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('quantity')">Quantity ${state.peopleSort.startsWith('quantity_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2">Actions</th>
+                </tr></thead>
                 <tbody>${rows}</tbody>
               </table>
             </div>
@@ -675,6 +723,7 @@ function filteredPeople() {
             render();
           });
         }
+
       }
 
       async function downloadExport(format) {
@@ -972,6 +1021,19 @@ function filteredPeople() {
           state.assignModal.selectedPersonId = people[0] ? String(people[0].id) : '';
         }
         renderAssignModal();
+      };
+
+      window.setPeopleSortField = function setPeopleSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+
+        if (state.peopleSort === asc) {
+          state.peopleSort = desc;
+        } else {
+          state.peopleSort = asc;
+        }
+
+        render();
       };
 
       window.editPerson = function editPerson(person) {
