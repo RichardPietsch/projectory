@@ -208,6 +208,7 @@
         clientsSort: 'name_asc',
         adminProjectsSort: 'project_asc',
         challengesSort: 'title_asc',
+        clientTeamsSort: 'product_asc',
         exportModalOpen: false,
         importModalOpen: false,
         importPreviewData: null
@@ -268,6 +269,15 @@
 
       function formatEuro(cents) {
         return (Number(cents || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+      }
+
+      function formatEuroWhole(cents) {
+        return (Number(cents || 0) / 100).toLocaleString('de-DE', {
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        });
       }
 
       async function api(url, options = {}) {
@@ -550,40 +560,75 @@ function clientsView() {
         if (!hasSelectedProject) {
           state.selectedProjectId = '';
 
-          const projectRows = projects
-            .map((project) => {
-              const projectAssignments = state.projectsPayload.assignments.filter((assignment) => Number(assignment.project_id) === Number(project.id));
-              const ownerNames = [];
-              const leaderNames = [];
-              const ownerSeen = new Set();
-              const leaderSeen = new Set();
+          const projectsWithTeams = projects.map((project) => {
+            const projectAssignments = state.projectsPayload.assignments.filter((assignment) => Number(assignment.project_id) === Number(project.id));
+            const ownerNames = [];
+            const leaderNames = [];
+            const ownerSeen = new Set();
+            const leaderSeen = new Set();
 
-              for (const assignment of projectAssignments) {
-                const personId = String(assignment.person_id);
-                const fullName = `${assignment.first_name} ${assignment.last_name}`;
+            for (const assignment of projectAssignments) {
+              const personId = String(assignment.person_id);
+              const fullName = `${assignment.first_name} ${assignment.last_name}`;
 
-                if (assignment.is_owner) {
-                  if (!ownerSeen.has(personId)) {
-                    ownerSeen.add(personId);
-                    ownerNames.push(fullName);
-                  }
-                  continue;
+              if (assignment.is_owner) {
+                if (!ownerSeen.has(personId)) {
+                  ownerSeen.add(personId);
+                  ownerNames.push(fullName);
                 }
-
-                if (assignment.is_leader) {
-                  if (!ownerSeen.has(personId) && !leaderSeen.has(personId)) {
-                    leaderSeen.add(personId);
-                    leaderNames.push(fullName);
-                  }
-                }
+                continue;
               }
 
+              if (assignment.is_leader) {
+                if (!ownerSeen.has(personId) && !leaderSeen.has(personId)) {
+                  leaderSeen.add(personId);
+                  leaderNames.push(fullName);
+                }
+              }
+            }
+
+            return {
+              ...project,
+              ownerNames,
+              leaderNames,
+              ownerSort: ownerNames.join(', ').toLowerCase(),
+              leaderSort: leaderNames.join(', ').toLowerCase(),
+              productSort: String(project.name || '').toLowerCase(),
+              clientSort: String(project.client_name || '').toLowerCase(),
+              budgetSort: Number(project.budget_cents || 0)
+            };
+          });
+
+          const sortedProjects = [...projectsWithTeams].sort((a, b) => {
+            switch (state.clientTeamsSort) {
+              case 'product_desc':
+                return b.productSort.localeCompare(a.productSort) || a.clientSort.localeCompare(b.clientSort);
+              case 'budget_asc':
+                return a.budgetSort - b.budgetSort || a.productSort.localeCompare(b.productSort);
+              case 'budget_desc':
+                return b.budgetSort - a.budgetSort || a.productSort.localeCompare(b.productSort);
+              case 'owner_asc':
+                return a.ownerSort.localeCompare(b.ownerSort) || a.productSort.localeCompare(b.productSort);
+              case 'owner_desc':
+                return b.ownerSort.localeCompare(a.ownerSort) || a.productSort.localeCompare(b.productSort);
+              case 'leaders_asc':
+                return a.leaderSort.localeCompare(b.leaderSort) || a.productSort.localeCompare(b.productSort);
+              case 'leaders_desc':
+                return b.leaderSort.localeCompare(a.leaderSort) || a.productSort.localeCompare(b.productSort);
+              case 'product_asc':
+              default:
+                return a.productSort.localeCompare(b.productSort) || a.clientSort.localeCompare(b.clientSort);
+            }
+          });
+
+          const projectRows = sortedProjects
+            .map((project) => {
               const noPeopleMessage = `There's no people assigned to this project, yet`;
-              const ownerPills = ownerNames.length
-                ? ownerNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${name}</span>`).join('')
+              const ownerPills = project.ownerNames.length
+                ? project.ownerNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${name}</span>`).join('')
                 : `<span class="text-slate-400">${noPeopleMessage}</span>`;
-              const leaderPills = leaderNames.length
-                ? leaderNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-emerald-400/70 bg-emerald-600 px-2 py-1 text-xs text-emerald-50">${name}</span>`).join('')
+              const leaderPills = project.leaderNames.length
+                ? project.leaderNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-emerald-400/70 bg-emerald-600 px-2 py-1 text-xs text-emerald-50">${name}</span>`).join('')
                 : `<span class="text-slate-400">${noPeopleMessage}</span>`;
 
               return `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openProjectDetail(${project.id})">
@@ -591,7 +636,7 @@ function clientsView() {
                   <div class="font-medium text-slate-100">${project.name}</div>
                   <div class="text-xs text-slate-400">${project.client_name}</div>
                 </td>
-                <td class="p-2 text-slate-300">${formatEuro(project.budget_cents)}</td>
+                <td class="p-2 text-slate-300">${formatEuroWhole(project.budget_cents)}</td>
                 <td class="p-2 text-slate-300">${ownerPills}</td>
                 <td class="p-2 text-slate-300">${leaderPills}</td>
               </tr>`;
@@ -600,16 +645,16 @@ function clientsView() {
 
           return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3">
-              <h3 class="text-lg font-semibold">Customer Teams</h3>
+              <h3 class="text-lg font-semibold">Client Teams</h3>
               <p class="text-xs text-slate-400">Select a client-team to see and update their challenges</p>
             </div>
             <table class="w-full text-left text-sm">
               <thead>
                 <tr class="text-slate-400">
-                  <th class="p-2">Project Name</th>
-                  <th class="p-2">Budget</th>
-                  <th class="p-2">Project Owner</th>
-                  <th class="p-2">Project Leaders</th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('product')">Product ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('budget')">Budget ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('owner')">Owner ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">Leaders ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                 </tr>
               </thead>
               <tbody>${projectRows}</tbody>
@@ -784,9 +829,9 @@ function clientsView() {
 
         return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="flex flex-wrap items-center gap-2 text-sm text-slate-300">
-              <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>Customer Teams</button>
+              <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>Client Teams</button>
               <span>/</span>
-              <span class="font-semibold text-slate-100">${selectedProject.name}</span>
+              <span class="font-semibold text-slate-100">${selectedProject.name} (${selectedProject.client_name})</span>
             </div>
           </div>
 
@@ -1355,6 +1400,13 @@ function filteredPeople() {
         const asc = `${field}_asc`;
         const desc = `${field}_desc`;
         state.challengesSort = state.challengesSort === asc ? desc : asc;
+        render();
+      };
+
+      window.setClientTeamsSortField = function setClientTeamsSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+        state.clientTeamsSort = state.clientTeamsSort === asc ? desc : asc;
         render();
       };
 
