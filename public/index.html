@@ -579,24 +579,35 @@ function clientsView() {
               }
 
               const noPeopleMessage = `There's no people assigned to this project, yet`;
+              const ownerPills = ownerNames.length
+                ? ownerNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${name}</span>`).join('')
+                : `<span class="text-slate-400">${noPeopleMessage}</span>`;
+              const leaderPills = leaderNames.length
+                ? leaderNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-emerald-400/70 bg-emerald-600 px-2 py-1 text-xs text-emerald-50">${name}</span>`).join('')
+                : `<span class="text-slate-400">${noPeopleMessage}</span>`;
 
               return `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openProjectDetail(${project.id})">
-                <td class="p-2 font-medium text-slate-100">${project.name}</td>
-                <td class="p-2 text-slate-300">${ownerNames.length ? ownerNames.join(', ') : noPeopleMessage}</td>
-                <td class="p-2 text-slate-300">${leaderNames.length ? leaderNames.join(', ') : noPeopleMessage}</td>
+                <td class="p-2">
+                  <div class="font-medium text-slate-100">${project.name}</div>
+                  <div class="text-xs text-slate-400">${project.client_name}</div>
+                </td>
+                <td class="p-2 text-slate-300">${formatEuro(project.budget_cents)}</td>
+                <td class="p-2 text-slate-300">${ownerPills}</td>
+                <td class="p-2 text-slate-300">${leaderPills}</td>
               </tr>`;
             })
             .join('');
 
           return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3">
-              <h3 class="text-lg font-semibold">Project Overview</h3>
-              <p class="text-xs text-slate-400">Select a project to open its challenge and team details.</p>
+              <h3 class="text-lg font-semibold">Customer Teams</h3>
+              <p class="text-xs text-slate-400">Select a client-team to see and update their challenges</p>
             </div>
             <table class="w-full text-left text-sm">
               <thead>
                 <tr class="text-slate-400">
                   <th class="p-2">Project Name</th>
+                  <th class="p-2">Budget</th>
                   <th class="p-2">Project Owner</th>
                   <th class="p-2">Project Leaders</th>
                 </tr>
@@ -773,7 +784,7 @@ function clientsView() {
 
         return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="flex flex-wrap items-center gap-2 text-sm text-slate-300">
-              <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>Project Overview</button>
+              <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>Customer Teams</button>
               <span>/</span>
               <span class="font-semibold text-slate-100">${selectedProject.name}</span>
             </div>
