@@ -89,6 +89,81 @@ async function distributeProjectQuantityAcrossAssignments(personId, projectId, t
   }
 }
 
+
+async function ensurePriorityCatalog() {
+  const targetPriorities = [
+    '⭐️ Hero',
+    '✨ Rising Star',
+    '☑️ Solid',
+    '🛠️ Maintenance',
+    '🔬 Small Client',
+    '❌ Outphasing'
+  ];
+
+  const legacyToTarget = [
+    ['Prio 1', '⭐️ Hero'],
+    ['Prio 2', '✨ Rising Star'],
+    ['Prio 3', '☑️ Solid'],
+    ['Prio 4', '🛠️ Maintenance']
+  ];
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    for (const [legacyName, targetName] of legacyToTarget) {
+      await client.query(
+        `UPDATE priorities
+         SET name = $1
+         WHERE name = $2
+           AND NOT EXISTS (SELECT 1 FROM priorities p2 WHERE p2.name = $1)`,
+        [targetName, legacyName]
+      );
+    }
+
+    await client.query(
+      `INSERT INTO priorities (name)
+       SELECT value
+       FROM UNNEST($1::text[]) AS value
+       ON CONFLICT (name) DO NOTHING`,
+      [targetPriorities]
+    );
+
+    const byName = await client.query(
+      `SELECT id, name FROM priorities WHERE name = ANY($1::text[])`,
+      [[...targetPriorities, ...legacyToTarget.map(([legacy]) => legacy)]]
+    );
+    const idByName = new Map(byName.rows.map((row) => [row.name, row.id]));
+
+    for (const [legacyName, targetName] of legacyToTarget) {
+      const legacyId = idByName.get(legacyName);
+      const targetId = idByName.get(targetName);
+      if (legacyId && targetId && legacyId !== targetId) {
+        await client.query(
+          `UPDATE clients
+           SET priority_id = $1
+           WHERE priority_id = $2`,
+          [targetId, legacyId]
+        );
+      }
+    }
+
+    await client.query(
+      `DELETE FROM priorities p
+       WHERE p.name = ANY($1::text[])
+         AND NOT EXISTS (SELECT 1 FROM clients c WHERE c.priority_id = p.id)`,
+      [legacyToTarget.map(([legacyName]) => legacyName)]
+    );
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 app.get('/api/meta', async (_req, res) => {
   try {
     const [priorities, trades, levels] = await Promise.all([
@@ -1070,6 +1145,16 @@ app.get('/health', async (_req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Projectory app listening on port ${port}`);
-});
+async function startServer() {
+  try {
+    await ensurePriorityCatalog();
+  } catch (error) {
+    console.warn('Priority catalog initialization skipped at startup.', error.message);
+  }
+
+  app.listen(port, () => {
+    console.log(`Projectory app listening on port ${port}`);
+  });
+}
+
+startServer();
