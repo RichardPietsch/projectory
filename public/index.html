@@ -131,6 +131,20 @@
       </div>
     </div>
 
+    <div id="unassign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="unassign-modal-title" class="text-lg font-semibold">Unassign People</h3>
+          <button id="unassign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+        <div id="unassign-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2 text-sm"></div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="unassign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="unassign-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold">Unassign selected</button>
+        </div>
+      </div>
+    </div>
+
     <div id="challenge-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
@@ -167,6 +181,12 @@
           search: '',
           role: 'contributor'
         },
+        unassignModal: {
+          open: false,
+          challengeId: null,
+          challengeTitle: '',
+          selectedAssignmentIds: []
+        },
         challengeModal: {
           open: false,
           challengeId: null
@@ -175,6 +195,7 @@
           header: false,
           footer: false,
           assignModal: false,
+          unassignModal: false,
           challengeModal: false,
           challengeModalForm: false,
           exportModal: false,
@@ -642,9 +663,14 @@ function clientsView() {
                   })
                   .join('')
               : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
-            const unassignButtons = assignments
-              .map((assignment) => `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteAssignment(${assignment.id})'>Unassign ${assignment.first_name}</button>`)
-              .join(' ');
+            const addAssigneeButton = assignments.length >= 1
+              ? `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Add additional assignee</button>`
+              : '';
+            const unassignAction = assignments.length === 1
+              ? `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteAssignment(${assignments[0].id})'>Unassign ${assignments[0].first_name}</button>`
+              : assignments.length > 1
+                ? `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='openUnassignModal(${challenge.id})'>Unassign</button>`
+                : '';
 
             return `<tr class="border-t border-slate-800">
               <td class="p-2">${challenge.title}</td>
@@ -653,7 +679,8 @@ function clientsView() {
               <td class="p-2">
                 <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openChallengeModal(${JSON.stringify(challenge)})'>Edit</button>
                 <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteChallenge(${challenge.id})'>Delete</button>
-                ${unassignButtons}
+                ${addAssigneeButton}
+                ${unassignAction}
               </td>
             </tr>`;
           })
@@ -1031,6 +1058,86 @@ function filteredPeople() {
         document.getElementById('challenge-cancel')?.addEventListener('click', closeChallengeModal);
       }
 
+      function renderUnassignModal() {
+        const modal = document.getElementById('unassign-modal');
+        modal.classList.toggle('hidden', !state.unassignModal.open);
+        modal.classList.toggle('flex', state.unassignModal.open);
+
+        if (!state.unassignModal.open) {
+          return;
+        }
+
+        document.getElementById('unassign-modal-title').textContent = `Unassign People · ${state.unassignModal.challengeTitle}`;
+
+        const assignments = state.projectsPayload.assignments.filter(
+          (assignment) => String(assignment.challenge_id) === String(state.unassignModal.challengeId)
+        );
+
+        const list = document.getElementById('unassign-list');
+        list.innerHTML = assignments
+          .map((assignment) => {
+            const checked = state.unassignModal.selectedAssignmentIds.includes(String(assignment.id)) ? 'checked' : '';
+            const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+            return `<label class="mb-1 flex items-center gap-2 rounded px-2 py-1 hover:bg-slate-900">
+              <input type="checkbox" data-unassign-id="${assignment.id}" ${checked} />
+              <span>${assignment.first_name} ${assignment.last_name} (${roleLabel})</span>
+            </label>`;
+          })
+          .join('');
+
+        list.querySelectorAll('input[data-unassign-id]').forEach((input) => {
+          input.addEventListener('change', () => {
+            const id = input.getAttribute('data-unassign-id');
+            if (input.checked) {
+              if (!state.unassignModal.selectedAssignmentIds.includes(id)) {
+                state.unassignModal.selectedAssignmentIds.push(id);
+              }
+            } else {
+              state.unassignModal.selectedAssignmentIds = state.unassignModal.selectedAssignmentIds.filter((item) => item !== id);
+            }
+          });
+        });
+      }
+
+      function closeUnassignModal() {
+        state.unassignModal.open = false;
+        state.unassignModal.challengeId = null;
+        state.unassignModal.challengeTitle = '';
+        state.unassignModal.selectedAssignmentIds = [];
+        renderUnassignModal();
+      }
+
+      window.openUnassignModal = function openUnassignModal(challengeId) {
+        const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(challengeId));
+        state.unassignModal.open = true;
+        state.unassignModal.challengeId = String(challengeId);
+        state.unassignModal.challengeTitle = challenge ? challenge.title : 'Challenge';
+        state.unassignModal.selectedAssignmentIds = [];
+        renderUnassignModal();
+      };
+
+      function bindUnassignModalActions() {
+        if (state.listenersBound.unassignModal) return;
+        state.listenersBound.unassignModal = true;
+
+        document.getElementById('unassign-modal-close')?.addEventListener('click', closeUnassignModal);
+        document.getElementById('unassign-cancel')?.addEventListener('click', closeUnassignModal);
+        document.getElementById('unassign-confirm')?.addEventListener('click', async () => {
+          if (state.unassignModal.selectedAssignmentIds.length === 0) {
+            showMessage('Select at least one assignee to unassign.', 'warning');
+            return;
+          }
+
+          await handleMutation(async () => {
+            for (const assignmentId of state.unassignModal.selectedAssignmentIds) {
+              await api(`/api/assignments/${assignmentId}`, { method: 'DELETE' });
+            }
+          }, 'Assignees updated.');
+
+          closeUnassignModal();
+        });
+      }
+
       function bindAssignModalActions() {
         if (state.listenersBound.assignModal) return;
         state.listenersBound.assignModal = true;
@@ -1326,6 +1433,7 @@ function filteredPeople() {
         bindForms();
         renderChallengeModal();
         renderAssignModal();
+        renderUnassignModal();
         renderExportModal();
         renderImportModal();
       }
@@ -1337,6 +1445,7 @@ function filteredPeople() {
           bindFooterActions();
           bindChallengeModalActions();
           bindAssignModalActions();
+          bindUnassignModalActions();
           bindExportModalActions();
           bindImportModalActions();
           render();
