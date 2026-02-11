@@ -1,0 +1,1853 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projectory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <main class="mx-auto max-w-7xl p-6">
+      <header class="mb-6 flex items-start justify-between gap-4 p-1">
+        <div class="flex items-start gap-4">
+          <svg aria-hidden="true" viewBox="0 0 88 88" class="mt-1 h-14 w-14 shrink-0 text-emerald-300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M60,13.89l5.11,24.66c.55,2.65.68,4.26.27,5.33-.48,1.23-1.45,1.14-1.86.02l-3.47-9.39c-.41-1.06-.95-2.03-1.9-2.62-1.04-.65-1.25-.75-1.38-1.97l-1.23-11.57c-.3-2.76.91-4.53,2.14-5.16,1.3-.67,2.1-.36,2.32.7Z"/>
+            <path d="M30.97,25.76l23.16,6.31c2.03.55,3.56,1.43,4.24,3.08l6.41,15.65c.81,2.68-.32,4.17-2.81,4.25-.4.02-.51.43-.45.83.27,2.04-1.18,4.09-2.79,4.58-.11-1.11-.46-2.32-1.17-3.71l-5.49-10.78c-.89-1.73-2.73-2.66-4.79-2.53l-8.29.54c-1.85.12-3.1,1.21-3.78,2.08l-1.25,1.6c-.52.67-.9.94-1.6,1.1-1.48.33-2.51.02-3.01-.36-.65-.49-.5-.85-.19-1.1l7.82-6.47c1.45-1.2,1.92-1.51,3.84-1.67l10.23-.83c1.72-.14,2.47.88,3.02,2.07l5.39,11.77c.5,1.11,1.41.78.96-.36l-4.72-12.11c-.88-2.25-2.57-3.34-4.79-3.16l-2.71.22c-1.1.09-1.78.08-2.74-.33l-11.83-5.03c-3.39-1.43-4.75-3.39-4.73-4.48.03-1.32.96-1.47,2.07-1.17Z"/>
+            <path d="M27.3,27.95c.44,1.72,2.05,3.48,4.84,4.75.78.35.82.44,1.01,1.19.6,2.31.78,3.92.16,6.81-.22.97-.31,1.12-1.06,1.75l-4.23,3.5c-.61.51-.94,1.28-.86,2.02.08.74.51,1.4,1.14,1.87.81.6,1.94.93,3.32.84l-2.53,3.23c-.24.31-.26.75-.02,1.08.67.92,1.57,1.53,2.56,1.77,1,.24,2.04.11,3.1-.26,1.91-.67,3.9-2.24,5.93-4.25.23-.23.32-.17.52-.04,1.14.72,2.39.99,3.7,1.02-.23,1.32-.45,2.45.43,3.47.49.58.34.65-.04.84-1.5.73-2.56,1.96-3.05,3.16-.21.5-.4.46-.84.55-2.68.54-4.63,1.66-6.09,3.01-1.65,1.53-2.33,3.32-2.58,6.25-.09,1.08,1.04,1.14,1.2.23.78-4.42,3.24-6.68,6.88-7.64.76-.2,1.19-.1,1.44.18.62.71.8,1.33,2.03,2.04.81.47,1.32-.28.42-.95-2.74-2.04-.22-5.77,2.21-6.14.66-.1.8-.54.35-1.03-1.01-1.42-1.3-2.71-.55-4.76.15-.4-.2-.77-.82-.61-1.78.22-3.03-.26-4.67-1.47-.36-.27-.86-.22-1.17.1-2.15,2.23-4.23,3.79-5.9,4.36-.91.31-1.62.39-2.28.14-.78-.3-.61-.93-.34-1.27l5.1-6.52c.49-.64,1.27-1.32,2.49-1.4l8.3-.54c1.51-.1,2.49.44,3.07,1.55l5.5,10.78c.94,1.83,1.13,3.07,1,4.16-.14,1.09-.65,2.09-1.34,3.34l-5.43,9.75c-.49.88-.58,1.37-.58,2.33v7.14c0,1.02-.44,2.21-2.05,2.21h-17.88c-1.39,0-1.72-.67-1.72-1.81v-3.98c0-.5.35-1.19,1.07-.57,2.89,2.51,6.13,2.76,9.85,1.49,1.13-.38.76-1.54-.37-1.15-4.14,1.4-7.86.09-10.72-4.28-2.85-4.37-3.14-7.92-2.36-14.16,1.29-10.4.7-21.07-.13-32.63-.04-.59,0-1.11.22-1.49.65-1.11,1.51-.91,1.75.03Z"/>
+            <path d="M38.78,5.59c-.94,0-1.57.96-1.2,1.82l3.42,8.31c.26.69,1.04,1.04,1.72.76.68-.28.99-1.08.69-1.75l-3.41-8.31c-.2-.5-.69-.83-1.23-.83Z"/>
+            <path d="M49.08,4.21c-.72.01-1.3.61-1.28,1.33v8.73c-.04.76.56,1.39,1.31,1.39s1.34-.63,1.3-1.39V5.53c0-.74-.6-1.33-1.33-1.32Z"/>
+            <path d="M30.53,11.96c-1.18,0-1.76,1.42-.92,2.24l6.13,6.18c.5.54,1.35.55,1.87.04.53-.52.52-1.37-.02-1.88l-6.12-6.18c-.25-.26-.58-.4-.94-.39Z"/>
+</svg>
+          <div>
+            <h1 class="text-3xl font-bold leading-tight">Projectory</h1>
+            <p class="mt-1 text-sm text-slate-300">A challenge-first ownership approach for setting up autonomous client-teams</p>
+          </div>
+        </div>
+        <button
+          id="admin-toggle"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+          title="Open Administration"
+        >
+          <span aria-hidden="true">⚙️</span>
+          <span>Admin</span>
+        </button>
+      </header>
+
+      <section id="view"></section>
+
+      <section id="admin-panel" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 p-4">
+        <div class="h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Administration Mode</h2>
+            <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+          </div>
+          <nav class="mb-6 flex gap-2" id="admin-tabs"></nav>
+          <section id="admin-view"></section>
+        </div>
+      </section>
+
+      <footer class="mt-8 border-t border-slate-800 pt-4 text-sm text-slate-300">
+        <div class="flex flex-wrap items-center gap-3">
+          <button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Export</button>
+          <button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-900">Import</button>
+        </div>
+      </footer>
+    </main>
+
+    <div id="toast-container" class="fixed right-4 top-4 z-[70] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"></div>
+
+    <div id="export-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Export data</h3>
+          <button id="export-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+        <label class="mb-4 block text-sm">Format
+          <select id="export-format" class="mt-1 w-full rounded bg-slate-950 p-2">
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+        </label>
+        <div class="flex justify-end gap-2">
+          <button id="export-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="export-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Export</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="import-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Import data</h3>
+          <button id="import-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+
+        <input id="import-file" type="file" accept=".json,.csv,application/json,text/csv" class="mb-3 block w-full text-sm" />
+
+        <div id="import-preview" class="hidden rounded border border-slate-700 bg-slate-950/60 p-3 text-sm">
+          <p class="mb-2 text-amber-300">⚠️ Warning: importing will replace and permanently delete all current data.</p>
+          <p class="mb-2 text-slate-300">Import summary:</p>
+          <ul class="list-disc pl-5 text-slate-200">
+            <li>People: <span id="import-count-people">0</span></li>
+            <li>Clients: <span id="import-count-clients">0</span></li>
+            <li>Projects: <span id="import-count-projects">0</span></li>
+            <li>Challenges: <span id="import-count-challenges">0</span></li>
+            <li>Assignments: <span id="import-count-assignments">0</span></li>
+          </ul>
+        </div>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="import-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="import-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold" disabled>Confirm Import</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="assign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="assign-modal-title" class="text-lg font-semibold">Assign People</h3>
+          <button id="assign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+
+        <label class="mb-3 block text-sm">
+          Search people
+          <input id="assign-search" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="Type a name..." />
+        </label>
+
+        <label class="mb-3 block text-sm">
+          Role
+          <select id="assign-role" class="mt-1 w-full rounded bg-slate-950 p-2">
+            <option value="contributor">Contributor</option>
+            <option value="owner">Owner</option>
+            <option value="leader">Leader</option>
+          </select>
+        </label>
+
+        <div id="assign-people-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2"></div>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="assign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="assign-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Assign</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="unassign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="unassign-modal-title" class="text-lg font-semibold">Unassign People</h3>
+          <button id="unassign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+        <div id="unassign-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2 text-sm"></div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="unassign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="unassign-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold">Unassign selected</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="challenge-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="challenge-modal-title" class="text-lg font-semibold">Add Challenge</h3>
+          <button id="challenge-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+        <form id="challenge-modal-form">
+          <input type="hidden" name="id" />
+          <label class="mb-2 block text-sm">Title<input required name="title" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Description<textarea required name="description" class="mt-1 w-full rounded bg-slate-950 p-2"></textarea></label>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" id="challenge-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+            <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Challenge</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+
+    <div id="people-overview-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="people-overview-modal-title" class="text-lg font-semibold">Person assignments</h3>
+          <button id="people-overview-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+        <div id="people-overview-modal-body" class="max-h-[70vh] overflow-y-auto text-sm"></div>
+      </div>
+    </div>
+
+    <script>
+      const state = {
+        showAdmin: false,
+        adminTab: 'people',
+        homeTab: 'client-teams',
+        selectedProjectId: '',
+        meta: { trades: [], levels: [], priorities: [] },
+        people: [],
+        clients: [],
+        projectsPayload: { projects: [], challenges: [], assignments: [] },
+        assignModal: {
+          open: false,
+          challengeId: null,
+          challengeTitle: '',
+          assignmentId: null,
+          selectedPersonId: '',
+          search: '',
+          role: 'contributor'
+        },
+        unassignModal: {
+          open: false,
+          challengeId: null,
+          challengeTitle: '',
+          selectedAssignmentIds: []
+        },
+        challengeModal: {
+          open: false,
+          challengeId: null
+        },
+        listenersBound: {
+          header: false,
+          footer: false,
+          assignModal: false,
+          unassignModal: false,
+          challengeModal: false,
+          challengeModalForm: false,
+          exportModal: false,
+          importModal: false,
+          peopleOverviewModal: false
+        },
+        assignSubmitting: false,
+        challengeSubmitting: false,
+        peopleSort: 'name_asc',
+        clientsSort: 'name_asc',
+        adminProjectsSort: 'project_asc',
+        challengesSort: 'title_asc',
+        clientTeamsSort: 'product_asc',
+        exportModalOpen: false,
+        importModalOpen: false,
+        importPreviewData: null,
+        peopleOverviewSort: 'name_asc',
+        peopleOverviewModal: { open: false, personId: null }
+      };
+
+      const adminTabs = [
+        { id: 'people', label: 'People View' },
+        { id: 'clients', label: 'Client View' },
+        { id: 'projects', label: 'Project View' }
+      ];
+
+      function showMessage(message, type = 'ok', options = {}) {
+        const { actionLabel, onAction } = options;
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto rounded-md border px-3 py-2 text-sm shadow-lg transition duration-300 ${
+          type === 'error'
+            ? 'border-rose-500/50 bg-rose-500/10 text-rose-200'
+            : type === 'warning'
+              ? 'border-amber-500/50 bg-amber-500/10 text-amber-200'
+              : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-200'
+        }`;
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-4px)';
+        const text = document.createElement('span');
+        text.textContent = message;
+        toast.appendChild(text);
+
+        if (actionLabel && typeof onAction === 'function') {
+          toast.classList.add('flex', 'items-center', 'justify-between', 'gap-2');
+
+          const actionButton = document.createElement('button');
+          actionButton.type = 'button';
+          actionButton.className = 'rounded border border-current/40 px-2 py-1 text-xs font-semibold hover:bg-slate-900/60';
+          actionButton.textContent = actionLabel;
+          actionButton.addEventListener('click', async () => {
+            actionButton.disabled = true;
+            await onAction();
+            toast.remove();
+          });
+          toast.appendChild(actionButton);
+        }
+
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateY(0)';
+        });
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(-4px)';
+          setTimeout(() => toast.remove(), 300);
+        }, 3500);
+      }
+
+      function formatEuro(cents) {
+        return (Number(cents || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+      }
+
+      function formatEuroWhole(cents) {
+        return (Number(cents || 0) / 100).toLocaleString('de-DE', {
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        });
+      }
+
+
+      function getPriorityPresentation(priorityName) {
+        const normalized = String(priorityName || '').toLowerCase();
+        if (normalized.includes('hero')) {
+          return { rank: 0, classes: 'border-yellow-300/70 bg-gradient-to-r from-amber-500 to-yellow-300 text-slate-900', label: '⭐️ Hero' };
+        }
+        if (normalized.includes('rising star')) {
+          return { rank: 1, classes: 'border-slate-300/70 bg-gradient-to-r from-slate-400 to-slate-200 text-slate-900', label: '✨ Rising Star' };
+        }
+        if (normalized.includes('solid')) {
+          return { rank: 2, classes: 'border-slate-300/70 bg-gradient-to-r from-white to-slate-200 text-slate-900', label: '☑️ Solid' };
+        }
+        if (normalized.includes('maintenance')) {
+          return { rank: 3, classes: 'border-slate-500/70 bg-gradient-to-r from-slate-600 to-slate-500 text-slate-100', label: '🛠️ Maintenance' };
+        }
+        if (normalized.includes('small client')) {
+          return { rank: 4, classes: 'border-slate-700/70 bg-gradient-to-r from-slate-800 to-slate-700 text-slate-100', label: '🔬 Small Client' };
+        }
+        if (normalized.includes('outphasing')) {
+          return { rank: 5, classes: 'border-rose-400/70 bg-gradient-to-r from-rose-700 to-rose-500 text-rose-50', label: '❌ Outphasing' };
+        }
+
+        return { rank: 99, classes: 'border-slate-500/70 bg-slate-700 text-slate-100', label: String(priorityName || 'Unknown') };
+      }
+
+      function renderPriorityPill(priorityName) {
+        const priority = getPriorityPresentation(priorityName);
+        return `<span class="inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${priority.classes}">${priority.label}</span>`;
+      }
+
+      async function api(url, options = {}) {
+        const response = await fetch(url, {
+          headers: { 'Content-Type': 'application/json' },
+          ...options
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({ error: 'Request failed.' }));
+          throw new Error(data.error || 'Request failed.');
+        }
+
+        if (response.status === 204) {
+          return null;
+        }
+
+        return response.json();
+      }
+
+      async function loadData() {
+        state.meta = await api('/api/meta');
+        state.people = await api('/api/people');
+        state.clients = await api('/api/clients');
+        state.projectsPayload = await api('/api/projects');
+
+      }
+
+      function optionList(items, selected) {
+        return items
+          .map((item) => `<option value="${item.id}" ${String(selected) === String(item.id) ? 'selected' : ''}>${item.name}</option>`)
+          .join('');
+      }
+
+      function peopleView() {
+        const levelOrder = new Map(state.meta.levels.map((level, index) => [String(level.name || '').toLowerCase(), index]));
+        const sortedPeople = [...state.people].sort((a, b) => {
+          const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+          const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+          const tradeA = String(a.trade_name || '').toLowerCase();
+          const tradeB = String(b.trade_name || '').toLowerCase();
+          const levelA = levelOrder.get(String(a.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+          const levelB = levelOrder.get(String(b.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+
+          switch (state.peopleSort) {
+            case 'name_desc':
+              return nameB.localeCompare(nameA);
+            case 'trade_asc':
+              return tradeA.localeCompare(tradeB) || nameA.localeCompare(nameB);
+            case 'trade_desc':
+              return tradeB.localeCompare(tradeA) || nameA.localeCompare(nameB);
+            case 'level_asc':
+              return levelA - levelB || nameA.localeCompare(nameB);
+            case 'level_desc':
+              return levelB - levelA || nameA.localeCompare(nameB);
+            case 'name_asc':
+            default:
+              return nameA.localeCompare(nameB);
+          }
+        });
+
+        const rows = sortedPeople
+          .map((person) => `<tr class="border-t border-slate-800">
+              <td class="p-2">${person.first_name} ${person.last_name}</td>
+              <td class="p-2">${person.trade_name}</td>
+              <td class="p-2">${person.level_name}</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editPerson(${JSON.stringify(person)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button>
+              </td>
+            </tr>`)
+          .join('');
+
+        return `<div class="space-y-6">
+            <form id="person-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Person</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">First Name<input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Last Name<input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Trade<select required name="tradeId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.trades)}</select></label>
+              <label class="mb-2 block text-sm">Level<select required name="levelId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.levels)}</select></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Person</button>
+            </form>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <div class="mb-3">
+                <h2 class="text-lg font-semibold">People</h2>
+              </div>
+              <table class="w-full text-left text-sm">
+                <thead><tr class="text-slate-400">
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('name')">Name ${state.peopleSort.startsWith('name_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('trade')">Trade ${state.peopleSort.startsWith('trade_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('level')">Level ${state.peopleSort.startsWith('level_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2">Actions</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      function peopleOverviewView() {
+        function assignmentWarningClass(count) {
+          if (count === 0) return 'text-slate-100';
+          if (count <= 2) return 'text-emerald-300';
+          if (count <= 4) return 'text-amber-300';
+          return 'text-rose-300';
+        }
+
+        function quantityWarningClass(quantity) {
+          if (quantity === 0) return 'text-slate-100';
+          if (quantity < 100) return 'text-amber-300';
+          if (quantity === 100) return 'text-emerald-300';
+          return 'text-rose-300';
+        }
+
+        const byPerson = new Map();
+        for (const assignment of state.projectsPayload.assignments) {
+          const key = String(assignment.person_id);
+          if (!byPerson.has(key)) byPerson.set(key, []);
+          byPerson.get(key).push(assignment);
+        }
+
+        const levelOrder = new Map(state.meta.levels.map((level, index) => [String(level.name || '').toLowerCase(), index]));
+        const rowsData = state.people.map((person) => {
+          const assignments = byPerson.get(String(person.id)) || [];
+          const assignmentCount = assignments.length;
+          const ownershipCount = assignments.filter((a) => a.is_owner).length;
+          const leadershipCount = assignments.filter((a) => a.is_leader).length;
+          const quantityTotal = Math.round(assignments.reduce((sum, a) => sum + Number(a.quantity || 0), 0));
+          return {
+            ...person,
+            assignmentCount,
+            ownershipCount,
+            leadershipCount,
+            quantityTotal,
+            nameSort: `${person.first_name} ${person.last_name}`.toLowerCase(),
+            tradeSort: String(person.trade_name || '').toLowerCase(),
+            levelSort: levelOrder.get(String(person.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER
+          };
+        });
+
+        const sorted = [...rowsData].sort((a, b) => {
+          switch (state.peopleOverviewSort) {
+            case 'name_desc':
+              return b.nameSort.localeCompare(a.nameSort);
+            case 'trade_asc':
+              return a.tradeSort.localeCompare(b.tradeSort) || a.nameSort.localeCompare(b.nameSort);
+            case 'trade_desc':
+              return b.tradeSort.localeCompare(a.tradeSort) || a.nameSort.localeCompare(b.nameSort);
+            case 'level_asc':
+              return a.levelSort - b.levelSort || a.nameSort.localeCompare(b.nameSort);
+            case 'level_desc':
+              return b.levelSort - a.levelSort || a.nameSort.localeCompare(b.nameSort);
+            case 'assignments_asc':
+              return a.assignmentCount - b.assignmentCount || a.nameSort.localeCompare(b.nameSort);
+            case 'assignments_desc':
+              return b.assignmentCount - a.assignmentCount || a.nameSort.localeCompare(b.nameSort);
+            case 'ownerships_asc':
+              return a.ownershipCount - b.ownershipCount || a.nameSort.localeCompare(b.nameSort);
+            case 'ownerships_desc':
+              return b.ownershipCount - a.ownershipCount || a.nameSort.localeCompare(b.nameSort);
+            case 'leaderships_asc':
+              return a.leadershipCount - b.leadershipCount || a.nameSort.localeCompare(b.nameSort);
+            case 'leaderships_desc':
+              return b.leadershipCount - a.leadershipCount || a.nameSort.localeCompare(b.nameSort);
+            case 'quantity_asc':
+              return a.quantityTotal - b.quantityTotal || a.nameSort.localeCompare(b.nameSort);
+            case 'quantity_desc':
+              return b.quantityTotal - a.quantityTotal || a.nameSort.localeCompare(b.nameSort);
+            case 'name_asc':
+            default:
+              return a.nameSort.localeCompare(b.nameSort);
+          }
+        });
+
+        const statButton = (personId, value, className, label) => {
+          if (!value) {
+            return `<span class="font-semibold ${className}">${label}</span>`;
+          }
+
+          return `<button class="font-semibold underline decoration-dotted ${className}" onclick="openPeopleOverviewModal(${personId})">${label}</button>`;
+        };
+
+        const rows = sorted.map((person) => `<tr class="border-t border-slate-800">
+            <td class="p-2">${person.first_name} ${person.last_name}</td>
+            <td class="p-2">${person.trade_name}</td>
+            <td class="p-2">${person.level_name}</td>
+            <td class="p-2">${statButton(person.id, person.assignmentCount, assignmentWarningClass(person.assignmentCount), person.assignmentCount)}</td>
+            <td class="p-2">${statButton(person.id, person.ownershipCount, 'text-blue-300', person.ownershipCount)}</td>
+            <td class="p-2">${statButton(person.id, person.leadershipCount, 'text-emerald-300', person.leadershipCount)}</td>
+            <td class="p-2">${statButton(person.id, person.quantityTotal, quantityWarningClass(person.quantityTotal), `${person.quantityTotal}%`)}</td>
+          </tr>`).join('');
+
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <div class="mb-3">
+            <h3 class="text-lg font-semibold">People Overview</h3>
+            <p class="text-xs text-slate-400">Organization-wide assignment, role and quantity insights.</p>
+          </div>
+          <table class="w-full text-left text-sm">
+            <thead><tr class="text-slate-400">
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('name')">Name ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('trade')">Title ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('level')">Level ${state.peopleOverviewSort.startsWith('level_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">Assignments ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">Ownerships ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">Leaderships ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">Quantity ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+      }
+
+function clientsView() {
+        const sortedClients = [...state.clients].sort((a, b) => {
+          const nameA = String(a.name || '').toLowerCase();
+          const nameB = String(b.name || '').toLowerCase();
+          const locationA = String(a.location || '').toLowerCase();
+          const locationB = String(b.location || '').toLowerCase();
+          const sinceA = String(a.since_month || '');
+          const sinceB = String(b.since_month || '');
+          const priorityA = String(a.priority_name || '').toLowerCase();
+          const priorityB = String(b.priority_name || '').toLowerCase();
+          const projectsA = Number(a.project_count || 0);
+          const projectsB = Number(b.project_count || 0);
+
+          switch (state.clientsSort) {
+            case 'name_desc':
+              return nameB.localeCompare(nameA);
+            case 'location_asc':
+              return locationA.localeCompare(locationB) || nameA.localeCompare(nameB);
+            case 'location_desc':
+              return locationB.localeCompare(locationA) || nameA.localeCompare(nameB);
+            case 'since_asc':
+              return sinceA.localeCompare(sinceB) || nameA.localeCompare(nameB);
+            case 'since_desc':
+              return sinceB.localeCompare(sinceA) || nameA.localeCompare(nameB);
+            case 'priority_asc':
+              return priorityA.localeCompare(priorityB) || nameA.localeCompare(nameB);
+            case 'priority_desc':
+              return priorityB.localeCompare(priorityA) || nameA.localeCompare(nameB);
+            case 'projects_asc':
+              return projectsA - projectsB || nameA.localeCompare(nameB);
+            case 'projects_desc':
+              return projectsB - projectsA || nameA.localeCompare(nameB);
+            case 'name_asc':
+            default:
+              return nameA.localeCompare(nameB);
+          }
+        });
+
+        const rows = sortedClients
+          .map(
+            (client) => `<tr class="border-t border-slate-800">
+              <td class="p-2">${client.name}</td>
+              <td class="p-2">${client.location}</td>
+              <td class="p-2">${client.since_month}</td>
+              <td class="p-2">${renderPriorityPill(client.priority_name)}</td>
+              <td class="p-2">${client.project_count}</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editClient(${JSON.stringify(client)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteClient(${client.id})'>Delete</button>
+              </td>
+            </tr>`
+          )
+          .join('');
+
+        return `<div class="space-y-6">
+            <form id="client-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Client</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Location<input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Since (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Priority<select required name="priorityId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.priorities)}</select></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Client</button>
+            </form>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Clients</h2>
+              <table class="w-full text-left text-sm">
+                <thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('name')">Name ${state.clientsSort.startsWith('name_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('location')">Location ${state.clientsSort.startsWith('location_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('since')">Since ${state.clientsSort.startsWith('since_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('priority')">Priority ${state.clientsSort.startsWith('priority_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('projects')">Projects ${state.clientsSort.startsWith('projects_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      function administrationProjectsView() {
+        const projects = state.projectsPayload.projects;
+        const sortedProjects = [...projects].sort((a, b) => {
+          const projectA = String(a.name || '').toLowerCase();
+          const projectB = String(b.name || '').toLowerCase();
+          const datesA = `${a.start_month || ''}-${a.end_month || ''}`;
+          const datesB = `${b.start_month || ''}-${b.end_month || ''}`;
+          const budgetA = Number(a.budget_cents || 0);
+          const budgetB = Number(b.budget_cents || 0);
+
+          switch (state.adminProjectsSort) {
+            case 'project_desc':
+              return projectB.localeCompare(projectA);
+            case 'dates_asc':
+              return datesA.localeCompare(datesB) || projectA.localeCompare(projectB);
+            case 'dates_desc':
+              return datesB.localeCompare(datesA) || projectA.localeCompare(projectB);
+            case 'budget_asc':
+              return budgetA - budgetB || projectA.localeCompare(projectB);
+            case 'budget_desc':
+              return budgetB - budgetA || projectA.localeCompare(projectB);
+            case 'project_asc':
+            default:
+              return projectA.localeCompare(projectB);
+          }
+        });
+
+        const rows = sortedProjects
+          .map(
+            (project) => `<tr class="border-t border-slate-800">
+              <td class="p-2">${project.name}<div class="text-xs text-slate-400">${project.client_name}</div></td>
+              <td class="p-2">${project.start_month} → ${project.end_month || 'open'}</td>
+              <td class="p-2">€ ${Math.round(Number(project.budget_cents || 0) / 100).toLocaleString('de-DE')}</td>
+              <td class="p-2">
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editProject(${JSON.stringify(project)})'>Edit</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteProject(${project.id})'>Delete</button>
+              </td>
+            </tr>`
+          )
+          .join('');
+
+        return `<div class="space-y-6">
+            <form id="project-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Add / Edit Project</h2>
+              <input type="hidden" name="id" />
+              <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Client<select required name="clientId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.clients)}</select></label>
+              <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">End (yyyy-mm optional)<input name="endMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <label class="mb-2 block text-sm">Budget in EUR<input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Project</button>
+            </form>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <h2 class="mb-3 text-lg font-semibold">Projects</h2>
+              <table class="w-full text-left text-sm">
+                <thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setAdminProjectsSortField('project')">Project ${state.adminProjectsSort.startsWith('project_') ? (state.adminProjectsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setAdminProjectsSortField('dates')">Dates ${state.adminProjectsSort.startsWith('dates_') ? (state.adminProjectsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setAdminProjectsSortField('budget')">Budget ${state.adminProjectsSort.startsWith('budget_') ? (state.adminProjectsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      function ownershipView() {
+        const projects = state.projectsPayload.projects;
+
+        if (projects.length === 0) {
+          return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-300">No projects available yet. Ask an admin to create one first.</div>`;
+        }
+
+        const hasSelectedProject = state.selectedProjectId && projects.some((project) => String(project.id) === String(state.selectedProjectId));
+        if (!hasSelectedProject) {
+          state.selectedProjectId = '';
+
+          const projectsWithTeams = projects.map((project) => {
+            const projectAssignments = state.projectsPayload.assignments.filter((assignment) => Number(assignment.project_id) === Number(project.id));
+            const ownerNames = [];
+            const leaderNames = [];
+            const ownerSeen = new Set();
+            const leaderSeen = new Set();
+
+            for (const assignment of projectAssignments) {
+              const personId = String(assignment.person_id);
+              const fullName = `${assignment.first_name} ${assignment.last_name}`;
+
+              if (assignment.is_owner) {
+                if (!ownerSeen.has(personId)) {
+                  ownerSeen.add(personId);
+                  ownerNames.push(fullName);
+                }
+                continue;
+              }
+
+              if (assignment.is_leader) {
+                if (!ownerSeen.has(personId) && !leaderSeen.has(personId)) {
+                  leaderSeen.add(personId);
+                  leaderNames.push(fullName);
+                }
+              }
+            }
+
+            return {
+              ...project,
+              ownerNames,
+              leaderNames,
+              ownerSort: ownerNames.join(', ').toLowerCase(),
+              leaderSort: leaderNames.join(', ').toLowerCase(),
+              productSort: String(project.name || '').toLowerCase(),
+              clientSort: String(project.client_name || '').toLowerCase(),
+              budgetSort: Number(project.budget_cents || 0),
+              prioritySort: getPriorityPresentation(project.priority_name).rank
+            };
+          });
+
+          const sortedProjects = [...projectsWithTeams].sort((a, b) => {
+            switch (state.clientTeamsSort) {
+              case 'product_desc':
+                return b.productSort.localeCompare(a.productSort) || a.clientSort.localeCompare(b.clientSort);
+              case 'budget_asc':
+                return a.budgetSort - b.budgetSort || a.productSort.localeCompare(b.productSort);
+              case 'budget_desc':
+                return b.budgetSort - a.budgetSort || a.productSort.localeCompare(b.productSort);
+              case 'owner_asc':
+                return a.ownerSort.localeCompare(b.ownerSort) || a.productSort.localeCompare(b.productSort);
+              case 'owner_desc':
+                return b.ownerSort.localeCompare(a.ownerSort) || a.productSort.localeCompare(b.productSort);
+              case 'leaders_asc':
+                return a.leaderSort.localeCompare(b.leaderSort) || a.productSort.localeCompare(b.productSort);
+              case 'leaders_desc':
+                return b.leaderSort.localeCompare(a.leaderSort) || a.productSort.localeCompare(b.productSort);
+              case 'priority_asc':
+                return a.prioritySort - b.prioritySort || a.productSort.localeCompare(b.productSort);
+              case 'priority_desc':
+                return b.prioritySort - a.prioritySort || a.productSort.localeCompare(b.productSort);
+              case 'product_asc':
+              default:
+                return a.productSort.localeCompare(b.productSort) || a.clientSort.localeCompare(b.clientSort);
+            }
+          });
+
+          const projectRows = sortedProjects
+            .map((project) => {
+              const noPeopleMessage = `There's no people assigned to this project, yet`;
+              const ownerPills = project.ownerNames.length
+                ? project.ownerNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${name}</span>`).join('')
+                : `<span class="text-slate-400">${noPeopleMessage}</span>`;
+              const leaderPills = project.leaderNames.length
+                ? project.leaderNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-emerald-400/70 bg-emerald-600 px-2 py-1 text-xs text-emerald-50">${name}</span>`).join('')
+                : `<span class="text-slate-400">${noPeopleMessage}</span>`;
+
+              return `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openProjectDetail(${project.id})">
+                <td class="p-2">
+                  <div class="font-medium text-slate-100">${project.name}</div>
+                  <div class="text-xs text-slate-400">${project.client_name}</div>
+                </td>
+                <td class="p-2 text-slate-300">${formatEuroWhole(project.budget_cents)}</td>
+                <td class="p-2 text-slate-300">${renderPriorityPill(project.priority_name)}</td>
+                <td class="p-2 text-slate-300">${ownerPills}</td>
+                <td class="p-2 text-slate-300">${leaderPills}</td>
+              </tr>`;
+            })
+            .join('');
+
+          return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div class="mb-3">
+              <h3 class="text-lg font-semibold">Client Teams</h3>
+              <p class="text-xs text-slate-400">Select a client-team to see and update their challenges</p>
+            </div>
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="text-slate-400">
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('product')">Product ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('budget')">Budget ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('priority')">Priority ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('owner')">Owner ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">Leaders ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                </tr>
+              </thead>
+              <tbody>${projectRows}</tbody>
+            </table>
+          </div>`;
+        }
+
+        const selectedProjectId = Number(state.selectedProjectId);
+        const selectedProject = projects.find((project) => Number(project.id) === selectedProjectId);
+
+        if (!selectedProject) {
+          state.selectedProjectId = '';
+          return ownershipView();
+        }
+
+        const projectChallenges = state.projectsPayload.challenges.filter((challenge) => Number(challenge.project_id) === Number(selectedProject.id));
+        const projectAssignments = state.projectsPayload.assignments.filter((assignment) => Number(assignment.project_id) === Number(selectedProject.id));
+        const assignmentsByChallenge = new Map();
+        for (const assignment of projectAssignments) {
+          const key = String(assignment.challenge_id);
+          if (!assignmentsByChallenge.has(key)) assignmentsByChallenge.set(key, []);
+          assignmentsByChallenge.get(key).push(assignment);
+        }
+
+        const assignmentsByPerson = new Map();
+        for (const assignment of projectAssignments) {
+          const key = String(assignment.person_id);
+          if (!assignmentsByPerson.has(key)) assignmentsByPerson.set(key, []);
+          assignmentsByPerson.get(key).push(assignment);
+        }
+
+        const ownerIds = new Set();
+        const leaderIds = new Set();
+        const contributorIds = new Set();
+
+        for (const assignment of projectAssignments) {
+          const personId = String(assignment.person_id);
+          if (assignment.is_owner) {
+            ownerIds.add(personId);
+          } else if (assignment.is_leader) {
+            leaderIds.add(personId);
+          } else {
+            contributorIds.add(personId);
+          }
+        }
+
+        for (const personId of ownerIds) {
+          leaderIds.delete(personId);
+          contributorIds.delete(personId);
+        }
+
+        for (const personId of leaderIds) {
+          contributorIds.delete(personId);
+        }
+
+        function renderTierPeople(ids, tierLabel, tierClass) {
+          const entries = Array.from(ids)
+            .map((personId) => {
+              const personAssignments = assignmentsByPerson.get(personId) || [];
+              if (personAssignments.length === 0) return '';
+              const sample = personAssignments[0];
+              const totalQuantity = personAssignments.reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
+              const quantity = Math.round(totalQuantity);
+              const name = `${sample.first_name} ${sample.last_name}`;
+              return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}%)</button>`;
+            })
+            .filter(Boolean)
+            .join(' ');
+
+          return `<div class="rounded border border-slate-700 bg-slate-950/60 p-3">
+            <h4 class="mb-2 text-sm font-semibold text-slate-200">${tierLabel}</h4>
+            <div class="flex flex-wrap gap-2">${entries || '<span class="text-xs text-slate-400">None</span>'}</div>
+          </div>`;
+        }
+
+        const projectPeopleOverview = `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <h3 class="mb-3 text-lg font-semibold">Project Team Overview</h3>
+          <p class="mb-3 text-xs text-slate-400">Click a name to change quantity in full percentage points for all their assignments in this project.</p>
+          <div class="space-y-3">
+            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50')}
+            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50')}
+            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-500 bg-slate-700 text-slate-100')}
+          </div>
+        </div>`;
+
+        const assigneeSortInfoByChallenge = new Map();
+        for (const challenge of projectChallenges) {
+          const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
+          const normalized = assignments
+            .map((assignment) => {
+              const roleRank = assignment.is_owner ? 0 : assignment.is_leader ? 1 : 2;
+              const name = `${assignment.first_name} ${assignment.last_name}`.trim().toLowerCase();
+              return { roleRank, name };
+            })
+            .sort((a, b) => a.roleRank - b.roleRank || a.name.localeCompare(b.name));
+
+          assigneeSortInfoByChallenge.set(String(challenge.id), {
+            roleRank: normalized[0]?.roleRank ?? 3,
+            alphaKey: normalized.map((entry) => entry.name).join('|')
+          });
+        }
+
+        const sortedChallenges = [...projectChallenges].sort((a, b) => {
+          const titleA = String(a.title || '').toLowerCase();
+          const titleB = String(b.title || '').toLowerCase();
+          const descriptionA = String(a.description || '').toLowerCase();
+          const descriptionB = String(b.description || '').toLowerCase();
+          const assigneeA = assigneeSortInfoByChallenge.get(String(a.id)) || { roleRank: 3, alphaKey: '' };
+          const assigneeB = assigneeSortInfoByChallenge.get(String(b.id)) || { roleRank: 3, alphaKey: '' };
+
+          switch (state.challengesSort) {
+            case 'title_desc':
+              return titleB.localeCompare(titleA);
+            case 'description_asc':
+              return descriptionA.localeCompare(descriptionB) || titleA.localeCompare(titleB);
+            case 'description_desc':
+              return descriptionB.localeCompare(descriptionA) || titleA.localeCompare(titleB);
+            case 'assignees_asc':
+              return assigneeA.roleRank - assigneeB.roleRank || assigneeA.alphaKey.localeCompare(assigneeB.alphaKey) || titleA.localeCompare(titleB);
+            case 'assignees_desc':
+              return assigneeB.roleRank - assigneeA.roleRank || assigneeB.alphaKey.localeCompare(assigneeA.alphaKey) || titleA.localeCompare(titleB);
+            case 'title_asc':
+            default:
+              return titleA.localeCompare(titleB);
+          }
+        });
+
+        const challengeRows = sortedChallenges
+          .map((challenge) => {
+            const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
+            const assignees = assignments.length
+              ? assignments
+                  .map((assignment) => {
+                    const roleClass = assignment.is_owner
+                      ? 'border-blue-400/70 bg-blue-600 text-blue-50'
+                      : assignment.is_leader
+                        ? 'border-emerald-400/70 bg-emerald-600 text-emerald-50'
+                        : 'border-slate-500 bg-slate-700 text-slate-100';
+                    const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+                    return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name} (${roleLabel})</button>`;
+                  })
+                  .join('')
+              : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
+            const actionItems = [
+              `<button class="w-full rounded border border-slate-600 px-2 py-1 text-left text-xs hover:bg-slate-800" onclick='openChallengeModal(${JSON.stringify(challenge)})'>Edit</button>`,
+              `<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteChallenge(${challenge.id})'>Delete</button>`
+            ];
+
+            if (assignments.length >= 1) {
+              actionItems.push(`<button class="w-full rounded border border-emerald-500/50 px-2 py-1 text-left text-xs text-emerald-300 hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Add additional assignee</button>`);
+            }
+
+            if (assignments.length === 1) {
+              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteAssignment(${assignments[0].id})'>Unassign ${assignments[0].first_name}</button>`);
+            } else if (assignments.length > 1) {
+              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='openUnassignModal(${challenge.id})'>Unassign</button>`);
+            }
+
+            const actionsMenu = `<details class="relative inline-block">
+              <summary class="list-none cursor-pointer rounded border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800">...</summary>
+              <div class="absolute right-0 z-30 mt-1 w-52 space-y-1 rounded border border-slate-700 bg-slate-900 p-2 shadow-xl">${actionItems.join('')}</div>
+            </details>`;
+
+            return `<tr class="border-t border-slate-800">
+              <td class="p-2">${challenge.title}</td>
+              <td class="p-2">${challenge.description}</td>
+              <td class="p-2">${assignees}</td>
+              <td class="p-2">${actionsMenu}</td>
+            </tr>`;
+          })
+          .join('');
+
+        return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div class="flex flex-wrap items-center gap-2 text-sm text-slate-300">
+              <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>Client Teams</button>
+              <span>/</span>
+              <span class="font-semibold text-slate-100">${selectedProject.name} (${selectedProject.client_name})</span>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div class="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-lg font-semibold">Challenge Overview</h3>
+                <p class="text-xs text-slate-400">What challenges need to be tackled to build a successful customer relationship?</p>
+              </div>
+              <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>Add Challenge</button>
+            </div>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('title')">Title ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('description')">Description ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('assignees')">Assignee ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
+          </div>
+
+          ${projectPeopleOverview}`;
+      }
+
+function filteredPeople() {
+        const search = state.assignModal.search.trim().toLowerCase();
+        if (!search) {
+          return state.people;
+        }
+
+        return state.people.filter((person) => `${person.first_name} ${person.last_name}`.toLowerCase().includes(search));
+      }
+
+      function renderAssignModal() {
+        const modal = document.getElementById('assign-modal');
+        modal.classList.toggle('hidden', !state.assignModal.open);
+        modal.classList.toggle('flex', state.assignModal.open);
+
+        if (!state.assignModal.open) {
+          return;
+        }
+
+        document.getElementById('assign-modal-title').textContent = `${state.assignModal.assignmentId ? 'Change Assignment' : 'Assign People'} · ${state.assignModal.challengeTitle}`;
+        document.getElementById('assign-search').value = state.assignModal.search;
+        document.getElementById('assign-role').value = state.assignModal.role;
+        const people = filteredPeople();
+        const list = document.getElementById('assign-people-list');
+
+        if (people.length === 0) {
+          list.innerHTML = '<p class="p-2 text-sm text-slate-400">No matching people found.</p>';
+          state.assignModal.selectedPersonId = '';
+          return;
+        }
+
+        if (!people.some((person) => String(person.id) === String(state.assignModal.selectedPersonId))) {
+          state.assignModal.selectedPersonId = String(people[0].id);
+        }
+
+        list.innerHTML = people
+          .map(
+            (person) => `<label class="mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-900">
+              <input type="radio" name="assign-person" value="${person.id}" ${String(state.assignModal.selectedPersonId) === String(person.id) ? 'checked' : ''} />
+              <span>${person.first_name} ${person.last_name} <span class="text-xs text-slate-400">(${person.trade_name})</span></span>
+            </label>`
+          )
+          .join('');
+
+        list.querySelectorAll('input[name="assign-person"]').forEach((input) => {
+          input.addEventListener('change', () => {
+            state.assignModal.selectedPersonId = input.value;
+          });
+        });
+      }
+
+      async function handleMutation(action, successMessage) {
+        try {
+          await action();
+          await loadData();
+          render();
+          showMessage(successMessage);
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      }
+
+      function renderAdminTabs() {
+        const root = document.getElementById('admin-tabs');
+        root.innerHTML = adminTabs
+          .map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" data-admin-tab="${tab.id}">${tab.label}</button>`)
+          .join('');
+
+        root.querySelectorAll('button').forEach((button) => {
+          button.addEventListener('click', () => {
+            state.adminTab = button.dataset.adminTab;
+            render();
+          });
+        });
+      }
+
+      function bindForms() {
+        const personForm = document.getElementById('person-form');
+        if (personForm) {
+          personForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(personForm).entries());
+            const id = payload.id;
+            delete payload.id;
+            await handleMutation(() => api(id ? `/api/people/${id}` : '/api/people', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Person saved.');
+            personForm.reset();
+          });
+        }
+
+        const clientForm = document.getElementById('client-form');
+        if (clientForm) {
+          clientForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(clientForm).entries());
+            const id = payload.id;
+            delete payload.id;
+            await handleMutation(() => api(id ? `/api/clients/${id}` : '/api/clients', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Client saved.');
+            clientForm.reset();
+          });
+        }
+
+        const projectForm = document.getElementById('project-form');
+        if (projectForm) {
+          projectForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = Object.fromEntries(new FormData(projectForm).entries());
+            const id = payload.id;
+            delete payload.id;
+            await handleMutation(() => api(id ? `/api/projects/${id}` : '/api/projects', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Project saved.');
+            projectForm.reset();
+          });
+        }
+
+        const challengeModalForm = document.getElementById('challenge-modal-form');
+        if (challengeModalForm && !state.listenersBound.challengeModalForm) {
+          state.listenersBound.challengeModalForm = true;
+          challengeModalForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (state.challengeSubmitting) return;
+
+            const payload = Object.fromEntries(new FormData(challengeModalForm).entries());
+            const id = payload.id;
+            delete payload.id;
+
+            state.challengeSubmitting = true;
+            const submitButton = challengeModalForm.querySelector('button[type="submit"], button:not([type])');
+            if (submitButton) submitButton.disabled = true;
+
+            try {
+              if (id) {
+                await handleMutation(() => api(`/api/challenges/${id}`, { method: 'PUT', body: JSON.stringify(payload) }), 'Challenge saved.');
+              } else {
+                await handleMutation(() => api(`/api/projects/${state.selectedProjectId}/challenges`, { method: 'POST', body: JSON.stringify(payload) }), 'Challenge saved.');
+              }
+              closeChallengeModal();
+            } finally {
+              state.challengeSubmitting = false;
+              if (submitButton) submitButton.disabled = false;
+            }
+          });
+        }
+
+      }
+
+      async function downloadExport(format) {
+        if (format === 'csv') {
+          const response = await fetch('/api/export?format=csv');
+          if (!response.ok) {
+            throw new Error('CSV export failed.');
+          }
+          const csv = await response.text();
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `projectory-export-${new Date().toISOString().slice(0, 10)}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          return;
+        }
+
+        const payload = await api('/api/export');
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `projectory-export-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function renderExportModal() {
+        const modal = document.getElementById('export-modal');
+        modal.classList.toggle('hidden', !state.exportModalOpen);
+        modal.classList.toggle('flex', state.exportModalOpen);
+      }
+
+      function closeExportModal() {
+        state.exportModalOpen = false;
+        renderExportModal();
+      }
+
+      function openExportModal() {
+        state.exportModalOpen = true;
+        renderExportModal();
+      }
+
+      function renderImportModal() {
+        const modal = document.getElementById('import-modal');
+        modal.classList.toggle('hidden', !state.importModalOpen);
+        modal.classList.toggle('flex', state.importModalOpen);
+
+        const preview = document.getElementById('import-preview');
+        const confirmButton = document.getElementById('import-confirm');
+
+        if (!state.importPreviewData) {
+          preview.classList.add('hidden');
+          if (confirmButton) confirmButton.disabled = true;
+          return;
+        }
+
+        preview.classList.remove('hidden');
+        document.getElementById('import-count-people').textContent = state.importPreviewData.summary.people;
+        document.getElementById('import-count-clients').textContent = state.importPreviewData.summary.clients;
+        document.getElementById('import-count-projects').textContent = state.importPreviewData.summary.projects;
+        document.getElementById('import-count-challenges').textContent = state.importPreviewData.summary.challenges;
+        document.getElementById('import-count-assignments').textContent = state.importPreviewData.summary.assignments;
+        if (confirmButton) confirmButton.disabled = false;
+      }
+
+      function closeImportModal() {
+        state.importModalOpen = false;
+        state.importPreviewData = null;
+        const input = document.getElementById('import-file');
+        if (input) input.value = '';
+        renderImportModal();
+        renderPeopleOverviewModal();
+      }
+
+      function openImportModal() {
+        state.importModalOpen = true;
+        state.importPreviewData = null;
+        renderImportModal();
+        renderPeopleOverviewModal();
+      }
+
+      function detectImportFormat(file) {
+        const name = file.name.toLowerCase();
+        if (name.endsWith('.csv')) return 'csv';
+        return 'json';
+      }
+
+      async function previewImportFile(file) {
+        const format = detectImportFormat(file);
+        const text = await file.text();
+
+        if (format === 'json') {
+          const payload = JSON.parse(text);
+          const preview = await api('/api/import/preview', {
+            method: 'POST',
+            body: JSON.stringify({ format: 'json', data: payload.data })
+          });
+          state.importPreviewData = preview;
+          renderImportModal();
+        renderPeopleOverviewModal();
+          return;
+        }
+
+        const preview = await api('/api/import/preview', {
+          method: 'POST',
+          body: JSON.stringify({ format: 'csv', content: text })
+        });
+        state.importPreviewData = preview;
+        renderImportModal();
+        renderPeopleOverviewModal();
+      }
+
+      async function confirmImport() {
+        if (!state.importPreviewData?.data) {
+          showMessage('Please choose a valid JSON or CSV file first.', 'error');
+          return;
+        }
+
+        await api('/api/import', { method: 'POST', body: JSON.stringify({ data: state.importPreviewData.data }) });
+        await loadData();
+        render();
+        closeImportModal();
+        showMessage('Import completed.');
+      }
+
+      function bindFooterActions() {
+        if (state.listenersBound.footer) return;
+        state.listenersBound.footer = true;
+        document.getElementById('export-btn')?.addEventListener('click', openExportModal);
+        document.getElementById('import-btn')?.addEventListener('click', openImportModal);
+      }
+
+      function bindExportModalActions() {
+        if (state.listenersBound.exportModal) return;
+        state.listenersBound.exportModal = true;
+
+        document.getElementById('export-modal-close')?.addEventListener('click', closeExportModal);
+        document.getElementById('export-cancel')?.addEventListener('click', closeExportModal);
+        document.getElementById('export-confirm')?.addEventListener('click', async () => {
+          try {
+            const format = document.getElementById('export-format').value;
+            await downloadExport(format);
+            closeExportModal();
+            showMessage('Export completed.');
+          } catch (error) {
+            showMessage(error.message, 'error');
+          }
+        });
+      }
+
+      function bindImportModalActions() {
+        if (state.listenersBound.importModal) return;
+        state.listenersBound.importModal = true;
+
+        document.getElementById('import-modal-close')?.addEventListener('click', closeImportModal);
+        document.getElementById('import-cancel')?.addEventListener('click', closeImportModal);
+
+        document.getElementById('import-file')?.addEventListener('change', async (event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+
+          try {
+            await previewImportFile(file);
+          } catch (error) {
+            state.importPreviewData = null;
+            renderImportModal();
+        renderPeopleOverviewModal();
+            showMessage(`Import preview failed: ${error.message}`, 'error');
+          }
+        });
+
+        document.getElementById('import-confirm')?.addEventListener('click', async () => {
+          try {
+            await confirmImport();
+          } catch (error) {
+            showMessage(`Import failed: ${error.message}`, 'error');
+          }
+        });
+      }
+
+      function bindHeaderActions() {
+        if (state.listenersBound.header) return;
+        state.listenersBound.header = true;
+        document.getElementById('admin-toggle')?.addEventListener('click', () => {
+          state.showAdmin = true;
+          render();
+        });
+
+        document.getElementById('admin-close')?.addEventListener('click', () => {
+          state.showAdmin = false;
+          render();
+        });
+      }
+
+      function bindChallengeModalActions() {
+        if (state.listenersBound.challengeModal) return;
+        state.listenersBound.challengeModal = true;
+        document.getElementById('challenge-modal-close')?.addEventListener('click', closeChallengeModal);
+        document.getElementById('challenge-cancel')?.addEventListener('click', closeChallengeModal);
+      }
+
+      function renderUnassignModal() {
+        const modal = document.getElementById('unassign-modal');
+        modal.classList.toggle('hidden', !state.unassignModal.open);
+        modal.classList.toggle('flex', state.unassignModal.open);
+
+        if (!state.unassignModal.open) {
+          return;
+        }
+
+        document.getElementById('unassign-modal-title').textContent = `Unassign People · ${state.unassignModal.challengeTitle}`;
+
+        const assignments = state.projectsPayload.assignments.filter(
+          (assignment) => String(assignment.challenge_id) === String(state.unassignModal.challengeId)
+        );
+
+        const list = document.getElementById('unassign-list');
+        list.innerHTML = assignments
+          .map((assignment) => {
+            const checked = state.unassignModal.selectedAssignmentIds.includes(String(assignment.id)) ? 'checked' : '';
+            const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+            return `<label class="mb-1 flex items-center gap-2 rounded px-2 py-1 hover:bg-slate-900">
+              <input type="checkbox" data-unassign-id="${assignment.id}" ${checked} />
+              <span>${assignment.first_name} ${assignment.last_name} (${roleLabel})</span>
+            </label>`;
+          })
+          .join('');
+
+        list.querySelectorAll('input[data-unassign-id]').forEach((input) => {
+          input.addEventListener('change', () => {
+            const id = input.getAttribute('data-unassign-id');
+            if (input.checked) {
+              if (!state.unassignModal.selectedAssignmentIds.includes(id)) {
+                state.unassignModal.selectedAssignmentIds.push(id);
+              }
+            } else {
+              state.unassignModal.selectedAssignmentIds = state.unassignModal.selectedAssignmentIds.filter((item) => item !== id);
+            }
+          });
+        });
+      }
+
+      function closeUnassignModal() {
+        state.unassignModal.open = false;
+        state.unassignModal.challengeId = null;
+        state.unassignModal.challengeTitle = '';
+        state.unassignModal.selectedAssignmentIds = [];
+        renderUnassignModal();
+      }
+
+      window.openUnassignModal = function openUnassignModal(challengeId) {
+        const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(challengeId));
+        state.unassignModal.open = true;
+        state.unassignModal.challengeId = String(challengeId);
+        state.unassignModal.challengeTitle = challenge ? challenge.title : 'Challenge';
+        state.unassignModal.selectedAssignmentIds = [];
+        renderUnassignModal();
+      };
+
+      function bindUnassignModalActions() {
+        if (state.listenersBound.unassignModal) return;
+        state.listenersBound.unassignModal = true;
+
+        document.getElementById('unassign-modal-close')?.addEventListener('click', closeUnassignModal);
+        document.getElementById('unassign-cancel')?.addEventListener('click', closeUnassignModal);
+        document.getElementById('unassign-confirm')?.addEventListener('click', async () => {
+          if (state.unassignModal.selectedAssignmentIds.length === 0) {
+            showMessage('Select at least one assignee to unassign.', 'warning');
+            return;
+          }
+
+          await handleMutation(async () => {
+            for (const assignmentId of state.unassignModal.selectedAssignmentIds) {
+              await api(`/api/assignments/${assignmentId}`, { method: 'DELETE' });
+            }
+          }, 'Assignees updated.');
+
+          closeUnassignModal();
+        });
+      }
+
+      function bindAssignModalActions() {
+        if (state.listenersBound.assignModal) return;
+        state.listenersBound.assignModal = true;
+        document.getElementById('assign-modal-close')?.addEventListener('click', closeAssignModal);
+        document.getElementById('assign-cancel')?.addEventListener('click', closeAssignModal);
+
+        document.getElementById('assign-search')?.addEventListener('input', (event) => {
+          state.assignModal.search = event.target.value;
+          renderAssignModal();
+        });
+
+        document.getElementById('assign-role')?.addEventListener('change', (event) => {
+          state.assignModal.role = event.target.value;
+        });
+
+        document.getElementById('assign-confirm')?.addEventListener('click', async () => {
+          if (state.assignSubmitting) return;
+          if (!state.assignModal.selectedPersonId || !state.assignModal.challengeId) {
+            showMessage('Please select a person to assign.', 'error');
+            return;
+          }
+
+          const role = state.assignModal.role;
+          const payload = {
+            projectId: state.selectedProjectId,
+            challengeId: state.assignModal.challengeId,
+            personId: state.assignModal.selectedPersonId,
+            isOwner: role === 'owner',
+            isLeader: role === 'leader'
+          };
+
+          state.assignSubmitting = true;
+          const confirmButton = document.getElementById('assign-confirm');
+          if (confirmButton) confirmButton.disabled = true;
+
+          try {
+            if (!state.assignModal.assignmentId) {
+              await handleMutation(() => api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) }), 'Assignment created.');
+              closeAssignModal();
+              return;
+            }
+
+            const existing = state.projectsPayload.assignments.find((assignment) => String(assignment.id) === String(state.assignModal.assignmentId));
+            if (!existing) {
+              showMessage('Current assignment could not be found.', 'error');
+              return;
+            }
+
+            if (String(existing.person_id) === String(state.assignModal.selectedPersonId)) {
+              await handleMutation(
+                () => api(`/api/assignments/${existing.id}`, { method: 'PUT', body: JSON.stringify({ isOwner: payload.isOwner, isLeader: payload.isLeader }) }),
+                'Assignment updated.'
+              );
+            } else {
+              await handleMutation(async () => {
+                await api('/api/assignments', { method: 'POST', body: JSON.stringify(payload) });
+                await api(`/api/assignments/${existing.id}`, { method: 'DELETE' });
+              }, 'Assignee updated.');
+            }
+
+            closeAssignModal();
+          } finally {
+            state.assignSubmitting = false;
+            if (confirmButton) confirmButton.disabled = false;
+          }
+        });
+      }
+
+      function closeAssignModal() {
+        state.assignModal.open = false;
+        state.assignModal.search = '';
+        state.assignModal.selectedPersonId = '';
+        state.assignModal.challengeId = null;
+        state.assignModal.challengeTitle = '';
+        state.assignModal.assignmentId = null;
+        state.assignModal.role = 'contributor';
+        renderAssignModal();
+      }
+
+      window.openAssignModal = function openAssignModal(challengeId, challengeTitle, assignment = null) {
+        state.assignModal.open = true;
+        state.assignModal.challengeId = String(challengeId);
+        state.assignModal.challengeTitle = challengeTitle;
+        state.assignModal.search = '';
+        state.assignModal.assignmentId = assignment ? String(assignment.id) : null;
+        if (assignment) {
+          state.assignModal.selectedPersonId = String(assignment.person_id);
+          state.assignModal.role = assignment.is_owner ? 'owner' : assignment.is_leader ? 'leader' : 'contributor';
+        } else {
+          state.assignModal.role = 'contributor';
+          const people = filteredPeople();
+          state.assignModal.selectedPersonId = people[0] ? String(people[0].id) : '';
+        }
+        renderAssignModal();
+      };
+
+      window.setPeopleSortField = function setPeopleSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+
+        if (state.peopleSort === asc) {
+          state.peopleSort = desc;
+        } else {
+          state.peopleSort = asc;
+        }
+
+        render();
+      };
+
+
+      window.setPeopleOverviewSortField = function setPeopleOverviewSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+        state.peopleOverviewSort = state.peopleOverviewSort === asc ? desc : asc;
+        render();
+      };
+
+      window.openPeopleOverviewModal = function openPeopleOverviewModal(personId) {
+        state.peopleOverviewModal.open = true;
+        state.peopleOverviewModal.personId = String(personId);
+        renderPeopleOverviewModal();
+      };
+
+      window.setClientsSortField = function setClientsSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+        state.clientsSort = state.clientsSort === asc ? desc : asc;
+        render();
+      };
+
+      window.setAdminProjectsSortField = function setAdminProjectsSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+        state.adminProjectsSort = state.adminProjectsSort === asc ? desc : asc;
+        render();
+      };
+
+      window.setChallengesSortField = function setChallengesSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+        state.challengesSort = state.challengesSort === asc ? desc : asc;
+        render();
+      };
+
+      window.setClientTeamsSortField = function setClientTeamsSortField(field) {
+        const asc = `${field}_asc`;
+        const desc = `${field}_desc`;
+        state.clientTeamsSort = state.clientTeamsSort === asc ? desc : asc;
+        render();
+      };
+
+      window.openProjectDetail = function openProjectDetail(projectId) {
+        state.selectedProjectId = String(projectId);
+        render();
+      };
+
+      window.goToProjectOverview = function goToProjectOverview() {
+        state.selectedProjectId = '';
+        render();
+      };
+
+      window.editPerson = function editPerson(person) {
+        const form = document.getElementById('person-form');
+        form.id.value = person.id;
+        form.firstName.value = person.first_name;
+        form.lastName.value = person.last_name;
+        form.tradeId.value = person.trade_id;
+        form.levelId.value = person.level_id;
+      };
+
+      window.deletePerson = async function deletePerson(id) {
+        await handleMutation(() => api(`/api/people/${id}`, { method: 'DELETE' }), 'Person deleted.');
+      };
+
+      window.editClient = function editClient(client) {
+        const form = document.getElementById('client-form');
+        form.id.value = client.id;
+        form.name.value = client.name;
+        form.location.value = client.location;
+        form.sinceMonth.value = client.since_month;
+        form.priorityId.value = client.priority_id;
+      };
+
+      window.deleteClient = async function deleteClient(id) {
+        await handleMutation(() => api(`/api/clients/${id}`, { method: 'DELETE' }), 'Client deleted.');
+      };
+
+      window.editProject = function editProject(project) {
+        const form = document.getElementById('project-form');
+        form.id.value = project.id;
+        form.name.value = project.name;
+        form.clientId.value = project.client_id;
+        form.startMonth.value = project.start_month;
+        form.endMonth.value = project.end_month || '';
+        form.budgetEuros.value = (Number(project.budget_cents) / 100).toFixed(2);
+      };
+
+      window.deleteProject = async function deleteProject(id) {
+        await handleMutation(() => api(`/api/projects/${id}`, { method: 'DELETE' }), 'Project deleted.');
+      };
+
+      window.adjustProjectPersonQuantity = async function adjustProjectPersonQuantity(projectId, personId, keepModalOpen = false) {
+        const currentAssignments = state.projectsPayload.assignments.filter(
+          (assignment) => String(assignment.project_id) === String(projectId) && String(assignment.person_id) === String(personId)
+        );
+        if (currentAssignments.length === 0) {
+          showMessage('No assignments found for this person in this project.', 'error');
+          return;
+        }
+
+        const currentQuantity = Math.round(currentAssignments.reduce((sum, assignment) => sum + Number(assignment.quantity || 0), 0));
+        const input = window.prompt('Set quantity (0-100 full percentage points):', String(currentQuantity));
+        if (input === null) return;
+
+        const quantity = Number(input);
+        if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100) {
+          showMessage('Quantity must be an integer between 0 and 100.', 'error');
+          return;
+        }
+
+        await handleMutation(
+          () => api(`/api/projects/${projectId}/people/${personId}/quantity`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
+          'Quantity updated.'
+        );
+
+        if (keepModalOpen) {
+          state.peopleOverviewModal.open = true;
+          state.peopleOverviewModal.personId = String(personId);
+          renderPeopleOverviewModal();
+        }
+      };
+
+      function renderPeopleOverviewModal() {
+        const modal = document.getElementById('people-overview-modal');
+        modal.classList.toggle('hidden', !state.peopleOverviewModal.open);
+        modal.classList.toggle('flex', state.peopleOverviewModal.open);
+
+        if (!state.peopleOverviewModal.open) {
+          return;
+        }
+
+        const person = state.people.find((item) => String(item.id) === String(state.peopleOverviewModal.personId));
+        if (!person) {
+          document.getElementById('people-overview-modal-title').textContent = 'Person assignments';
+          document.getElementById('people-overview-modal-body').innerHTML = '<p class="text-slate-300">No assignments found.</p>';
+          return;
+        }
+
+        const assignments = state.projectsPayload.assignments.filter((assignment) => String(assignment.person_id) === String(person.id));
+        document.getElementById('people-overview-modal-title').textContent = `${person.first_name} ${person.last_name} · Assignments`;
+
+        if (assignments.length === 0) {
+          document.getElementById('people-overview-modal-body').innerHTML = '<p class="text-slate-300">No assignments for this person.</p>';
+          return;
+        }
+
+        const projectById = new Map(state.projectsPayload.projects.map((project) => [String(project.id), project]));
+        const grouped = new Map();
+        for (const assignment of assignments) {
+          const key = String(assignment.project_id);
+          if (!grouped.has(key)) grouped.set(key, []);
+          grouped.get(key).push(assignment);
+        }
+
+        const sections = Array.from(grouped.entries())
+          .map(([projectId, projectAssignments]) => {
+            const project = projectById.get(projectId);
+            const projectName = project ? `${project.name} (${project.client_name})` : `Project ${projectId}`;
+            const projectQuantity = Math.round(projectAssignments.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
+            const rows = projectAssignments
+              .map((assignment) => {
+                const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+                return `<tr class="border-t border-slate-800">
+                  <td class="p-2">${assignment.challenge_title}</td>
+                  <td class="p-2">${roleLabel}</td>
+                  <td class="p-2">${Math.round(Number(assignment.quantity || 0))}%</td>
+                </tr>`;
+              })
+              .join('');
+
+            return `<section class="mb-4 rounded border border-slate-700 bg-slate-950/50 p-3">
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <h4 class="font-semibold text-slate-100">${projectName}</h4>
+                <button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust quantity (${projectQuantity}%)</button>
+              </div>
+              <table class="w-full text-left text-xs">
+                <thead><tr class="text-slate-400"><th class="p-2">Challenge</th><th class="p-2">Role</th><th class="p-2">Quantity</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </section>`;
+          })
+          .join('');
+
+        document.getElementById('people-overview-modal-body').innerHTML = sections;
+      }
+
+      function closePeopleOverviewModal() {
+        state.peopleOverviewModal.open = false;
+        state.peopleOverviewModal.personId = null;
+        renderPeopleOverviewModal();
+      }
+
+      function bindPeopleOverviewModalActions() {
+        if (state.listenersBound.peopleOverviewModal) return;
+        state.listenersBound.peopleOverviewModal = true;
+        document.getElementById('people-overview-modal-close')?.addEventListener('click', closePeopleOverviewModal);
+      }
+
+      function renderChallengeModal() {
+        const modal = document.getElementById('challenge-modal');
+        modal.classList.toggle('hidden', !state.challengeModal.open);
+        modal.classList.toggle('flex', state.challengeModal.open);
+      }
+
+      function closeChallengeModal() {
+        state.challengeModal.open = false;
+        state.challengeModal.challengeId = null;
+        const form = document.getElementById('challenge-modal-form');
+        if (form) form.reset();
+        renderChallengeModal();
+      }
+
+      window.openChallengeModal = function openChallengeModal(challenge = null) {
+        state.challengeModal.open = true;
+        state.challengeModal.challengeId = challenge ? String(challenge.id) : null;
+        const title = document.getElementById('challenge-modal-title');
+        title.textContent = challenge ? 'Edit Challenge' : 'Add Challenge';
+        const form = document.getElementById('challenge-modal-form');
+        if (form) {
+          form.id.value = challenge ? challenge.id : '';
+          form.title.value = challenge ? challenge.title : '';
+          form.description.value = challenge ? challenge.description : '';
+        }
+        renderChallengeModal();
+      };
+
+      window.editChallenge = function editChallenge(challenge) {
+        window.openChallengeModal(challenge);
+      };
+
+      window.deleteChallenge = async function deleteChallenge(id) {
+        const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(id));
+        if (!challenge) {
+          showMessage('Challenge not found.', 'error');
+          return;
+        }
+
+        try {
+          await api(`/api/challenges/${id}`, { method: 'DELETE' });
+          await loadData();
+          render();
+
+          showMessage('Challenge deleted.', 'warning', {
+            actionLabel: 'Undo',
+            onAction: async () => {
+              try {
+                await api(`/api/projects/${challenge.project_id}/challenges`, {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    title: challenge.title,
+                    description: challenge.description
+                  })
+                });
+                await loadData();
+                render();
+                showMessage('Challenge restored.');
+              } catch (error) {
+                showMessage(`Undo failed: ${error.message}`, 'error');
+              }
+            }
+          });
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+      window.deleteAssignment = async function deleteAssignment(id) {
+        await handleMutation(() => api(`/api/assignments/${id}`, { method: 'DELETE' }), 'Assignment deleted.');
+      };
+
+      window.toggleAssignmentRole = async function toggleAssignmentRole(id, isOwner, isLeader) {
+        let next = { isOwner: false, isLeader: false };
+        if (!isOwner && !isLeader) next = { isOwner: true, isLeader: false };
+        else if (isOwner) next = { isOwner: false, isLeader: true };
+        await handleMutation(() => api(`/api/assignments/${id}`, { method: 'PUT', body: JSON.stringify(next) }), 'Assignment role updated.');
+      };
+
+      window.setHomeTab = function setHomeTab(tabId) {
+        state.homeTab = tabId;
+        render();
+      };
+
+      function render() {
+        const homeTabs = `<div class="mb-4 flex gap-2"><button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setHomeTab('client-teams')">Client Teams</button><button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setHomeTab('people-overview')">People Overview</button></div>`;
+        const homeContent = state.homeTab === 'people-overview' ? peopleOverviewView() : ownershipView();
+        document.getElementById('view').innerHTML = homeTabs + homeContent;
+
+        const panel = document.getElementById('admin-panel');
+        const adminView = document.getElementById('admin-view');
+        panel.classList.toggle('hidden', !state.showAdmin);
+        panel.classList.toggle('flex', state.showAdmin);
+
+        if (state.showAdmin) {
+          renderAdminTabs();
+          if (state.adminTab === 'people') adminView.innerHTML = peopleView();
+          else if (state.adminTab === 'clients') adminView.innerHTML = clientsView();
+          else adminView.innerHTML = administrationProjectsView();
+        } else {
+          adminView.innerHTML = '';
+          document.getElementById('admin-tabs').innerHTML = '';
+        }
+
+        bindForms();
+        renderChallengeModal();
+        renderAssignModal();
+        renderUnassignModal();
+        renderExportModal();
+        renderImportModal();
+        renderPeopleOverviewModal();
+      }
+
+      async function init() {
+        try {
+          await loadData();
+          bindHeaderActions();
+          bindFooterActions();
+          bindChallengeModalActions();
+          bindAssignModalActions();
+          bindUnassignModalActions();
+          bindExportModalActions();
+          bindImportModalActions();
+          bindPeopleOverviewModalActions();
+          render();
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>
