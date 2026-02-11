@@ -1207,14 +1207,12 @@ function filteredPeople() {
         const input = document.getElementById('import-file');
         if (input) input.value = '';
         renderImportModal();
-        renderPeopleOverviewModal();
       }
 
       function openImportModal() {
         state.importModalOpen = true;
         state.importPreviewData = null;
         renderImportModal();
-        renderPeopleOverviewModal();
       }
 
       function detectImportFormat(file) {
@@ -1235,7 +1233,6 @@ function filteredPeople() {
           });
           state.importPreviewData = preview;
           renderImportModal();
-        renderPeopleOverviewModal();
           return;
         }
 
@@ -1245,7 +1242,6 @@ function filteredPeople() {
         });
         state.importPreviewData = preview;
         renderImportModal();
-        renderPeopleOverviewModal();
       }
 
       async function confirmImport() {
@@ -1535,9 +1531,11 @@ function filteredPeople() {
       };
 
       window.openPeopleOverviewModal = function openPeopleOverviewModal(personId) {
+        state.homeTab = 'people-overview';
         state.peopleOverviewModal.open = true;
         state.peopleOverviewModal.personId = String(personId);
-        renderPeopleOverviewModal();
+        navigateFromState();
+        render();
       };
 
       window.setClientsSortField = function setClientsSortField(field) {
@@ -1569,12 +1567,20 @@ function filteredPeople() {
       };
 
       window.openProjectDetail = function openProjectDetail(projectId) {
+        state.homeTab = 'client-teams';
         state.selectedProjectId = String(projectId);
+        state.peopleOverviewModal.open = false;
+        state.peopleOverviewModal.personId = null;
+        navigateFromState();
         render();
       };
 
       window.goToProjectOverview = function goToProjectOverview() {
+        state.homeTab = 'client-teams';
         state.selectedProjectId = '';
+        state.peopleOverviewModal.open = false;
+        state.peopleOverviewModal.personId = null;
+        navigateFromState();
         render();
       };
 
@@ -1722,7 +1728,8 @@ function filteredPeople() {
       function closePeopleOverviewModal() {
         state.peopleOverviewModal.open = false;
         state.peopleOverviewModal.personId = null;
-        renderPeopleOverviewModal();
+        navigateFromState();
+        render();
       }
 
       function bindPeopleOverviewModalActions() {
@@ -1810,8 +1817,84 @@ function filteredPeople() {
         await handleMutation(() => api(`/api/assignments/${id}`, { method: 'PUT', body: JSON.stringify(next) }), 'Assignment role updated.');
       };
 
+      function parseAppRoute(pathname) {
+        const normalized = String(pathname || '/').replace(/^\/+|\/+$/g, '');
+        const parts = normalized ? normalized.split('/') : [];
+
+        if (parts.length === 0 || (parts.length === 1 && parts[0] === 'teams')) {
+          return { homeTab: 'client-teams', projectId: '', personId: '' };
+        }
+
+        if (parts[0] === 'teams' && parts.length === 2) {
+          return { homeTab: 'client-teams', projectId: parts[1], personId: '' };
+        }
+
+        if (parts.length === 1 && parts[0] === 'people') {
+          return { homeTab: 'people-overview', projectId: '', personId: '' };
+        }
+
+        if (parts[0] === 'people' && parts.length === 2) {
+          return { homeTab: 'people-overview', projectId: '', personId: parts[1] };
+        }
+
+        return null;
+      }
+
+      function applyAppRoute(pathname) {
+        const route = parseAppRoute(pathname);
+        if (!route) return false;
+
+        state.homeTab = route.homeTab;
+
+        if (route.homeTab === 'client-teams') {
+          const hasProject = route.projectId && state.projectsPayload.projects.some((project) => String(project.id) === String(route.projectId));
+          state.selectedProjectId = hasProject ? String(route.projectId) : '';
+          state.peopleOverviewModal.open = false;
+          state.peopleOverviewModal.personId = null;
+          return true;
+        }
+
+        state.selectedProjectId = '';
+        if (route.personId && state.people.some((person) => String(person.id) === String(route.personId))) {
+          state.peopleOverviewModal.open = true;
+          state.peopleOverviewModal.personId = String(route.personId);
+        } else {
+          state.peopleOverviewModal.open = false;
+          state.peopleOverviewModal.personId = null;
+        }
+
+        return true;
+      }
+
+      function pathFromState() {
+        if (state.homeTab === 'people-overview') {
+          if (state.peopleOverviewModal.open && state.peopleOverviewModal.personId) {
+            return `/people/${state.peopleOverviewModal.personId}`;
+          }
+          return '/people';
+        }
+
+        if (state.selectedProjectId) {
+          return `/teams/${state.selectedProjectId}`;
+        }
+
+        return '/teams';
+      }
+
+      function navigateFromState(push = true) {
+        const targetPath = pathFromState();
+        if (window.location.pathname === targetPath) return;
+        const method = push ? 'pushState' : 'replaceState';
+        window.history[method]({}, '', targetPath);
+      }
+
       window.setHomeTab = function setHomeTab(tabId) {
         state.homeTab = tabId;
+        if (tabId === 'client-teams') {
+          state.peopleOverviewModal.open = false;
+          state.peopleOverviewModal.personId = null;
+        }
+        navigateFromState();
         render();
       };
 
@@ -1841,7 +1924,6 @@ function filteredPeople() {
         renderUnassignModal();
         renderExportModal();
         renderImportModal();
-        renderPeopleOverviewModal();
       }
 
       async function init() {
@@ -1855,6 +1937,20 @@ function filteredPeople() {
           bindExportModalActions();
           bindImportModalActions();
           bindPeopleOverviewModalActions();
+
+          if (!applyAppRoute(window.location.pathname)) {
+            state.homeTab = 'client-teams';
+            state.selectedProjectId = '';
+            state.peopleOverviewModal.open = false;
+            state.peopleOverviewModal.personId = null;
+            navigateFromState(false);
+          }
+
+          window.addEventListener('popstate', () => {
+            applyAppRoute(window.location.pathname);
+            render();
+          });
+
           render();
         } catch (error) {
           showMessage(error.message, 'error');
