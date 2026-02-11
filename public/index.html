@@ -584,13 +584,30 @@ function clientsView() {
           </div>
         </div>`;
 
+        const assigneeSortInfoByChallenge = new Map();
+        for (const challenge of projectChallenges) {
+          const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
+          const normalized = assignments
+            .map((assignment) => {
+              const roleRank = assignment.is_owner ? 0 : assignment.is_leader ? 1 : 2;
+              const name = `${assignment.first_name} ${assignment.last_name}`.trim().toLowerCase();
+              return { roleRank, name };
+            })
+            .sort((a, b) => a.roleRank - b.roleRank || a.name.localeCompare(b.name));
+
+          assigneeSortInfoByChallenge.set(String(challenge.id), {
+            roleRank: normalized[0]?.roleRank ?? 3,
+            alphaKey: normalized.map((entry) => entry.name).join('|')
+          });
+        }
+
         const sortedChallenges = [...projectChallenges].sort((a, b) => {
           const titleA = String(a.title || '').toLowerCase();
           const titleB = String(b.title || '').toLowerCase();
           const descriptionA = String(a.description || '').toLowerCase();
           const descriptionB = String(b.description || '').toLowerCase();
-          const assigneesA = Number(a.assignment_count || 0);
-          const assigneesB = Number(b.assignment_count || 0);
+          const assigneeA = assigneeSortInfoByChallenge.get(String(a.id)) || { roleRank: 3, alphaKey: '' };
+          const assigneeB = assigneeSortInfoByChallenge.get(String(b.id)) || { roleRank: 3, alphaKey: '' };
 
           switch (state.challengesSort) {
             case 'title_desc':
@@ -600,9 +617,9 @@ function clientsView() {
             case 'description_desc':
               return descriptionB.localeCompare(descriptionA) || titleA.localeCompare(titleB);
             case 'assignees_asc':
-              return assigneesA - assigneesB || titleA.localeCompare(titleB);
+              return assigneeA.roleRank - assigneeB.roleRank || assigneeA.alphaKey.localeCompare(assigneeB.alphaKey) || titleA.localeCompare(titleB);
             case 'assignees_desc':
-              return assigneesB - assigneesA || titleA.localeCompare(titleB);
+              return assigneeB.roleRank - assigneeA.roleRank || assigneeB.alphaKey.localeCompare(assigneeA.alphaKey) || titleA.localeCompare(titleB);
             case 'title_asc':
             default:
               return titleA.localeCompare(titleB);
