@@ -294,9 +294,6 @@
         state.clients = await api('/api/clients');
         state.projectsPayload = await api('/api/projects');
 
-        if (!state.selectedProjectId && state.projectsPayload.projects.length > 0) {
-          state.selectedProjectId = String(state.projectsPayload.projects[0].id);
-        }
       }
 
       function optionList(items, selected) {
@@ -549,9 +546,73 @@ function clientsView() {
           return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-300">No projects available yet. Ask an admin to create one first.</div>`;
         }
 
-        const selectedProjectId = Number(state.selectedProjectId || projects[0].id);
-        const selectedProject = projects.find((project) => Number(project.id) === selectedProjectId) || projects[0];
-        state.selectedProjectId = String(selectedProject.id);
+        const hasSelectedProject = state.selectedProjectId && projects.some((project) => String(project.id) === String(state.selectedProjectId));
+        if (!hasSelectedProject) {
+          state.selectedProjectId = '';
+
+          const projectRows = projects
+            .map((project) => {
+              const projectAssignments = state.projectsPayload.assignments.filter((assignment) => Number(assignment.project_id) === Number(project.id));
+              const ownerNames = [];
+              const leaderNames = [];
+              const ownerSeen = new Set();
+              const leaderSeen = new Set();
+
+              for (const assignment of projectAssignments) {
+                const personId = String(assignment.person_id);
+                const fullName = `${assignment.first_name} ${assignment.last_name}`;
+
+                if (assignment.is_owner) {
+                  if (!ownerSeen.has(personId)) {
+                    ownerSeen.add(personId);
+                    ownerNames.push(fullName);
+                  }
+                  continue;
+                }
+
+                if (assignment.is_leader) {
+                  if (!ownerSeen.has(personId) && !leaderSeen.has(personId)) {
+                    leaderSeen.add(personId);
+                    leaderNames.push(fullName);
+                  }
+                }
+              }
+
+              const noPeopleMessage = `There's no people assigned to this project, yet`;
+
+              return `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openProjectDetail(${project.id})">
+                <td class="p-2 font-medium text-slate-100">${project.name}</td>
+                <td class="p-2 text-slate-300">${ownerNames.length ? ownerNames.join(', ') : noPeopleMessage}</td>
+                <td class="p-2 text-slate-300">${leaderNames.length ? leaderNames.join(', ') : noPeopleMessage}</td>
+              </tr>`;
+            })
+            .join('');
+
+          return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div class="mb-3">
+              <h3 class="text-lg font-semibold">Project Overview</h3>
+              <p class="text-xs text-slate-400">Select a project to open its challenge and team details.</p>
+            </div>
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="text-slate-400">
+                  <th class="p-2">Project Name</th>
+                  <th class="p-2">Project Owner</th>
+                  <th class="p-2">Project Leaders</th>
+                </tr>
+              </thead>
+              <tbody>${projectRows}</tbody>
+            </table>
+          </div>`;
+        }
+
+        const selectedProjectId = Number(state.selectedProjectId);
+        const selectedProject = projects.find((project) => Number(project.id) === selectedProjectId);
+
+        if (!selectedProject) {
+          state.selectedProjectId = '';
+          return ownershipView();
+        }
 
         const projectChallenges = state.projectsPayload.challenges.filter((challenge) => Number(challenge.project_id) === Number(selectedProject.id));
         const projectAssignments = state.projectsPayload.assignments.filter((assignment) => Number(assignment.project_id) === Number(selectedProject.id));
@@ -711,11 +772,10 @@ function clientsView() {
           .join('');
 
         return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div class="flex flex-wrap items-end gap-3">
-              <label class="block flex-1 text-sm">Selected Project
-                <select id="ownership-project-select" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(projects.map((project) => ({ id: project.id, name: `${project.name} (${project.client_name})` })), selectedProject.id)}</select>
-              </label>
-              
+            <div class="flex flex-wrap items-center gap-2 text-sm text-slate-300">
+              <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>Project Overview</button>
+              <span>/</span>
+              <span class="font-semibold text-slate-100">${selectedProject.name}</span>
             </div>
           </div>
 
@@ -871,14 +931,6 @@ function filteredPeople() {
               state.challengeSubmitting = false;
               if (submitButton) submitButton.disabled = false;
             }
-          });
-        }
-
-        const projectSelect = document.getElementById('ownership-project-select');
-        if (projectSelect) {
-          projectSelect.addEventListener('change', () => {
-            state.selectedProjectId = projectSelect.value;
-            render();
           });
         }
 
@@ -1292,6 +1344,16 @@ function filteredPeople() {
         const asc = `${field}_asc`;
         const desc = `${field}_desc`;
         state.challengesSort = state.challengesSort === asc ? desc : asc;
+        render();
+      };
+
+      window.openProjectDetail = function openProjectDetail(projectId) {
+        state.selectedProjectId = String(projectId);
+        render();
+      };
+
+      window.goToProjectOverview = function goToProjectOverview() {
+        state.selectedProjectId = '';
         render();
       };
 
