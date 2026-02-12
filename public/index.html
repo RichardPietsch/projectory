@@ -40,14 +40,16 @@
         <div class="h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
           <div class="mb-4 flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold">Administration Mode</h2>
-            <div class="flex items-center gap-2">
-              <button id="export-btn" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Export</button>
-              <button id="import-btn" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Import</button>
-              <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
-            </div>
+            <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
           </div>
           <nav class="mb-6 flex gap-2" id="admin-tabs"></nav>
           <section id="admin-view"></section>
+          <footer class="mt-6 border-t border-slate-800 pt-4 text-sm text-slate-300">
+            <div class="flex flex-wrap items-center gap-3">
+              <button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">Export</button>
+              <button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">Import</button>
+            </div>
+          </footer>
         </div>
       </section>
     </main>
