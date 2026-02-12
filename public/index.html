@@ -177,6 +177,47 @@
       </div>
     </div>
 
+
+    <div id="admin-person-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between"><h3 id="admin-person-modal-title" class="text-lg font-semibold">Add Person</h3><button id="admin-person-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button></div>
+        <form id="admin-person-form"><input type="hidden" name="id" />
+          <label class="mb-2 block text-sm">First Name<input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Last Name<input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Trade<select required name="tradeId" id="admin-person-trade" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 block text-sm">Level<select required name="levelId" id="admin-person-level" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-person-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Person</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="admin-client-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between"><h3 id="admin-client-modal-title" class="text-lg font-semibold">Add Client</h3><button id="admin-client-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button></div>
+        <form id="admin-client-form"><input type="hidden" name="id" />
+          <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Location<input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Since (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Priority<select required name="priorityId" id="admin-client-priority" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-client-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Client</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="admin-project-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between"><h3 id="admin-project-modal-title" class="text-lg font-semibold">Add Project</h3><button id="admin-project-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button></div>
+        <form id="admin-project-form"><input type="hidden" name="id" />
+          <label class="mb-2 block text-sm">Client<select required name="clientId" id="admin-project-client" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">End (yyyy-mm)<input name="endMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Budget in EUR<input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-project-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Project</button></div>
+        </form>
+      </div>
+    </div>
+
     <script>
       const state = {
         showAdmin: false,
@@ -215,7 +256,8 @@
           challengeModalForm: false,
           exportModal: false,
           importModal: false,
-          peopleOverviewModal: false
+          peopleOverviewModal: false,
+          adminEntityModals: false
         },
         assignSubmitting: false,
         challengeSubmitting: false,
@@ -360,189 +402,9 @@
       }
 
       function peopleView() {
-        const levelOrder = new Map(state.meta.levels.map((level, index) => [String(level.name || '').toLowerCase(), index]));
-        const sortedPeople = [...state.people].sort((a, b) => {
-          const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
-          const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
-          const tradeA = String(a.trade_name || '').toLowerCase();
-          const tradeB = String(b.trade_name || '').toLowerCase();
-          const levelA = levelOrder.get(String(a.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
-          const levelB = levelOrder.get(String(b.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
-
-          switch (state.peopleSort) {
-            case 'name_desc':
-              return nameB.localeCompare(nameA);
-            case 'trade_asc':
-              return tradeA.localeCompare(tradeB) || nameA.localeCompare(nameB);
-            case 'trade_desc':
-              return tradeB.localeCompare(tradeA) || nameA.localeCompare(nameB);
-            case 'level_asc':
-              return levelA - levelB || nameA.localeCompare(nameB);
-            case 'level_desc':
-              return levelB - levelA || nameA.localeCompare(nameB);
-            case 'name_asc':
-            default:
-              return nameA.localeCompare(nameB);
-          }
-        });
-
-        const rows = sortedPeople
-          .map((person) => `<tr class="border-t border-slate-800">
-              <td class="p-2">${person.first_name} ${person.last_name}</td>
-              <td class="p-2">${person.trade_name}</td>
-              <td class="p-2">${person.level_name}</td>
-              <td class="p-2">
-                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editPerson(${JSON.stringify(person)})'>Edit</button>
-                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button>
-              </td>
-            </tr>`)
-          .join('');
-
-        return `<div class="space-y-6">
-            <form id="person-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <h2 class="mb-3 text-lg font-semibold">Add / Edit Person</h2>
-              <input type="hidden" name="id" />
-              <label class="mb-2 block text-sm">First Name<input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-              <label class="mb-2 block text-sm">Last Name<input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-              <label class="mb-2 block text-sm">Trade<select required name="tradeId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.trades)}</select></label>
-              <label class="mb-2 block text-sm">Level<select required name="levelId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.levels)}</select></label>
-              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Person</button>
-            </form>
-            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <div class="mb-3">
-                <h2 class="text-lg font-semibold">People</h2>
-              </div>
-              <table class="w-full text-left text-sm">
-                <thead><tr class="text-slate-400">
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('name')">Name ${state.peopleSort.startsWith('name_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('trade')">Trade ${state.peopleSort.startsWith('trade_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleSortField('level')">Level ${state.peopleSort.startsWith('level_') ? (state.peopleSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2">Actions</th>
-                </tr></thead>
-                <tbody>${rows}</tbody>
-              </table>
-            </div>
-          </div>`;
-      }
-
-      function peopleOverviewView() {
-        function assignmentsWarningClass(count) {
-          if (count === 0) return 'text-slate-100';
-          if (count <= 5) return 'text-emerald-300';
-          if (count <= 8) return 'text-amber-300';
-          return 'text-rose-300';
-        }
-
-        function roleCountWarningClass(count) {
-          if (count === 0) return 'text-slate-100';
-          if (count <= 2) return 'text-emerald-300';
-          if (count <= 4) return 'text-amber-300';
-          return 'text-rose-300';
-        }
-
-        function workloadWarningClass(workload) {
-          if (workload === 0) return 'text-slate-100';
-          if (workload < 100) return 'text-amber-300';
-          if (workload === 100) return 'text-emerald-300';
-          return 'text-rose-300';
-        }
-
-        const byPerson = new Map();
-        for (const assignment of state.projectsPayload.assignments) {
-          const key = String(assignment.person_id);
-          if (!byPerson.has(key)) byPerson.set(key, []);
-          byPerson.get(key).push(assignment);
-        }
-
-        const levelOrder = new Map(state.meta.levels.map((level, index) => [String(level.name || '').toLowerCase(), index]));
-        const rowsData = state.people.map((person) => {
-          const assignments = byPerson.get(String(person.id)) || [];
-          const assignmentCount = assignments.length;
-          const ownershipCount = assignments.filter((a) => a.is_owner).length;
-          const leadershipCount = assignments.filter((a) => a.is_leader).length;
-          const contributionsCount = assignments.filter((a) => !a.is_owner && !a.is_leader).length;
-          const workloadTotal = Math.round(assignments.reduce((sum, a) => sum + Number(a.quantity || 0), 0));
-          return {
-            ...person,
-            assignmentCount,
-            ownershipCount,
-            leadershipCount,
-            contributionsCount,
-            workloadTotal,
-            nameSort: `${person.first_name} ${person.last_name}`.toLowerCase(),
-            tradeSort: String(person.trade_name || '').toLowerCase(),
-            levelSort: levelOrder.get(String(person.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER
-          };
-        });
-
-        const sorted = [...rowsData].sort((a, b) => {
-          switch (state.peopleOverviewSort) {
-            case 'name_desc':
-              return b.nameSort.localeCompare(a.nameSort);
-            case 'trade_asc':
-              return a.tradeSort.localeCompare(b.tradeSort) || a.nameSort.localeCompare(b.nameSort);
-            case 'trade_desc':
-              return b.tradeSort.localeCompare(a.tradeSort) || a.nameSort.localeCompare(b.nameSort);
-            case 'level_asc':
-              return a.levelSort - b.levelSort || a.nameSort.localeCompare(b.nameSort);
-            case 'level_desc':
-              return b.levelSort - a.levelSort || a.nameSort.localeCompare(b.nameSort);
-            case 'assignments_asc':
-              return a.assignmentCount - b.assignmentCount || a.nameSort.localeCompare(b.nameSort);
-            case 'assignments_desc':
-              return b.assignmentCount - a.assignmentCount || a.nameSort.localeCompare(b.nameSort);
-            case 'ownerships_asc':
-              return a.ownershipCount - b.ownershipCount || a.nameSort.localeCompare(b.nameSort);
-            case 'ownerships_desc':
-              return b.ownershipCount - a.ownershipCount || a.nameSort.localeCompare(b.nameSort);
-            case 'leaderships_asc':
-              return a.leadershipCount - b.leadershipCount || a.nameSort.localeCompare(b.nameSort);
-            case 'leaderships_desc':
-              return b.leadershipCount - a.leadershipCount || a.nameSort.localeCompare(b.nameSort);
-            case 'contributions_asc':
-              return a.contributionsCount - b.contributionsCount || a.nameSort.localeCompare(b.nameSort);
-            case 'contributions_desc':
-              return b.contributionsCount - a.contributionsCount || a.nameSort.localeCompare(b.nameSort);
-            case 'quantity_asc':
-              return a.workloadTotal - b.workloadTotal || a.nameSort.localeCompare(b.nameSort);
-            case 'quantity_desc':
-              return b.workloadTotal - a.workloadTotal || a.nameSort.localeCompare(b.nameSort);
-            case 'name_asc':
-            default:
-              return a.nameSort.localeCompare(b.nameSort);
-          }
-        });
-
-        const rows = sorted.map((person) => `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openPeopleOverviewModal(${person.id})">
-            <td class="p-2">${person.first_name} ${person.last_name}</td>
-            <td class="p-2">${person.trade_name}</td>
-            <td class="p-2">${person.level_name}</td>
-            <td class="p-2 font-semibold ${assignmentsWarningClass(person.assignmentCount)}">${person.assignmentCount}</td>
-            <td class="p-2 font-semibold ${roleCountWarningClass(person.ownershipCount)}">${person.ownershipCount}</td>
-            <td class="p-2 font-semibold ${roleCountWarningClass(person.leadershipCount)}">${person.leadershipCount}</td>
-            <td class="p-2 font-semibold ${assignmentsWarningClass(person.contributionsCount)}">${person.contributionsCount}</td>
-            <td class="p-2 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}%</td>
-          </tr>`).join('');
-
-        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <div class="mb-3">
-            <h3 class="text-lg font-semibold">People Overview</h3>
-            <p class="text-xs text-slate-400">Organization-wide assignment, role and workload insights.</p>
-          </div>
-          <table class="w-full text-left text-sm">
-            <thead><tr class="text-slate-400">
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('name')">Name ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('trade')">Title ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('level')">Level ${state.peopleOverviewSort.startsWith('level_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">Assignments ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">Ownerships ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">Leaderships ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('contributions')">Contributions ${state.peopleOverviewSort.startsWith('contributions_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">Workload ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>`;
+        const sortedPeople = [...state.people].sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
+        const rows = sortedPeople.map((person) => `<tr class="border-t border-slate-800"><td class="p-2">${person.first_name} ${person.last_name}</td><td class="p-2">${person.trade_name}</td><td class="p-2">${person.level_name}</td><td class="p-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminPersonModal(${JSON.stringify(person)})'>Edit</button><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button></td></tr>`).join('');
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4"><div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-semibold">People</h2><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick="openAdminPersonModal()">Add Person</button></div><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Trade</th><th class="p-2">Level</th><th class="p-2">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`;
       }
 
 function clientsView() {
@@ -592,31 +454,21 @@ function clientsView() {
               <td class="p-2">${renderPriorityPill(client.priority_name)}</td>
               <td class="p-2">${client.project_count}</td>
               <td class="p-2">
-                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editClient(${JSON.stringify(client)})'>Edit</button>
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminClientModal(${JSON.stringify(client)})'>Edit</button>
                 <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteClient(${client.id})'>Delete</button>
               </td>
             </tr>`
           )
           .join('');
 
-        return `<div class="space-y-6">
-            <form id="client-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <h2 class="mb-3 text-lg font-semibold">Add / Edit Client</h2>
-              <input type="hidden" name="id" />
-              <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-              <label class="mb-2 block text-sm">Location<input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-              <label class="mb-2 block text-sm">Since (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-              <label class="mb-2 block text-sm">Priority<select required name="priorityId" class="mt-1 w-full rounded bg-slate-950 p-2">${optionList(state.meta.priorities)}</select></label>
-              <button class="mt-3 rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Client</button>
-            </form>
-            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <h2 class="mb-3 text-lg font-semibold">Clients</h2>
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-semibold">Clients</h2><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick="openAdminClientModal()">Add Client</button></div>
               <table class="w-full text-left text-sm">
+              
                 <thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('name')">Name ${state.clientsSort.startsWith('name_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('location')">Location ${state.clientsSort.startsWith('location_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('since')">Since ${state.clientsSort.startsWith('since_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('priority')">Priority ${state.clientsSort.startsWith('priority_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('projects')">Projects ${state.clientsSort.startsWith('projects_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
-            </div>
-          </div>`;
+            </div>`;
       }
 
       function administrationProjectsView() {
@@ -653,15 +505,16 @@ function clientsView() {
               <td class="p-2">${project.start_month} → ${project.end_month || 'open'}</td>
               <td class="p-2">€ ${Math.round(Number(project.budget_cents || 0) / 100).toLocaleString('de-DE')}</td>
               <td class="p-2">
-                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='editProject(${JSON.stringify(project)})'>Edit</button>
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminProjectModal(${JSON.stringify(project)})'>Edit</button>
                 <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteProject(${project.id})'>Delete</button>
               </td>
             </tr>`
           )
           .join('');
 
-        return `<div class="space-y-6">
-            <form id="project-form" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-semibold">Projects</h2><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick="openAdminProjectModal()">Add Project</button></div>
+              <table class="w-full text-left text-sm">
               <h2 class="mb-3 text-lg font-semibold">Add / Edit Project</h2>
               <input type="hidden" name="id" />
               <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
@@ -677,8 +530,7 @@ function clientsView() {
                 <thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setAdminProjectsSortField('project')">Project ${state.adminProjectsSort.startsWith('project_') ? (state.adminProjectsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setAdminProjectsSortField('dates')">Dates ${state.adminProjectsSort.startsWith('dates_') ? (state.adminProjectsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setAdminProjectsSortField('budget')">Budget ${state.adminProjectsSort.startsWith('budget_') ? (state.adminProjectsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
-            </div>
-          </div>`;
+            </div>`;
       }
 
       function ownershipView() {
@@ -1047,6 +899,82 @@ function filteredPeople() {
         } catch (error) {
           showMessage(error.message, 'error');
         }
+      }
+
+      function openAdminPersonModal(person = null) {
+        const modal = document.getElementById('admin-person-modal');
+        document.getElementById('admin-person-modal-title').textContent = person ? 'Edit Person' : 'Add Person';
+        document.getElementById('admin-person-trade').innerHTML = optionList(state.meta.trades, person?.trade_id);
+        document.getElementById('admin-person-level').innerHTML = optionList(state.meta.levels, person?.level_id);
+        const form = document.getElementById('admin-person-form');
+        form.id.value = person?.id || '';
+        form.firstName.value = person?.first_name || '';
+        form.lastName.value = person?.last_name || '';
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+      }
+      window.openAdminPersonModal = openAdminPersonModal;
+      function closeAdminPersonModal() { const m=document.getElementById('admin-person-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+      function openAdminClientModal(client = null) {
+        const modal = document.getElementById('admin-client-modal');
+        document.getElementById('admin-client-modal-title').textContent = client ? 'Edit Client' : 'Add Client';
+        document.getElementById('admin-client-priority').innerHTML = optionList(state.meta.priorities, client?.priority_id);
+        const form = document.getElementById('admin-client-form');
+        form.id.value = client?.id || '';
+        form.name.value = client?.name || '';
+        form.location.value = client?.location || '';
+        form.sinceMonth.value = client?.since_month || '';
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+      }
+      window.openAdminClientModal = openAdminClientModal;
+      function closeAdminClientModal() { const m=document.getElementById('admin-client-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+      function openAdminProjectModal(project = null) {
+        const modal = document.getElementById('admin-project-modal');
+        document.getElementById('admin-project-modal-title').textContent = project ? 'Edit Project' : 'Add Project';
+        document.getElementById('admin-project-client').innerHTML = optionList(state.clients, project?.client_id);
+        const form = document.getElementById('admin-project-form');
+        form.id.value = project?.id || '';
+        form.name.value = project?.name || '';
+        form.startMonth.value = project?.start_month || '';
+        form.endMonth.value = project?.end_month || '';
+        form.budgetEuros.value = project ? (Number(project.budget_cents)/100).toFixed(2) : '';
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+      }
+      window.openAdminProjectModal = openAdminProjectModal;
+      function closeAdminProjectModal() { const m=document.getElementById('admin-project-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+      function bindAdminEntityModalActions() {
+        if (state.listenersBound.adminEntityModals) return;
+        state.listenersBound.adminEntityModals = true;
+        document.getElementById('admin-person-modal-close')?.addEventListener('click', closeAdminPersonModal);
+        document.getElementById('admin-person-modal-cancel')?.addEventListener('click', closeAdminPersonModal);
+        document.getElementById('admin-client-modal-close')?.addEventListener('click', closeAdminClientModal);
+        document.getElementById('admin-client-modal-cancel')?.addEventListener('click', closeAdminClientModal);
+        document.getElementById('admin-project-modal-close')?.addEventListener('click', closeAdminProjectModal);
+        document.getElementById('admin-project-modal-cancel')?.addEventListener('click', closeAdminProjectModal);
+
+        document.getElementById('admin-person-form')?.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const payload = Object.fromEntries(new FormData(event.target).entries());
+          const id = payload.id; delete payload.id;
+          await handleMutation(() => api(id ? `/api/people/${id}` : '/api/people', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Person saved.');
+          closeAdminPersonModal();
+        });
+        document.getElementById('admin-client-form')?.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const payload = Object.fromEntries(new FormData(event.target).entries());
+          const id = payload.id; delete payload.id;
+          await handleMutation(() => api(id ? `/api/clients/${id}` : '/api/clients', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Client saved.');
+          closeAdminClientModal();
+        });
+        document.getElementById('admin-project-form')?.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const payload = Object.fromEntries(new FormData(event.target).entries());
+          const id = payload.id; delete payload.id;
+          await handleMutation(() => api(id ? `/api/projects/${id}` : '/api/projects', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Project saved.');
+          closeAdminProjectModal();
+        });
       }
 
       function renderAdminTabs() {
@@ -1898,25 +1826,26 @@ function filteredPeople() {
         render();
       };
 
+      function adminStandaloneView() {
+        const tabs = adminTabs.map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setAdminTab(${JSON.stringify(tab.id)})">${tab.label}</button>`).join('');
+        const body = state.adminTab === 'people' ? peopleView() : state.adminTab === 'clients' ? clientsView() : administrationProjectsView();
+        return `<div class="space-y-4"><div class="flex items-center justify-between"><h2 class="text-2xl font-bold">Administration</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="closeAdminStandalone()">Back to app</button></div><div class="flex gap-2">${tabs}</div>${body}</div>`;
+      }
+
+      window.setAdminTab = function setAdminTab(tabId) { state.adminTab = tabId; render(); };
+      window.closeAdminStandalone = function closeAdminStandalone() { state.showAdmin = false; render(); };
+
       function render() {
+        if (state.showAdmin) {
+          document.getElementById('view').innerHTML = adminStandaloneView();
+        } else {
         const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>Client Teams</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>People Overview</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.length}</span></button></nav></div>`;
         const homeContent = state.homeTab === 'people-overview' ? peopleOverviewView() : ownershipView();
         document.getElementById('view').innerHTML = homeTabs + homeContent;
 
-        const panel = document.getElementById('admin-panel');
-        const adminView = document.getElementById('admin-view');
-        panel.classList.toggle('hidden', !state.showAdmin);
-        panel.classList.toggle('flex', state.showAdmin);
-
-        if (state.showAdmin) {
-          renderAdminTabs();
-          if (state.adminTab === 'people') adminView.innerHTML = peopleView();
-          else if (state.adminTab === 'clients') adminView.innerHTML = clientsView();
-          else adminView.innerHTML = administrationProjectsView();
-        } else {
-          adminView.innerHTML = '';
-          document.getElementById('admin-tabs').innerHTML = '';
         }
+
+        document.getElementById('admin-panel').classList.add('hidden');
 
         bindForms();
         renderChallengeModal();
@@ -1938,6 +1867,7 @@ function filteredPeople() {
           bindExportModalActions();
           bindImportModalActions();
           bindPeopleOverviewModalActions();
+          bindAdminEntityModalActions();
 
           if (!applyAppRoute(window.location.pathname)) {
             state.homeTab = 'client-teams';
