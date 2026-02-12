@@ -76,14 +76,26 @@ INSERT INTO trades (name)
 VALUES
   ('UX'),
   ('UI'),
-  ('FE-DEV'),
-  ('BE-DEV'),
-  ('PM'),
-  ('TPM'),
+  ('DATA'),
+  ('STRATEGY'),
+  ('CONSULTING'),
+  ('DEV-FE'),
+  ('DEV-BE'),
+  ('DEV-FULLSTACK'),
+  ('DEV-OPS'),
+  ('ART'),
   ('COPY'),
   ('CREATIVE'),
-  ('CONSULTANT'),
-  ('OTHER')
+  ('IT'),
+  ('HR'),
+  ('ACCOUNT'),
+  ('PO'),
+  ('TPM'),
+  ('MANAGEMENT'),
+  ('ADMIN'),
+  ('CONTROLLING'),
+  ('TEMP'),
+  ('STUDENT')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO levels (name)

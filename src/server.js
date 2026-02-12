@@ -15,6 +15,14 @@ const pool = new Pool({
 
 const MONTH_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
+const TRADE_CATALOG = [
+  'UX', 'UI', 'DATA', 'STRATEGY', 'CONSULTING', 'DEV-FE', 'DEV-BE', 'DEV-FULLSTACK', 'DEV-OPS',
+  'ART', 'COPY', 'CREATIVE', 'IT', 'HR', 'ACCOUNT', 'PO', 'TPM', 'MANAGEMENT', 'ADMIN', 'CONTROLLING',
+  'TEMP', 'STUDENT'
+];
+
+const LEVEL_CATALOG = ['JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LEVEL'];
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -164,12 +172,54 @@ async function ensurePriorityCatalog() {
   }
 }
 
+async function ensurePeopleCatalog() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
+      `INSERT INTO trades (name)
+       SELECT value
+       FROM UNNEST($1::text[]) AS value
+       ON CONFLICT (name) DO NOTHING`,
+      [TRADE_CATALOG]
+    );
+
+    await client.query(
+      `INSERT INTO levels (name)
+       SELECT value
+       FROM UNNEST($1::text[]) AS value
+       ON CONFLICT (name) DO NOTHING`,
+      [LEVEL_CATALOG]
+    );
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function getPeopleCatalogLookups(client = pool) {
+  const [trades, levels] = await Promise.all([
+    client.query('SELECT id, name FROM trades WHERE name = ANY($1::text[]) ORDER BY name', [TRADE_CATALOG]),
+    client.query('SELECT id, name FROM levels WHERE name = ANY($1::text[]) ORDER BY name', [LEVEL_CATALOG])
+  ]);
+
+  return {
+    tradeByName: new Map(trades.rows.map((row) => [String(row.name).toUpperCase(), row.id])),
+    levelByName: new Map(levels.rows.map((row) => [String(row.name).toUpperCase(), row.id]))
+  };
+}
+
 app.get('/api/meta', async (_req, res) => {
   try {
     const [priorities, trades, levels] = await Promise.all([
       pool.query('SELECT id, name FROM priorities ORDER BY id'),
-      pool.query('SELECT id, name FROM trades ORDER BY id'),
-      pool.query('SELECT id, name FROM levels ORDER BY id')
+      pool.query('SELECT id, name FROM trades WHERE name = ANY($1::text[]) ORDER BY array_position($1::text[], name)', [TRADE_CATALOG]),
+      pool.query('SELECT id, name FROM levels WHERE name = ANY($1::text[]) ORDER BY array_position($1::text[], name)', [LEVEL_CATALOG])
     ]);
 
     res.json({
@@ -696,7 +746,13 @@ app.get('/api/export', async (req, res) => {
     const [clients, projects, people, challenges, assignments] = await Promise.all([
       pool.query('SELECT id, name, location, since_month, priority_id FROM clients ORDER BY id'),
       pool.query('SELECT id, client_id, name, start_month, end_month, budget_cents FROM projects ORDER BY id'),
-      pool.query('SELECT id, first_name, last_name, trade_id, level_id FROM people ORDER BY id'),
+      pool.query(
+        `SELECT p.id, p.first_name, p.last_name, t.name AS trade, l.name AS level
+         FROM people p
+         JOIN trades t ON p.trade_id = t.id
+         JOIN levels l ON p.level_id = l.id
+         ORDER BY p.id`
+      ),
       pool.query('SELECT id, project_id, title, description FROM challenges ORDER BY id'),
       pool.query('SELECT id, project_id, challenge_id, person_id, is_owner, is_leader, quantity FROM assignments ORDER BY id')
     ]);
@@ -823,6 +879,34 @@ function validateImportPayload(payload) {
   return null;
 }
 
+async function normalizeImportPeople(payload) {
+  const { tradeByName, levelByName } = await getPeopleCatalogLookups();
+
+  for (const row of payload.people) {
+    let tradeId = isPositiveInteger(row.trade_id) ? Number(row.trade_id) : null;
+    let levelId = isPositiveInteger(row.level_id) ? Number(row.level_id) : null;
+
+    if (!tradeId && row.trade) {
+      tradeId = tradeByName.get(String(row.trade).trim().toUpperCase()) || null;
+      if (!tradeId) return `Invalid trade '${row.trade}' in person id ${row.id}.`;
+    }
+
+    if (!levelId && row.level) {
+      levelId = levelByName.get(String(row.level).trim().toUpperCase()) || null;
+      if (!levelId) return `Invalid level '${row.level}' in person id ${row.id}.`;
+    }
+
+    if (!tradeId || !levelId) {
+      return `Invalid person row with id ${row.id}.`;
+    }
+
+    row.trade_id = tradeId;
+    row.level_id = levelId;
+  }
+
+  return null;
+}
+
 function csvEscape(value) {
   const raw = value === null || value === undefined ? '' : String(value);
   if (raw.includes('"') || raw.includes(',') || raw.includes('\n') || raw.includes('\r')) {
@@ -834,7 +918,7 @@ function csvEscape(value) {
 function payloadToCsv(payload) {
   const headers = [
     'entity', 'id', 'client_id', 'project_id', 'challenge_id', 'person_id', 'name', 'location', 'since_month', 'priority_id',
-    'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade_id', 'level_id', 'title', 'description',
+    'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade', 'level', 'title', 'description',
     'is_owner', 'is_leader', 'quantity'
   ];
 
@@ -996,6 +1080,8 @@ function csvToPayload(text) {
         id: parseCsvInteger(record.id),
         first_name: record.first_name,
         last_name: record.last_name,
+        trade: record.trade,
+        level: record.level,
         trade_id: parseCsvInteger(record.trade_id),
         level_id: parseCsvInteger(record.level_id)
       });
@@ -1048,6 +1134,9 @@ app.post('/api/import/preview', async (req, res) => {
       return badRequest(res, 'Unsupported import format.');
     }
 
+    const normalizationError = await normalizeImportPeople(payload);
+    if (normalizationError) return badRequest(res, normalizationError);
+
     const validationError = validateImportPayload(payload);
     if (validationError) return badRequest(res, validationError);
 
@@ -1066,6 +1155,11 @@ app.post('/api/import', async (req, res) => {
 
   if (!payload) {
     return badRequest(res, 'Import payload must contain a data object.');
+  }
+
+  const normalizationError = await normalizeImportPeople(payload);
+  if (normalizationError) {
+    return badRequest(res, normalizationError);
   }
 
   const validationError = validateImportPayload(payload);
@@ -1153,8 +1247,9 @@ app.get('/health', async (_req, res) => {
 async function startServer() {
   try {
     await ensurePriorityCatalog();
+    await ensurePeopleCatalog();
   } catch (error) {
-    console.warn('Priority catalog initialization skipped at startup.', error.message);
+    console.warn('Catalog initialization skipped at startup.', error.message);
   }
 
   app.listen(port, () => {
