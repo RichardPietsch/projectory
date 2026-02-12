@@ -1850,7 +1850,7 @@ function filteredPeople() {
       };
 
       function adminStandaloneView() {
-        const tabs = adminTabs.map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setAdminTab(${JSON.stringify(tab.id)})">${tab.label}</button>`).join('');
+        const tabs = adminTabs.map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setAdminTab('${tab.id}')">${tab.label}</button>`).join('');
         const body = state.adminTab === 'people' ? peopleView() : state.adminTab === 'clients' ? clientsView() : administrationProjectsView();
         return `<div class="space-y-4"><div class="flex items-center justify-between"><h2 class="text-2xl font-bold">Administration</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="closeAdminStandalone()">Back to app</button></div><div class="flex gap-2">${tabs}</div>${body}</div>`;
       }
