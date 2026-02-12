@@ -719,13 +719,12 @@ function clientsView() {
 
           const projectRows = sortedProjects
             .map((project) => {
-              const noPeopleMessage = `There's no people assigned to this project, yet`;
               const ownerPills = project.ownerNames.length
                 ? project.ownerNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${name}</span>`).join('')
-                : `<span class="text-slate-400">${noPeopleMessage}</span>`;
+                : `<span class="text-slate-400">No client ownership assigned</span>`;
               const leaderPills = project.leaderNames.length
                 ? project.leaderNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-emerald-400/70 bg-emerald-600 px-2 py-1 text-xs text-emerald-50">${name}</span>`).join('')
-                : `<span class="text-slate-400">${noPeopleMessage}</span>`;
+                : `<span class="text-slate-400">No client leadership assigned</span>`;
 
               return `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openProjectDetail(${project.id})">
                 <td class="p-2">
