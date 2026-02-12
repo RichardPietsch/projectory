@@ -407,6 +407,128 @@
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4"><div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-semibold">People</h2><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick="openAdminPersonModal()">Add Person</button></div><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Trade</th><th class="p-2">Level</th><th class="p-2">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`;
       }
 
+
+
+      function peopleOverviewView() {
+        function assignmentsWarningClass(count) {
+          if (count === 0) return 'text-slate-100';
+          if (count <= 5) return 'text-emerald-300';
+          if (count <= 8) return 'text-amber-300';
+          return 'text-rose-300';
+        }
+
+        function roleCountWarningClass(count) {
+          if (count === 0) return 'text-slate-100';
+          if (count <= 2) return 'text-emerald-300';
+          if (count <= 4) return 'text-amber-300';
+          return 'text-rose-300';
+        }
+
+        function workloadWarningClass(workload) {
+          if (workload === 0) return 'text-slate-100';
+          if (workload < 100) return 'text-amber-300';
+          if (workload === 100) return 'text-emerald-300';
+          return 'text-rose-300';
+        }
+
+        const byPerson = new Map();
+        for (const assignment of state.projectsPayload.assignments) {
+          const key = String(assignment.person_id);
+          if (!byPerson.has(key)) byPerson.set(key, []);
+          byPerson.get(key).push(assignment);
+        }
+
+        const levelOrder = new Map(state.meta.levels.map((level, index) => [String(level.name || '').toLowerCase(), index]));
+        const rowsData = state.people.map((person) => {
+          const assignments = byPerson.get(String(person.id)) || [];
+          const assignmentCount = assignments.length;
+          const ownershipCount = assignments.filter((a) => a.is_owner).length;
+          const leadershipCount = assignments.filter((a) => a.is_leader).length;
+          const contributionsCount = assignments.filter((a) => !a.is_owner && !a.is_leader).length;
+          const workloadTotal = Math.round(assignments.reduce((sum, a) => sum + Number(a.quantity || 0), 0));
+          return {
+            ...person,
+            assignmentCount,
+            ownershipCount,
+            leadershipCount,
+            contributionsCount,
+            workloadTotal,
+            nameSort: `${person.first_name} ${person.last_name}`.toLowerCase(),
+            tradeSort: String(person.trade_name || '').toLowerCase(),
+            levelSort: levelOrder.get(String(person.level_name || '').toLowerCase()) ?? Number.MAX_SAFE_INTEGER
+          };
+        });
+
+        const sorted = [...rowsData].sort((a, b) => {
+          switch (state.peopleOverviewSort) {
+            case 'name_desc':
+              return b.nameSort.localeCompare(a.nameSort);
+            case 'trade_asc':
+              return a.tradeSort.localeCompare(b.tradeSort) || a.nameSort.localeCompare(b.nameSort);
+            case 'trade_desc':
+              return b.tradeSort.localeCompare(a.tradeSort) || a.nameSort.localeCompare(b.nameSort);
+            case 'level_asc':
+              return a.levelSort - b.levelSort || a.nameSort.localeCompare(b.nameSort);
+            case 'level_desc':
+              return b.levelSort - a.levelSort || a.nameSort.localeCompare(b.nameSort);
+            case 'assignments_asc':
+              return a.assignmentCount - b.assignmentCount || a.nameSort.localeCompare(b.nameSort);
+            case 'assignments_desc':
+              return b.assignmentCount - a.assignmentCount || a.nameSort.localeCompare(b.nameSort);
+            case 'ownerships_asc':
+              return a.ownershipCount - b.ownershipCount || a.nameSort.localeCompare(b.nameSort);
+            case 'ownerships_desc':
+              return b.ownershipCount - a.ownershipCount || a.nameSort.localeCompare(b.nameSort);
+            case 'leaderships_asc':
+              return a.leadershipCount - b.leadershipCount || a.nameSort.localeCompare(b.nameSort);
+            case 'leaderships_desc':
+              return b.leadershipCount - a.leadershipCount || a.nameSort.localeCompare(b.nameSort);
+            case 'contributions_asc':
+              return a.contributionsCount - b.contributionsCount || a.nameSort.localeCompare(b.nameSort);
+            case 'contributions_desc':
+              return b.contributionsCount - a.contributionsCount || a.nameSort.localeCompare(b.nameSort);
+            case 'quantity_asc':
+              return a.workloadTotal - b.workloadTotal || a.nameSort.localeCompare(b.nameSort);
+            case 'quantity_desc':
+              return b.workloadTotal - a.workloadTotal || a.nameSort.localeCompare(b.nameSort);
+            case 'name_asc':
+            default:
+              return a.nameSort.localeCompare(b.nameSort);
+          }
+        });
+
+        const rows = sorted.map((person) => `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openPeopleOverviewModal(${person.id})">
+            <td class="p-2">${person.first_name} ${person.last_name}</td>
+            <td class="p-2">${person.trade_name}</td>
+            <td class="p-2">${person.level_name}</td>
+            <td class="p-2 font-semibold ${assignmentsWarningClass(person.assignmentCount)}">${person.assignmentCount}</td>
+            <td class="p-2 font-semibold ${roleCountWarningClass(person.ownershipCount)}">${person.ownershipCount}</td>
+            <td class="p-2 font-semibold ${roleCountWarningClass(person.leadershipCount)}">${person.leadershipCount}</td>
+            <td class="p-2 font-semibold ${assignmentsWarningClass(person.contributionsCount)}">${person.contributionsCount}</td>
+            <td class="p-2 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}%</td>
+          </tr>`).join('');
+
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <div class="mb-3">
+            <h3 class="text-lg font-semibold">People Overview</h3>
+            <p class="text-xs text-slate-400">Organization-wide assignment, role and workload insights.</p>
+          </div>
+          <table class="w-full text-left text-sm">
+            <thead><tr class="text-slate-400">
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('name')">Name ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('trade')">Title ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('level')">Level ${state.peopleOverviewSort.startsWith('level_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">Assignments ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">Ownerships ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">Leaderships ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('contributions')">Contributions ${state.peopleOverviewSort.startsWith('contributions_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">Workload ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+      }
+
 function clientsView() {
         const sortedClients = [...state.clients].sort((a, b) => {
           const nameA = String(a.name || '').toLowerCase();
