@@ -1137,7 +1137,7 @@ app.post('/api/import', async (req, res) => {
 });
 
 
-app.get(['/teams', '/teams/:id', '/people', '/people/:id'], (_req, res) => {
+app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab'], (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 

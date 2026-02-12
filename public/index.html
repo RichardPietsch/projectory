@@ -1245,11 +1245,13 @@ function filteredPeople() {
         state.listenersBound.header = true;
         document.getElementById('admin-toggle')?.addEventListener('click', () => {
           state.showAdmin = true;
+          navigateFromState();
           render();
         });
 
         document.getElementById('admin-close')?.addEventListener('click', () => {
           state.showAdmin = false;
+          navigateFromState();
           render();
         });
       }
@@ -1750,19 +1752,27 @@ function filteredPeople() {
         const parts = normalized ? normalized.split('/') : [];
 
         if (parts.length === 0 || (parts.length === 1 && parts[0] === 'teams')) {
-          return { homeTab: 'client-teams', projectId: '', personId: '' };
+          return { mode: 'app', homeTab: 'client-teams', projectId: '', personId: '' };
         }
 
         if (parts[0] === 'teams' && parts.length === 2) {
-          return { homeTab: 'client-teams', projectId: parts[1], personId: '' };
+          return { mode: 'app', homeTab: 'client-teams', projectId: parts[1], personId: '' };
         }
 
         if (parts.length === 1 && parts[0] === 'people') {
-          return { homeTab: 'people-overview', projectId: '', personId: '' };
+          return { mode: 'app', homeTab: 'people-overview', projectId: '', personId: '' };
         }
 
         if (parts[0] === 'people' && parts.length === 2) {
-          return { homeTab: 'people-overview', projectId: '', personId: parts[1] };
+          return { mode: 'app', homeTab: 'people-overview', projectId: '', personId: parts[1] };
+        }
+
+        if (parts.length === 1 && parts[0] === 'admin') {
+          return { mode: 'admin', adminTab: state.adminTab || 'people' };
+        }
+
+        if (parts[0] === 'admin' && parts.length === 2 && adminTabs.some((tab) => tab.id === parts[1])) {
+          return { mode: 'admin', adminTab: parts[1] };
         }
 
         return null;
@@ -1772,6 +1782,15 @@ function filteredPeople() {
         const route = parseAppRoute(pathname);
         if (!route) return false;
 
+        if (route.mode === 'admin') {
+          state.showAdmin = true;
+          state.adminTab = route.adminTab || 'people';
+          state.peopleOverviewModal.open = false;
+          state.peopleOverviewModal.personId = null;
+          return true;
+        }
+
+        state.showAdmin = false;
         state.homeTab = route.homeTab;
 
         if (route.homeTab === 'client-teams') {
@@ -1795,6 +1814,10 @@ function filteredPeople() {
       }
 
       function pathFromState() {
+        if (state.showAdmin) {
+          return state.adminTab === 'people' ? '/admin' : `/admin/${state.adminTab}`;
+        }
+
         if (state.homeTab === 'people-overview') {
           if (state.peopleOverviewModal.open && state.peopleOverviewModal.personId) {
             return `/people/${state.peopleOverviewModal.personId}`;
@@ -1832,8 +1855,8 @@ function filteredPeople() {
         return `<div class="space-y-4"><div class="flex items-center justify-between"><h2 class="text-2xl font-bold">Administration</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="closeAdminStandalone()">Back to app</button></div><div class="flex gap-2">${tabs}</div>${body}</div>`;
       }
 
-      window.setAdminTab = function setAdminTab(tabId) { state.adminTab = tabId; render(); };
-      window.closeAdminStandalone = function closeAdminStandalone() { state.showAdmin = false; render(); };
+      window.setAdminTab = function setAdminTab(tabId) { state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
+      window.closeAdminStandalone = function closeAdminStandalone() { state.showAdmin = false; navigateFromState(); render(); };
 
       function render() {
         if (state.showAdmin) {
@@ -1874,6 +1897,8 @@ function filteredPeople() {
             state.selectedProjectId = '';
             state.peopleOverviewModal.open = false;
             state.peopleOverviewModal.personId = null;
+            state.showAdmin = false;
+            state.adminTab = 'people';
             navigateFromState(false);
           }
 
