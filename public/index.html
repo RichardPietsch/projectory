@@ -272,6 +272,9 @@
         { id: 'projects', label: 'Project View' }
       ];
 
+      const CHALLENGE_TITLE_PREFILL = 'Placeholder Challenge';
+      const CHALLENGE_DESCRIPTION_PREFILL = 'Please edit this to reflect an actual challenge!';
+
       function showMessage(message, type = 'ok', options = {}) {
         const { actionLabel, onAction } = options;
         const container = document.getElementById('toast-container');
@@ -1361,6 +1364,20 @@ function filteredPeople() {
         state.listenersBound.challengeModal = true;
         document.getElementById('challenge-modal-close')?.addEventListener('click', closeChallengeModal);
         document.getElementById('challenge-cancel')?.addEventListener('click', closeChallengeModal);
+
+        const challengeForm = document.getElementById('challenge-modal-form');
+        const clearPrefilledFieldOnFocus = (field) => {
+          if (!field) return;
+          field.addEventListener('focus', () => {
+            if (field.dataset.prefilled === 'true') {
+              field.value = '';
+              field.dataset.prefilled = 'false';
+            }
+          });
+        };
+
+        clearPrefilledFieldOnFocus(challengeForm?.title);
+        clearPrefilledFieldOnFocus(challengeForm?.description);
       }
 
       function renderUnassignModal() {
@@ -1780,8 +1797,10 @@ function filteredPeople() {
         const form = document.getElementById('challenge-modal-form');
         if (form) {
           form.id.value = challenge ? challenge.id : '';
-          form.title.value = challenge ? challenge.title : '';
-          form.description.value = challenge ? challenge.description : '';
+          form.title.value = challenge ? challenge.title : CHALLENGE_TITLE_PREFILL;
+          form.description.value = challenge ? challenge.description : CHALLENGE_DESCRIPTION_PREFILL;
+          form.title.dataset.prefilled = challenge ? 'false' : 'true';
+          form.description.dataset.prefilled = challenge ? 'false' : 'true';
         }
         renderChallengeModal();
       };
