@@ -22,6 +22,7 @@ const TRADE_CATALOG = [
 ];
 
 const LEVEL_CATALOG = ['JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LEVEL'];
+const PROJECT_STATUS_VALUES = ['green', 'blue', 'yellow', 'red', 'white'];
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -52,6 +53,12 @@ function requireMonth(value, fieldName) {
     return `${fieldName} must be in yyyy-mm format.`;
   }
   return null;
+}
+
+function normalizeProjectStatus(status, fallback = 'white') {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (PROJECT_STATUS_VALUES.includes(normalized)) return normalized;
+  return fallback;
 }
 
 async function getPersonProjectTotalQuantity(personId, projectId, client = pool) {
@@ -200,6 +207,14 @@ async function ensurePeopleCatalog() {
   } finally {
     client.release();
   }
+}
+
+async function ensureProjectStatusColumn() {
+  await pool.query(`
+    ALTER TABLE projects
+    ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'white'
+    CHECK (status IN ('green', 'blue', 'yellow', 'red', 'white'))
+  `);
 }
 
 async function getPeopleCatalogLookups(client = pool) {
@@ -394,7 +409,7 @@ app.delete('/api/clients/:id', async (req, res) => {
 app.get('/api/projects', async (_req, res) => {
   try {
     const projects = await pool.query(
-      `SELECT p.id, p.name, p.start_month, p.end_month, p.budget_cents,
+      `SELECT p.id, p.name, p.status, p.start_month, p.end_month, p.budget_cents,
               c.id AS client_id, c.name AS client_name,
               pr.id AS priority_id, pr.name AS priority_name
        FROM projects p
@@ -434,7 +449,7 @@ app.get('/api/projects', async (_req, res) => {
 });
 
 app.post('/api/projects', async (req, res) => {
-  const { clientId, name, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
+  const { clientId, name, status, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
 
   if (!clientId || !name || !startMonth || (budgetEuros === undefined && budgetCents === undefined)) {
     return badRequest(res, 'clientId, name, startMonth and budgetEuros are required.');
@@ -459,10 +474,10 @@ app.post('/api/projects', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO projects (client_id, name, start_month, end_month, budget_cents)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO projects (client_id, name, status, start_month, end_month, budget_cents)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [clientId, name.trim(), startMonth, endMonth || null, normalizedBudgetCents]
+      [clientId, name.trim(), normalizeProjectStatus(status), startMonth, endMonth || null, normalizedBudgetCents]
     );
 
     return res.status(201).json({ id: result.rows[0].id });
@@ -472,7 +487,7 @@ app.post('/api/projects', async (req, res) => {
 });
 
 app.put('/api/projects/:id', async (req, res) => {
-  const { clientId, name, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
+  const { clientId, name, status, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
 
   if (!clientId || !name || !startMonth || (budgetEuros === undefined && budgetCents === undefined)) {
     return badRequest(res, 'clientId, name, startMonth and budgetEuros are required.');
@@ -498,9 +513,9 @@ app.put('/api/projects/:id', async (req, res) => {
 
     const result = await pool.query(
       `UPDATE projects
-       SET client_id = $1, name = $2, start_month = $3, end_month = $4, budget_cents = $5
-       WHERE id = $6`,
-      [clientId, name.trim(), startMonth, endMonth || null, normalizedBudgetCents, req.params.id]
+       SET client_id = $1, name = $2, status = $3, start_month = $4, end_month = $5, budget_cents = $6
+       WHERE id = $7`,
+      [clientId, name.trim(), normalizeProjectStatus(status), startMonth, endMonth || null, normalizedBudgetCents, req.params.id]
     );
 
     if (result.rowCount === 0) {
@@ -745,7 +760,7 @@ app.get('/api/export', async (req, res) => {
   try {
     const [clients, projects, people, challenges, assignments] = await Promise.all([
       pool.query('SELECT id, name, location, since_month, priority_id FROM clients ORDER BY id'),
-      pool.query('SELECT id, client_id, name, start_month, end_month, budget_cents FROM projects ORDER BY id'),
+      pool.query('SELECT id, client_id, name, status, start_month, end_month, budget_cents FROM projects ORDER BY id'),
       pool.query(
         `SELECT p.id, p.first_name, p.last_name, t.name AS trade, l.name AS level
          FROM people p
@@ -837,6 +852,10 @@ function validateImportPayload(payload) {
       return `Invalid project row with id ${row.id}.`;
     }
 
+    if (!PROJECT_STATUS_VALUES.includes(String(row.status || '').toLowerCase())) {
+      return `Invalid project status in project id ${row.id}.`;
+    }
+
     if (row.end_month && !MONTH_REGEX.test(row.end_month)) {
       return `Invalid end_month in project id ${row.id}.`;
     }
@@ -918,7 +937,7 @@ function csvEscape(value) {
 function payloadToCsv(payload) {
   const headers = [
     'entity', 'id', 'client_id', 'project_id', 'challenge_id', 'person_id', 'name', 'location', 'since_month', 'priority_id',
-    'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade', 'level', 'title', 'description',
+    'status', 'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade', 'level', 'title', 'description',
     'is_owner', 'is_leader', 'quantity'
   ];
 
@@ -1071,6 +1090,7 @@ function csvToPayload(text) {
         id: parseCsvInteger(record.id),
         client_id: parseCsvInteger(record.client_id),
         name: record.name,
+        status: normalizeProjectStatus(record.status),
         start_month: record.start_month,
         end_month: record.end_month || null,
         budget_cents: parseCsvInteger(record.budget_cents)
@@ -1134,6 +1154,10 @@ app.post('/api/import/preview', async (req, res) => {
       return badRequest(res, 'Unsupported import format.');
     }
 
+    for (const project of payload.projects) {
+      project.status = normalizeProjectStatus(project.status);
+    }
+
     const normalizationError = await normalizeImportPeople(payload);
     if (normalizationError) return badRequest(res, normalizationError);
 
@@ -1155,6 +1179,10 @@ app.post('/api/import', async (req, res) => {
 
   if (!payload) {
     return badRequest(res, 'Import payload must contain a data object.');
+  }
+
+  for (const project of payload.projects) {
+    project.status = normalizeProjectStatus(project.status);
   }
 
   const normalizationError = await normalizeImportPeople(payload);
@@ -1186,8 +1214,8 @@ app.post('/api/import', async (req, res) => {
 
     for (const row of payload.projects) {
       await client.query(
-        'INSERT INTO projects (id, client_id, name, start_month, end_month, budget_cents) VALUES ($1, $2, $3, $4, $5, $6)',
-        [row.id, row.client_id, row.name, row.start_month, row.end_month || null, row.budget_cents]
+        'INSERT INTO projects (id, client_id, name, status, start_month, end_month, budget_cents) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [row.id, row.client_id, row.name, normalizeProjectStatus(row.status), row.start_month, row.end_month || null, row.budget_cents]
       );
     }
 
@@ -1246,6 +1274,7 @@ app.get('/health', async (_req, res) => {
 
 async function startServer() {
   try {
+    await ensureProjectStatusColumn();
     await ensurePriorityCatalog();
     await ensurePeopleCatalog();
   } catch (error) {

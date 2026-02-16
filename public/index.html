@@ -203,6 +203,15 @@
         <form id="admin-project-form"><input type="hidden" name="id" />
           <label class="mb-2 block text-sm">Client<select required name="clientId" id="admin-project-client" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
           <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Status
+            <select required name="status" class="mt-1 w-full rounded bg-slate-950 p-2">
+              <option value="green">Formed Team</option>
+              <option value="blue">In Progress</option>
+              <option value="yellow">Needs Attention</option>
+              <option value="red">Needs Problem-Solving</option>
+              <option value="white">New</option>
+            </select>
+          </label>
           <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">End (yyyy-mm)<input name="endMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">Budget in EUR<input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
@@ -258,7 +267,7 @@
         clientsSort: 'name_asc',
         adminProjectsSort: 'project_asc',
         challengesSort: 'title_asc',
-        clientTeamsSort: 'product_asc',
+        clientTeamsSort: 'status_desc',
         exportModalOpen: false,
         importModalOpen: false,
         importPreviewData: null,
@@ -333,6 +342,22 @@
           minimumFractionDigits: 0,
           maximumFractionDigits: 0
         });
+      }
+
+      function getProjectStatusPresentation(status) {
+        const normalized = String(status || 'white').toLowerCase();
+        if (normalized === 'green') return { key: 'green', rank: 5, label: 'Formed Team', classes: 'border-emerald-400/70 bg-emerald-600 text-emerald-50' };
+        if (normalized === 'blue') return { key: 'blue', rank: 4, label: 'In Progress', classes: 'border-sky-400/70 bg-sky-600 text-sky-50' };
+        if (normalized === 'yellow') return { key: 'yellow', rank: 3, label: 'Needs Attention', classes: 'border-amber-300/70 bg-amber-500 text-amber-950' };
+        if (normalized === 'red') return { key: 'red', rank: 2, label: 'Needs Problem-Solving', classes: 'border-rose-400/70 bg-rose-600 text-rose-50' };
+        return { key: 'white', rank: 1, label: 'New', classes: 'border-slate-300/70 bg-white text-slate-900' };
+      }
+
+      function renderProjectStatusPill(status, projectId = null) {
+        const presentation = getProjectStatusPresentation(status);
+        const clickAttr = projectId ? ` onclick="openProjectStatusPicker(${projectId}, event)"` : '';
+        const interactiveClass = projectId ? ' cursor-pointer hover:brightness-110' : '';
+        return `<span class="inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${presentation.classes}${interactiveClass}"${clickAttr}>${presentation.label}</span>`;
       }
 
 
@@ -704,7 +729,8 @@ function clientsView() {
               productSort: String(project.name || '').toLowerCase(),
               clientSort: String(project.client_name || '').toLowerCase(),
               budgetSort: Number(project.budget_cents || 0),
-              prioritySort: getPriorityPresentation(project.priority_name).rank
+              prioritySort: getPriorityPresentation(project.priority_name).rank,
+              statusSort: getProjectStatusPresentation(project.status).rank
             };
           });
 
@@ -728,6 +754,10 @@ function clientsView() {
                 return a.prioritySort - b.prioritySort || a.productSort.localeCompare(b.productSort);
               case 'priority_desc':
                 return b.prioritySort - a.prioritySort || a.productSort.localeCompare(b.productSort);
+              case 'status_asc':
+                return a.statusSort - b.statusSort || a.productSort.localeCompare(b.productSort);
+              case 'status_desc':
+                return b.statusSort - a.statusSort || a.productSort.localeCompare(b.productSort);
               case 'product_asc':
               default:
                 return a.productSort.localeCompare(b.productSort) || a.clientSort.localeCompare(b.clientSort);
@@ -751,6 +781,7 @@ function clientsView() {
                 : `<span class="text-slate-400">No client leadership assigned</span>`;
 
               return `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openProjectDetail(${project.id})">
+                <td class="p-2 text-slate-300">${renderProjectStatusPill(project.status, project.id)}</td>
                 <td class="p-2">
                   <div class="font-medium text-slate-100">${project.name}</div>
                   <div class="text-xs text-slate-400">${project.client_name}</div>
@@ -771,6 +802,7 @@ function clientsView() {
             <table class="w-full text-left text-sm">
               <thead>
                 <tr class="text-slate-400">
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('status')">Status ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('product')">Product ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('budget')">Budget ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('priority')">Priority ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
@@ -960,6 +992,7 @@ function clientsView() {
               <div>
                 <h3 class="text-lg font-semibold">Challenge Overview</h3>
                 <p class="text-xs text-slate-400">What challenges need to be tackled to build a successful customer relationship?</p>
+                <p class="mt-2 text-xs text-slate-300">Status: ${renderProjectStatusPill(selectedProject.status, selectedProject.id)}</p>
               </div>
               <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>Add Challenge</button>
             </div>
@@ -1065,6 +1098,7 @@ function filteredPeople() {
         const form = document.getElementById('admin-project-form');
         form.id.value = project?.id || '';
         form.name.value = project?.name || '';
+        form.status.value = project?.status || 'white';
         form.startMonth.value = project?.start_month || '';
         form.endMonth.value = project?.end_month || '';
         form.budgetEuros.value = project ? (Number(project.budget_cents)/100).toFixed(2) : '';
@@ -1607,6 +1641,48 @@ function filteredPeople() {
         state.peopleOverviewModal.personId = String(personId);
         navigateFromState();
         render();
+      };
+
+      window.openProjectStatusPicker = async function openProjectStatusPicker(projectId, event) {
+        event?.stopPropagation?.();
+
+        const project = state.projectsPayload.projects.find((item) => String(item.id) === String(projectId));
+        if (!project) return;
+
+        const options = ['green', 'blue', 'yellow', 'red', 'white'];
+        const current = String(project.status || 'white').toLowerCase();
+        const chosen = window.prompt(`Set project status (${options.join(', ')}):`, current);
+        if (chosen === null) return;
+
+        const nextStatus = String(chosen).trim().toLowerCase();
+        if (!options.includes(nextStatus)) {
+          showMessage('Invalid status. Use one of: green, blue, yellow, red, white.', 'error');
+          return;
+        }
+
+        const labels = {
+          green: 'Formed Team',
+          blue: 'In Progress',
+          yellow: 'Needs Attention',
+          red: 'Needs Problem-Solving',
+          white: 'New'
+        };
+
+        await handleMutation(
+          () =>
+            api(`/api/projects/${project.id}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                clientId: project.client_id,
+                name: project.name,
+                status: nextStatus,
+                startMonth: project.start_month,
+                endMonth: project.end_month || '',
+                budgetCents: Number(project.budget_cents || 0)
+              })
+            }),
+          `Project status set to ${labels[nextStatus]}.`
+        );
       };
 
       window.setClientsSortField = function setClientsSortField(field) {

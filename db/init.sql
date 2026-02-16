@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS projects (
   id SERIAL PRIMARY KEY,
   client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
   name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'white' CHECK (status IN ('green', 'blue', 'yellow', 'red', 'white')),
   start_month CHAR(7) NOT NULL CHECK (start_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'),
   end_month CHAR(7) CHECK (end_month IS NULL OR end_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'),
   budget_cents INTEGER NOT NULL CHECK (budget_cents >= 0),
