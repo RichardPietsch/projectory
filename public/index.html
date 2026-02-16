@@ -97,6 +97,28 @@
       </div>
     </div>
 
+    <div id="project-status-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Update project status</h3>
+          <button id="project-status-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+        </div>
+        <label class="mb-4 block text-sm">Status
+          <select id="project-status-select" class="mt-1 w-full rounded bg-slate-950 p-2">
+            <option value="green">Formed Team</option>
+            <option value="blue">In Progress</option>
+            <option value="yellow">Needs Attention</option>
+            <option value="red">Needs Problem-Solving</option>
+            <option value="white">New</option>
+          </select>
+        </label>
+        <div class="flex justify-end gap-2">
+          <button id="project-status-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="project-status-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Status</button>
+        </div>
+      </div>
+    </div>
+
     <div id="assign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
@@ -249,6 +271,11 @@
           open: false,
           challengeId: null
         },
+        projectStatusModal: {
+          open: false,
+          projectId: null,
+          status: 'white'
+        },
         listenersBound: {
           header: false,
           footer: false,
@@ -259,7 +286,8 @@
           exportModal: false,
           importModal: false,
           peopleOverviewModal: false,
-          adminEntityModals: false
+          adminEntityModals: false,
+          projectStatusModal: false
         },
         assignSubmitting: false,
         challengeSubmitting: false,
@@ -1288,6 +1316,62 @@ function filteredPeople() {
         renderImportModal();
       }
 
+      function renderProjectStatusModal() {
+        const modal = document.getElementById('project-status-modal');
+        modal.classList.toggle('hidden', !state.projectStatusModal.open);
+        modal.classList.toggle('flex', state.projectStatusModal.open);
+        if (!state.projectStatusModal.open) return;
+        const select = document.getElementById('project-status-select');
+        if (select) select.value = state.projectStatusModal.status || 'white';
+      }
+
+      function closeProjectStatusModal() {
+        state.projectStatusModal.open = false;
+        state.projectStatusModal.projectId = null;
+        state.projectStatusModal.status = 'white';
+        renderProjectStatusModal();
+      }
+
+      async function confirmProjectStatusModal() {
+        const projectId = state.projectStatusModal.projectId;
+        if (!projectId) return;
+        const project = state.projectsPayload.projects.find((item) => String(item.id) === String(projectId));
+        if (!project) return;
+
+        const nextStatus = String(document.getElementById('project-status-select')?.value || '').toLowerCase();
+        const options = ['green', 'blue', 'yellow', 'red', 'white'];
+        if (!options.includes(nextStatus)) {
+          showMessage('Invalid status selected.', 'error');
+          return;
+        }
+
+        const labels = {
+          green: 'Formed Team',
+          blue: 'In Progress',
+          yellow: 'Needs Attention',
+          red: 'Needs Problem-Solving',
+          white: 'New'
+        };
+
+        await handleMutation(
+          () =>
+            api(`/api/projects/${project.id}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                clientId: project.client_id,
+                name: project.name,
+                status: nextStatus,
+                startMonth: project.start_month,
+                endMonth: project.end_month || '',
+                budgetCents: Number(project.budget_cents || 0)
+              })
+            }),
+          `Project status set to ${labels[nextStatus]}.`
+        );
+
+        closeProjectStatusModal();
+      }
+
       function openImportModal() {
         state.importModalOpen = true;
         state.importPreviewData = null;
@@ -1397,6 +1481,21 @@ function filteredPeople() {
             await confirmImport();
           } catch (error) {
             showMessage(`Import failed: ${error.message}`, 'error');
+          }
+        });
+      }
+
+      function bindProjectStatusModalActions() {
+        if (state.listenersBound.projectStatusModal) return;
+        state.listenersBound.projectStatusModal = true;
+
+        document.getElementById('project-status-modal-close')?.addEventListener('click', closeProjectStatusModal);
+        document.getElementById('project-status-cancel')?.addEventListener('click', closeProjectStatusModal);
+        document.getElementById('project-status-confirm')?.addEventListener('click', async () => {
+          try {
+            await confirmProjectStatusModal();
+          } catch (error) {
+            showMessage(error.message, 'error');
           }
         });
       }
@@ -1649,40 +1748,10 @@ function filteredPeople() {
         const project = state.projectsPayload.projects.find((item) => String(item.id) === String(projectId));
         if (!project) return;
 
-        const options = ['green', 'blue', 'yellow', 'red', 'white'];
-        const current = String(project.status || 'white').toLowerCase();
-        const chosen = window.prompt(`Set project status (${options.join(', ')}):`, current);
-        if (chosen === null) return;
-
-        const nextStatus = String(chosen).trim().toLowerCase();
-        if (!options.includes(nextStatus)) {
-          showMessage('Invalid status. Use one of: green, blue, yellow, red, white.', 'error');
-          return;
-        }
-
-        const labels = {
-          green: 'Formed Team',
-          blue: 'In Progress',
-          yellow: 'Needs Attention',
-          red: 'Needs Problem-Solving',
-          white: 'New'
-        };
-
-        await handleMutation(
-          () =>
-            api(`/api/projects/${project.id}`, {
-              method: 'PUT',
-              body: JSON.stringify({
-                clientId: project.client_id,
-                name: project.name,
-                status: nextStatus,
-                startMonth: project.start_month,
-                endMonth: project.end_month || '',
-                budgetCents: Number(project.budget_cents || 0)
-              })
-            }),
-          `Project status set to ${labels[nextStatus]}.`
-        );
+        state.projectStatusModal.open = true;
+        state.projectStatusModal.projectId = String(project.id);
+        state.projectStatusModal.status = String(project.status || 'white').toLowerCase();
+        renderProjectStatusModal();
       };
 
       window.setClientsSortField = function setClientsSortField(field) {
@@ -2085,6 +2154,7 @@ function filteredPeople() {
         renderUnassignModal();
         renderExportModal();
         renderImportModal();
+        renderProjectStatusModal();
         renderPeopleOverviewModal();
       }
 
@@ -2098,6 +2168,7 @@ function filteredPeople() {
           bindUnassignModalActions();
           bindExportModalActions();
           bindImportModalActions();
+          bindProjectStatusModalActions();
           bindPeopleOverviewModalActions();
           bindAdminEntityModalActions();
 
