@@ -374,18 +374,18 @@
 
       function getProjectStatusPresentation(status) {
         const normalized = String(status || 'white').toLowerCase();
-        if (normalized === 'green') return { key: 'green', rank: 5, label: 'Formed Team', classes: 'border-emerald-400/70 bg-emerald-600 text-emerald-50' };
-        if (normalized === 'blue') return { key: 'blue', rank: 4, label: 'In Progress', classes: 'border-sky-400/70 bg-sky-600 text-sky-50' };
-        if (normalized === 'yellow') return { key: 'yellow', rank: 3, label: 'Needs Attention', classes: 'border-amber-300/70 bg-amber-500 text-amber-950' };
-        if (normalized === 'red') return { key: 'red', rank: 2, label: 'Needs Problem-Solving', classes: 'border-rose-400/70 bg-rose-600 text-rose-50' };
-        return { key: 'white', rank: 1, label: 'New', classes: 'border-slate-300/70 bg-white text-slate-900' };
+        if (normalized === 'green') return { key: 'green', rank: 5, label: 'Formed Team', classes: 'border-emerald-300/80 bg-emerald-500' };
+        if (normalized === 'blue') return { key: 'blue', rank: 4, label: 'In Progress', classes: 'border-sky-300/80 bg-sky-500' };
+        if (normalized === 'yellow') return { key: 'yellow', rank: 3, label: 'Needs Attention', classes: 'border-amber-300/90 bg-amber-400' };
+        if (normalized === 'red') return { key: 'red', rank: 2, label: 'Needs Problem-Solving', classes: 'border-rose-300/80 bg-rose-500' };
+        return { key: 'white', rank: 1, label: 'New', classes: 'border-slate-300 bg-white' };
       }
 
       function renderProjectStatusPill(status, projectId = null) {
         const presentation = getProjectStatusPresentation(status);
         const clickAttr = projectId ? ` onclick="openProjectStatusPicker(${projectId}, event)"` : '';
-        const interactiveClass = projectId ? ' cursor-pointer hover:brightness-110' : '';
-        return `<span class="inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${presentation.classes}${interactiveClass}"${clickAttr}>${presentation.label}</span>`;
+        const interactiveClass = projectId ? ' cursor-pointer hover:scale-110' : '';
+        return `<span class="inline-flex h-3 w-3 rounded-full border ${presentation.classes}${interactiveClass}" title="${presentation.label}" aria-label="${presentation.label}"${clickAttr}></span>`;
       }
 
 
