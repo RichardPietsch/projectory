@@ -743,7 +743,7 @@ function clientsView() {
                 ? project.leaderEntries
                     .map((person) => {
                       const leaderClass = person.owner
-                        ? 'border-emerald-400/70 bg-transparent text-emerald-200'
+                        ? 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200'
                         : 'border-emerald-400/70 bg-emerald-600 text-emerald-50';
                       return `<span class="mb-1 mr-1 inline-flex rounded border px-2 py-1 text-xs ${leaderClass}">${person.name}</span>`;
                     })
@@ -848,8 +848,8 @@ function clientsView() {
           <p class="mb-3 text-xs text-slate-400">Click a name to change workload in full percentage points for all their assignments in this project.</p>
           <div class="space-y-3">
             ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50', 'border-blue-400/70 bg-blue-600 text-blue-50')}
-            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50', 'border-emerald-400/70 bg-transparent text-emerald-200', (personId) => ownerIds.has(personId))}
-            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-500 bg-slate-700 text-slate-100', 'border-slate-500 bg-transparent text-slate-300', (personId) => ownerIds.has(personId) || leaderIds.has(personId))}
+            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50', 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200', (personId) => ownerIds.has(personId))}
+            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-500 bg-slate-700 text-slate-100', 'border-slate-500 border-dotted bg-transparent text-slate-300', (personId) => ownerIds.has(personId) || leaderIds.has(personId))}
           </div>
         </div>`;
 
@@ -901,11 +901,18 @@ function clientsView() {
             const assignees = assignments.length
               ? assignments
                   .map((assignment) => {
+                    const personId = String(assignment.person_id);
+                    const hasOwnerRole = ownerIds.has(personId);
+                    const hasLeaderRole = leaderIds.has(personId);
                     const roleClass = assignment.is_owner
                       ? 'border-blue-400/70 bg-blue-600 text-blue-50'
                       : assignment.is_leader
-                        ? 'border-emerald-400/70 bg-emerald-600 text-emerald-50'
-                        : 'border-slate-500 bg-slate-700 text-slate-100';
+                        ? hasOwnerRole
+                          ? 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200'
+                          : 'border-emerald-400/70 bg-emerald-600 text-emerald-50'
+                        : hasOwnerRole || hasLeaderRole
+                          ? 'border-slate-500 border-dotted bg-transparent text-slate-300'
+                          : 'border-slate-500 bg-slate-700 text-slate-100';
                     const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
                     return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name} (${roleLabel})</button>`;
                   })
