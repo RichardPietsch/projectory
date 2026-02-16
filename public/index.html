@@ -734,6 +734,8 @@ function clientsView() {
               if (!peopleById.has(personId)) {
                 peopleById.set(personId, {
                   id: personId,
+                  firstName: String(assignment.first_name || ''),
+                  lastName: String(assignment.last_name || ''),
                   name: `${assignment.first_name} ${assignment.last_name}`,
                   owner: false,
                   leader: false
@@ -745,8 +747,9 @@ function clientsView() {
               if (assignment.is_leader) person.leader = true;
             }
 
-            const ownerEntries = Array.from(peopleById.values()).filter((person) => person.owner);
-            const leaderEntries = Array.from(peopleById.values()).filter((person) => person.leader);
+            const sortByFirstName = (a, b) => a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName);
+            const ownerEntries = Array.from(peopleById.values()).filter((person) => person.owner).sort(sortByFirstName);
+            const leaderEntries = Array.from(peopleById.values()).filter((person) => person.leader).sort(sortByFirstName);
 
             return {
               ...project,
@@ -883,7 +886,17 @@ function clientsView() {
         }
 
         function renderTierPeople(ids, tierLabel, primaryTierClass, secondaryTierClass, isSecondaryRole = () => false) {
-          const entries = Array.from(ids)
+          const sortedIds = Array.from(ids).sort((a, b) => {
+            const sampleA = (assignmentsByPerson.get(a) || [])[0] || {};
+            const sampleB = (assignmentsByPerson.get(b) || [])[0] || {};
+            const firstA = String(sampleA.first_name || '').toLowerCase();
+            const firstB = String(sampleB.first_name || '').toLowerCase();
+            const lastA = String(sampleA.last_name || '').toLowerCase();
+            const lastB = String(sampleB.last_name || '').toLowerCase();
+            return firstA.localeCompare(firstB) || lastA.localeCompare(lastB);
+          });
+
+          const entries = sortedIds
             .map((personId) => {
               const personAssignments = assignmentsByPerson.get(personId) || [];
               if (personAssignments.length === 0) return '';
@@ -959,7 +972,8 @@ function clientsView() {
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
             const assignees = assignments.length
-              ? assignments
+              ? [...assignments]
+                  .sort((a, b) => String(a.first_name || '').localeCompare(String(b.first_name || '')) || String(a.last_name || '').localeCompare(String(b.last_name || '')))
                   .map((assignment) => {
                     const personId = String(assignment.person_id);
                     const hasOwnerRole = ownerIds.has(personId);
