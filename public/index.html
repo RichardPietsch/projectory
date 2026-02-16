@@ -674,37 +674,33 @@ function clientsView() {
 
           const projectsWithTeams = projects.map((project) => {
             const projectAssignments = state.projectsPayload.assignments.filter((assignment) => Number(assignment.project_id) === Number(project.id));
-            const ownerNames = [];
-            const leaderNames = [];
-            const ownerSeen = new Set();
-            const leaderSeen = new Set();
+            const peopleById = new Map();
 
             for (const assignment of projectAssignments) {
               const personId = String(assignment.person_id);
-              const fullName = `${assignment.first_name} ${assignment.last_name}`;
-
-              if (assignment.is_owner) {
-                if (!ownerSeen.has(personId)) {
-                  ownerSeen.add(personId);
-                  ownerNames.push(fullName);
-                }
-                continue;
+              if (!peopleById.has(personId)) {
+                peopleById.set(personId, {
+                  id: personId,
+                  name: `${assignment.first_name} ${assignment.last_name}`,
+                  owner: false,
+                  leader: false
+                });
               }
+              const person = peopleById.get(personId);
 
-              if (assignment.is_leader) {
-                if (!ownerSeen.has(personId) && !leaderSeen.has(personId)) {
-                  leaderSeen.add(personId);
-                  leaderNames.push(fullName);
-                }
-              }
+              if (assignment.is_owner) person.owner = true;
+              if (assignment.is_leader) person.leader = true;
             }
+
+            const ownerEntries = Array.from(peopleById.values()).filter((person) => person.owner);
+            const leaderEntries = Array.from(peopleById.values()).filter((person) => person.leader);
 
             return {
               ...project,
-              ownerNames,
-              leaderNames,
-              ownerSort: ownerNames.join(', ').toLowerCase(),
-              leaderSort: leaderNames.join(', ').toLowerCase(),
+              ownerEntries,
+              leaderEntries,
+              ownerSort: ownerEntries.map((person) => person.name).join(', ').toLowerCase(),
+              leaderSort: leaderEntries.map((person) => person.name).join(', ').toLowerCase(),
               productSort: String(project.name || '').toLowerCase(),
               clientSort: String(project.client_name || '').toLowerCase(),
               budgetSort: Number(project.budget_cents || 0),
@@ -740,11 +736,18 @@ function clientsView() {
 
           const projectRows = sortedProjects
             .map((project) => {
-              const ownerPills = project.ownerNames.length
-                ? project.ownerNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${name}</span>`).join('')
+              const ownerPills = project.ownerEntries.length
+                ? project.ownerEntries.map((person) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${person.name}</span>`).join('')
                 : `<span class="text-slate-400">No client ownership assigned</span>`;
-              const leaderPills = project.leaderNames.length
-                ? project.leaderNames.map((name) => `<span class="mb-1 mr-1 inline-flex rounded border border-emerald-400/70 bg-emerald-600 px-2 py-1 text-xs text-emerald-50">${name}</span>`).join('')
+              const leaderPills = project.leaderEntries.length
+                ? project.leaderEntries
+                    .map((person) => {
+                      const leaderClass = person.owner
+                        ? 'border-emerald-400/70 bg-transparent text-emerald-200'
+                        : 'border-emerald-400/70 bg-emerald-600 text-emerald-50';
+                      return `<span class="mb-1 mr-1 inline-flex rounded border px-2 py-1 text-xs ${leaderClass}">${person.name}</span>`;
+                    })
+                    .join('')
                 : `<span class="text-slate-400">No client leadership assigned</span>`;
 
               return `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openProjectDetail(${project.id})">
@@ -819,16 +822,7 @@ function clientsView() {
           }
         }
 
-        for (const personId of ownerIds) {
-          leaderIds.delete(personId);
-          contributorIds.delete(personId);
-        }
-
-        for (const personId of leaderIds) {
-          contributorIds.delete(personId);
-        }
-
-        function renderTierPeople(ids, tierLabel, tierClass) {
+        function renderTierPeople(ids, tierLabel, primaryTierClass, secondaryTierClass, isSecondaryRole = () => false) {
           const entries = Array.from(ids)
             .map((personId) => {
               const personAssignments = assignmentsByPerson.get(personId) || [];
@@ -837,6 +831,7 @@ function clientsView() {
               const totalQuantity = personAssignments.reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
               const quantity = Math.round(totalQuantity);
               const name = `${sample.first_name} ${sample.last_name}`;
+              const tierClass = isSecondaryRole(personId) ? secondaryTierClass : primaryTierClass;
               return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}%)</button>`;
             })
             .filter(Boolean)
@@ -852,9 +847,9 @@ function clientsView() {
           <h3 class="mb-3 text-lg font-semibold">Project Team Overview</h3>
           <p class="mb-3 text-xs text-slate-400">Click a name to change workload in full percentage points for all their assignments in this project.</p>
           <div class="space-y-3">
-            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50')}
-            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50')}
-            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-500 bg-slate-700 text-slate-100')}
+            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50', 'border-blue-400/70 bg-blue-600 text-blue-50')}
+            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50', 'border-emerald-400/70 bg-transparent text-emerald-200', (personId) => ownerIds.has(personId))}
+            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-500 bg-slate-700 text-slate-100', 'border-slate-500 bg-transparent text-slate-300', (personId) => ownerIds.has(personId) || leaderIds.has(personId))}
           </div>
         </div>`;
 
