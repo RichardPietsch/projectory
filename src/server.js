@@ -226,6 +226,18 @@ async function ensureProjectStatusColumn() {
   `);
 }
 
+async function ensurePeopleFlagsColumns() {
+  await pool.query(`
+    ALTER TABLE people
+    ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN
+  `);
+
+  await pool.query(`
+    ALTER TABLE people
+    ADD COLUMN IF NOT EXISTS is_leaver BOOLEAN
+  `);
+}
+
 async function getPeopleCatalogLookups(client = pool) {
   const [trades, levels] = await Promise.all([
     client.query('SELECT id, name FROM trades WHERE name = ANY($1::text[]) ORDER BY name', [TRADE_CATALOG]),
@@ -1297,6 +1309,7 @@ app.get('/health', async (_req, res) => {
 async function startServer() {
   try {
     await ensureProjectStatusColumn();
+    await ensurePeopleFlagsColumns();
     await ensurePriorityCatalog();
     await ensurePeopleCatalog();
   } catch (error) {
