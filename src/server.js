@@ -40,6 +40,13 @@ function parseOptionalBoolean(value) {
   return null;
 }
 
+function parseWorkingHours(value) {
+  if (value === undefined || value === null || value === '') return 40;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
 function handleDbError(res, error) {
   if (error.code === '23503') {
     return res.status(409).json({ error: 'Cannot delete record because dependencies exist.' });
@@ -238,6 +245,15 @@ async function ensurePeopleFlagsColumns() {
   `);
 }
 
+async function ensurePeopleWorkingHoursColumn() {
+  await pool.query(`
+    ALTER TABLE people
+    ADD COLUMN IF NOT EXISTS working_hours INTEGER NOT NULL DEFAULT 40
+  `);
+
+  await pool.query('UPDATE people SET working_hours = 40 WHERE working_hours IS NULL');
+}
+
 async function getPeopleCatalogLookups(client = pool) {
   const [trades, levels] = await Promise.all([
     client.query('SELECT id, name FROM trades WHERE name = ANY($1::text[]) ORDER BY name', [TRADE_CATALOG]),
@@ -277,7 +293,8 @@ app.get('/api/people', async (_req, res) => {
               COALESCE(COUNT(a.id), 0) AS assignment_count,
               COALESCE(SUM(a.quantity), 0) AS assignment_quantity_total,
               COALESCE(p.is_hidden, FALSE) AS is_hidden,
-              COALESCE(p.is_leaver, FALSE) AS is_leaver
+              COALESCE(p.is_leaver, FALSE) AS is_leaver,
+              p.working_hours
        FROM people p
        JOIN trades t ON p.trade_id = t.id
        JOIN levels l ON p.level_id = l.id
@@ -293,18 +310,23 @@ app.get('/api/people', async (_req, res) => {
 });
 
 app.post('/api/people', async (req, res) => {
-  const { firstName, lastName, tradeId, levelId, isHidden, isLeaver } = req.body;
+  const { firstName, lastName, tradeId, levelId, isHidden, isLeaver, workingHours } = req.body;
+  const parsedWorkingHours = parseWorkingHours(workingHours);
 
   if (!firstName || !lastName || !tradeId || !levelId) {
     return badRequest(res, 'firstName, lastName, tradeId and levelId are required.');
   }
 
+  if (parsedWorkingHours === null) {
+    return badRequest(res, 'workingHours must be a positive integer.');
+  }
+
   try {
     const result = await pool.query(
-      `INSERT INTO people (first_name, last_name, trade_id, level_id, is_hidden, is_leaver)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO people (first_name, last_name, trade_id, level_id, is_hidden, is_leaver, working_hours)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id`,
-      [firstName.trim(), lastName.trim(), tradeId, levelId, parseOptionalBoolean(isHidden), parseOptionalBoolean(isLeaver)]
+      [firstName.trim(), lastName.trim(), tradeId, levelId, parseOptionalBoolean(isHidden), parseOptionalBoolean(isLeaver), parsedWorkingHours]
     );
 
     return res.status(201).json({ id: result.rows[0].id });
@@ -314,18 +336,23 @@ app.post('/api/people', async (req, res) => {
 });
 
 app.put('/api/people/:id', async (req, res) => {
-  const { firstName, lastName, tradeId, levelId, isHidden, isLeaver } = req.body;
+  const { firstName, lastName, tradeId, levelId, isHidden, isLeaver, workingHours } = req.body;
+  const parsedWorkingHours = parseWorkingHours(workingHours);
 
   if (!firstName || !lastName || !tradeId || !levelId) {
     return badRequest(res, 'firstName, lastName, tradeId and levelId are required.');
   }
 
+  if (parsedWorkingHours === null) {
+    return badRequest(res, 'workingHours must be a positive integer.');
+  }
+
   try {
     const result = await pool.query(
       `UPDATE people
-       SET first_name = $1, last_name = $2, trade_id = $3, level_id = $4, is_hidden = $5, is_leaver = $6
-       WHERE id = $7`,
-      [firstName.trim(), lastName.trim(), tradeId, levelId, parseOptionalBoolean(isHidden), parseOptionalBoolean(isLeaver), req.params.id]
+       SET first_name = $1, last_name = $2, trade_id = $3, level_id = $4, is_hidden = $5, is_leaver = $6, working_hours = $7
+       WHERE id = $8`,
+      [firstName.trim(), lastName.trim(), tradeId, levelId, parseOptionalBoolean(isHidden), parseOptionalBoolean(isLeaver), parsedWorkingHours, req.params.id]
     );
 
     if (result.rowCount === 0) {
@@ -454,7 +481,7 @@ app.get('/api/projects', async (_req, res) => {
     const assignments = await pool.query(
       `SELECT a.id, a.project_id, a.challenge_id, a.person_id,
               a.is_owner, a.is_leader, a.quantity,
-              pe.first_name, pe.last_name, COALESCE(pe.is_leaver, FALSE) AS is_leaver, ch.title AS challenge_title
+              pe.first_name, pe.last_name, COALESCE(pe.is_leaver, FALSE) AS is_leaver, pe.working_hours, ch.title AS challenge_title
        FROM assignments a
        JOIN people pe ON pe.id = a.person_id
        JOIN challenges ch ON ch.id = a.challenge_id
@@ -786,7 +813,7 @@ app.get('/api/export', async (req, res) => {
       pool.query('SELECT id, client_id, name, status, start_month, end_month, budget_cents FROM projects ORDER BY id'),
       pool.query(
         `SELECT p.id, p.first_name, p.last_name, t.name AS trade, l.name AS level,
-                COALESCE(p.is_hidden, FALSE) AS is_hidden, COALESCE(p.is_leaver, FALSE) AS is_leaver
+                COALESCE(p.is_hidden, FALSE) AS is_hidden, COALESCE(p.is_leaver, FALSE) AS is_leaver, p.working_hours
          FROM people p
          JOIN trades t ON p.trade_id = t.id
          JOIN levels l ON p.level_id = l.id
@@ -897,6 +924,10 @@ function validateImportPayload(payload) {
     if (row.is_leaver !== undefined && row.is_leaver !== null && typeof row.is_leaver !== 'boolean') {
       return `Invalid is_leaver flag in person row with id ${row.id}.`;
     }
+
+    if (row.working_hours !== undefined && row.working_hours !== null && !isPositiveInteger(row.working_hours)) {
+      return `Invalid working_hours in person row with id ${row.id}.`;
+    }
   }
 
   for (const row of payload.challenges) {
@@ -953,6 +984,7 @@ async function normalizeImportPeople(payload) {
 
     row.trade_id = tradeId;
     row.level_id = levelId;
+    row.working_hours = isPositiveInteger(row.working_hours) ? Number(row.working_hours) : 40;
   }
 
   return null;
@@ -969,7 +1001,7 @@ function csvEscape(value) {
 function payloadToCsv(payload) {
   const headers = [
     'entity', 'id', 'client_id', 'project_id', 'challenge_id', 'person_id', 'name', 'location', 'since_month', 'priority_id',
-    'status', 'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade', 'level', 'is_hidden', 'is_leaver', 'title', 'description',
+    'status', 'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade', 'level', 'is_hidden', 'is_leaver', 'working_hours', 'title', 'description',
     'is_owner', 'is_leader', 'quantity'
   ];
 
@@ -1137,7 +1169,8 @@ function csvToPayload(text) {
         trade_id: parseCsvInteger(record.trade_id),
         level_id: parseCsvInteger(record.level_id),
         is_hidden: parseCsvBoolean(record.is_hidden),
-        is_leaver: parseCsvBoolean(record.is_leaver)
+        is_leaver: parseCsvBoolean(record.is_leaver),
+        working_hours: parseCsvInteger(record.working_hours)
       });
     } else if (entity === 'challenges') {
       payload.challenges.push({
@@ -1255,8 +1288,8 @@ app.post('/api/import', async (req, res) => {
 
     for (const row of payload.people) {
       await client.query(
-        'INSERT INTO people (id, first_name, last_name, trade_id, level_id, is_hidden, is_leaver) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [row.id, row.first_name, row.last_name, row.trade_id, row.level_id, row.is_hidden ?? null, row.is_leaver ?? null]
+        'INSERT INTO people (id, first_name, last_name, trade_id, level_id, is_hidden, is_leaver, working_hours) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [row.id, row.first_name, row.last_name, row.trade_id, row.level_id, row.is_hidden ?? null, row.is_leaver ?? null, row.working_hours ?? 40]
       );
     }
 
@@ -1310,6 +1343,7 @@ async function startServer() {
   try {
     await ensureProjectStatusColumn();
     await ensurePeopleFlagsColumns();
+    await ensurePeopleWorkingHoursColumn();
     await ensurePriorityCatalog();
     await ensurePeopleCatalog();
   } catch (error) {

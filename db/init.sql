@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS people (
   level_id INTEGER NOT NULL REFERENCES levels(id) ON DELETE RESTRICT,
   is_hidden BOOLEAN,
   is_leaver BOOLEAN,
+  working_hours INTEGER NOT NULL DEFAULT 40 CHECK (working_hours > 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

@@ -8,7 +8,7 @@ Browser-based resource planning tool with three management views:
 ## What v1 includes
 
 ### Entities
-- **Person**: first name, last name, trade, level, optional `isHidden` + `isLeaver` flags
+- **Person**: first name, last name, trade, level, working hours (default 40), optional `isHidden` + `isLeaver` flags
 - **Client**: name, location, since month (`yyyy-mm`), priority
 - **Project**: belongs to exactly one client, start/end month (`yyyy-mm`), budget entered in **euros** (stored as cents internally)
 - **Challenge**: belongs to a project

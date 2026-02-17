@@ -203,6 +203,7 @@
           <label class="mb-2 block text-sm">Last Name<input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">Trade<select required name="tradeId" id="admin-person-trade" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
           <label class="mb-2 block text-sm">Level<select required name="levelId" id="admin-person-level" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 block text-sm">Working Hours<input required name="workingHours" type="number" min="1" step="1" class="mt-1 w-full rounded bg-slate-950 p-2" value="40" /></label>
           <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isHidden" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Hidden in non-admin views (if unassigned)</label>
           <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isLeaver" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Mark as future leaver</label>
           <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-person-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Person</button></div>
@@ -494,6 +495,16 @@
         return isLeaver ? ' <span class="iconify inline-block align-[-1px]" data-icon="mdi:run" aria-label="Leaver"></span>' : '';
       }
 
+      function formatWorkloadDuration(percentage, workingHours) {
+        const pct = Number(percentage) || 0;
+        const baseHours = Number(workingHours) || 40;
+        const minutes = Math.round(((baseHours * pct) / 100) * 4) * 15;
+        const hrs = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        if (mins === 0) return `${hrs}hrs`;
+        return `${hrs}hrs ${mins}min`;
+      }
+
       function peopleView() {
         const sortedPeople = [...state.people].sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
         const rows = sortedPeople.map((person) => `<tr class="border-t border-slate-800"><td class="p-2">${person.first_name} ${person.last_name}${personLeaverBadge(person)}${personHiddenBadge(person)}</td><td class="p-2">${person.trade_name}</td><td class="p-2">${person.level_name}</td><td class="p-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminPersonModal(${JSON.stringify(person)})'>Edit</button><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button></td></tr>`).join('');
@@ -598,7 +609,7 @@
             <td class="p-2 font-semibold ${roleCountWarningClass(person.ownershipCount)}">${person.ownershipCount}</td>
             <td class="p-2 font-semibold ${roleCountWarningClass(person.leadershipCount)}">${person.leadershipCount}</td>
             <td class="p-2 font-semibold ${assignmentsWarningClass(person.contributionsCount)}">${person.contributionsCount}</td>
-            <td class="p-2 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}%</td>
+            <td class="p-2 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}% (${formatWorkloadDuration(person.workloadTotal, person.working_hours)})</td>
           </tr>`).join('');
 
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
@@ -933,7 +944,7 @@ function clientsView() {
               const quantity = Math.round(totalQuantity);
               const name = `${sample.first_name} ${sample.last_name}${leaverRunIcon(sample.is_leaver)}`;
               const tierClass = isSecondaryRole(personId) ? secondaryTierClass : primaryTierClass;
-              return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}%)</button>`;
+              return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</button>`;
             })
             .filter(Boolean)
             .join(' ');
@@ -1142,6 +1153,7 @@ function filteredPeople() {
         form.id.value = person?.id || '';
         form.firstName.value = person?.first_name || '';
         form.lastName.value = person?.last_name || '';
+        form.workingHours.value = Number(person?.working_hours || 40);
         form.isHidden.checked = Boolean(person?.is_hidden);
         form.isLeaver.checked = Boolean(person?.is_leaver);
         modal.classList.remove('hidden'); modal.classList.add('flex');
@@ -1195,6 +1207,7 @@ function filteredPeople() {
           const id = payload.id; delete payload.id;
           payload.isHidden = Boolean(event.target.isHidden?.checked);
           payload.isLeaver = Boolean(event.target.isLeaver?.checked);
+          payload.workingHours = Number.parseInt(event.target.workingHours?.value, 10) || 40;
           await handleMutation(() => api(id ? `/api/people/${id}` : '/api/people', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Person saved.');
           closeAdminPersonModal();
         });
@@ -1966,7 +1979,7 @@ function filteredPeople() {
                     <div class="text-slate-400">${challengeDescription}</div>
                   </td>
                   <td class="p-2">${roleLabel}</td>
-                  <td class="p-2">${Math.round(Number(assignment.quantity || 0))}%</td>
+                  <td class="p-2">${Math.round(Number(assignment.quantity || 0))}% (${formatWorkloadDuration(Math.round(Number(assignment.quantity || 0)), person.working_hours)})</td>
                 </tr>`;
               })
               .join('');
@@ -1974,7 +1987,7 @@ function filteredPeople() {
             return `<section class="mb-4 rounded border border-slate-700 bg-slate-950/50 p-3">
               <div class="mb-2 flex items-center justify-between gap-2">
                 <h4 class="font-semibold text-slate-100">${projectName}</h4>
-                <button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust workload (${projectQuantity}%)</button>
+                <button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust workload (${projectQuantity}% · ${formatWorkloadDuration(projectQuantity, person.working_hours)})</button>
               </div>
               <table class="w-full text-left text-xs">
                 <thead><tr class="text-slate-400"><th class="p-2">Challenge</th><th class="p-2">Role</th><th class="p-2">Workload</th></tr></thead>
