@@ -19,7 +19,7 @@ Browser-based resource planning tool with three management views:
 - Static lists are pre-seeded on DB startup:
   - Priorities: Prio 1..4
   - Trades: UX, UI, DATA, STRATEGY, CONSULTING, DEV-FE, DEV-BE, DEV-FULLSTACK, DEV-OPS, ART, COPY, CREATIVE, IT, HR, ACCOUNT, PO, TPM, MANAGEMENT, ADMIN, CONTROLLING, TEMP, STUDENT
-  - Levels: JUNIOR, MIDWEIGHT, SENIOR, DIRECTOR, C-LEVEL
+  - Levels: —, JUNIOR, MIDWEIGHT, SENIOR, DIRECTOR, C-LEVEL
 - A project must belong to one client.
 - An assignment cannot be both owner and leader at once.
 - The same person cannot be assigned to the same challenge more than once.

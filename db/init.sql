@@ -103,6 +103,7 @@ ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO levels (name)
 VALUES
+  ('—'),
   ('JUNIOR'),
   ('MIDWEIGHT'),
   ('SENIOR'),

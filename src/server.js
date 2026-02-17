@@ -21,7 +21,7 @@ const TRADE_CATALOG = [
   'TEMP', 'STUDENT'
 ];
 
-const LEVEL_CATALOG = ['JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LEVEL'];
+const LEVEL_CATALOG = ['—', 'JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LEVEL'];
 const PROJECT_STATUS_VALUES = ['green', 'blue', 'yellow', 'red', 'white'];
 
 app.use(express.json());
