@@ -1103,7 +1103,7 @@ function filteredPeople() {
           .map(
             (person) => `<label class="mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-900">
               <input type="radio" name="assign-person" value="${person.id}" ${String(state.assignModal.selectedPersonId) === String(person.id) ? 'checked' : ''} />
-              <span>${person.first_name} ${person.last_name} <span class="text-xs text-slate-400">(${person.trade_name})</span></span>
+              <span>${person.first_name} ${person.last_name}${person.is_leaver ? " <span class=\"ml-1 rounded border border-amber-500/60 px-1 py-0.5 text-[10px] uppercase tracking-wide text-amber-300\">Leaver</span>" : ""} <span class="text-xs text-slate-400">(${person.trade_name})</span></span>
             </label>`
           )
           .join('');
