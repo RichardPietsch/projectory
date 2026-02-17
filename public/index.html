@@ -769,6 +769,10 @@ function clientsView() {
             switch (state.clientTeamsSort) {
               case 'product_desc':
                 return b.productSort.localeCompare(a.productSort) || a.clientSort.localeCompare(b.clientSort);
+              case 'client_asc':
+                return a.clientSort.localeCompare(b.clientSort) || a.productSort.localeCompare(b.productSort);
+              case 'client_desc':
+                return b.clientSort.localeCompare(a.clientSort) || a.productSort.localeCompare(b.productSort);
               case 'budget_asc':
                 return a.budgetSort - b.budgetSort || a.productSort.localeCompare(b.productSort);
               case 'budget_desc':
@@ -815,8 +819,8 @@ function clientsView() {
                 <td class="p-2 text-slate-300">${renderProjectStatusPill(project.status, project.id)}</td>
                 <td class="p-2">
                   <div class="font-medium text-slate-100">${project.name}</div>
-                  <div class="text-xs text-slate-400">${project.client_name}</div>
                 </td>
+                <td class="p-2 text-slate-300">${project.client_name}</td>
                 <td class="p-2 text-slate-300">${formatEuroWhole(project.budget_cents)}</td>
                 <td class="p-2 text-slate-300">${renderPriorityPill(project.priority_name)}</td>
                 <td class="p-2 text-slate-300">${ownerPills}</td>
@@ -835,6 +839,7 @@ function clientsView() {
                 <tr class="text-slate-400">
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('status')">Status ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('product')">Product ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('client')">Client ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('budget')">Budget ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('priority')">Priority ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('owner')">Owner ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
