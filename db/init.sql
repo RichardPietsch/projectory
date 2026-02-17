@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS people (
   last_name TEXT NOT NULL,
   trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE RESTRICT,
   level_id INTEGER NOT NULL REFERENCES levels(id) ON DELETE RESTRICT,
+  is_hidden BOOLEAN,
+  is_leaver BOOLEAN,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

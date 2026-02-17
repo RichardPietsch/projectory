@@ -8,7 +8,7 @@ Browser-based resource planning tool with three management views:
 ## What v1 includes
 
 ### Entities
-- **Person**: first name, last name, trade, level
+- **Person**: first name, last name, trade, level, optional `isHidden` + `isLeaver` flags
 - **Client**: name, location, since month (`yyyy-mm`), priority
 - **Project**: belongs to exactly one client, start/end month (`yyyy-mm`), budget entered in **euros** (stored as cents internally)
 - **Challenge**: belongs to a project
@@ -26,6 +26,7 @@ Browser-based resource planning tool with three management views:
 - Multiple owners/leaders per project are allowed.
 - Deleting records is blocked if dependencies exist (FK restrict behavior).
 - Assignment `quantity` is auto-split equally across a person's assigned projects and always sums to 100%.
+- A person with `isHidden=true` is hidden from non-admin views only when they have no challenge assignments; assigned people remain visible.
 
 ## Run locally with Docker Desktop (recommended)
 

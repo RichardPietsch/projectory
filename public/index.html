@@ -201,6 +201,8 @@
           <label class="mb-2 block text-sm">Last Name<input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">Trade<select required name="tradeId" id="admin-person-trade" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
           <label class="mb-2 block text-sm">Level<select required name="levelId" id="admin-person-level" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isHidden" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Hidden in non-admin views (if unassigned)</label>
+          <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isLeaver" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Mark as future leaver</label>
           <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-person-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Person</button></div>
         </form>
       </div>
@@ -472,9 +474,19 @@
           .join('');
       }
 
+      function personIsVisibleInNonAdmin(person) {
+        const isHidden = Boolean(person.is_hidden);
+        if (!isHidden) return true;
+        return Number(person.assignment_count || 0) > 0;
+      }
+
+      function personLeaverBadge(person) {
+        return person.is_leaver ? '<span class="ml-2 rounded border border-amber-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">Leaver</span>' : '';
+      }
+
       function peopleView() {
         const sortedPeople = [...state.people].sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
-        const rows = sortedPeople.map((person) => `<tr class="border-t border-slate-800"><td class="p-2">${person.first_name} ${person.last_name}</td><td class="p-2">${person.trade_name}</td><td class="p-2">${person.level_name}</td><td class="p-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminPersonModal(${JSON.stringify(person)})'>Edit</button><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button></td></tr>`).join('');
+        const rows = sortedPeople.map((person) => `<tr class="border-t border-slate-800"><td class="p-2">${person.first_name} ${person.last_name}${personLeaverBadge(person)}</td><td class="p-2">${person.trade_name}</td><td class="p-2">${person.level_name}</td><td class="p-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminPersonModal(${JSON.stringify(person)})'>Edit</button><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button></td></tr>`).join('');
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4"><div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-semibold">People</h2><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick="openAdminPersonModal()">Add Person</button></div><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Trade</th><th class="p-2">Level</th><th class="p-2">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`;
       }
 
@@ -510,7 +522,7 @@
         }
 
         const levelOrder = new Map(state.meta.levels.map((level, index) => [String(level.name || '').toLowerCase(), index]));
-        const rowsData = state.people.map((person) => {
+        const rowsData = state.people.filter(personIsVisibleInNonAdmin).map((person) => {
           const assignments = byPerson.get(String(person.id)) || [];
           const assignmentCount = assignments.length;
           const ownershipCount = assignments.filter((a) => a.is_owner).length;
@@ -569,7 +581,7 @@
         });
 
         const rows = sorted.map((person) => `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openPeopleOverviewModal(${person.id})">
-            <td class="p-2">${person.first_name} ${person.last_name}</td>
+            <td class="p-2">${person.first_name} ${person.last_name}${personLeaverBadge(person)}</td>
             <td class="p-2">${person.trade_name}</td>
             <td class="p-2">${person.level_name}</td>
             <td class="p-2 font-semibold ${assignmentsWarningClass(person.assignmentCount)}">${person.assignmentCount}</td>
@@ -1052,10 +1064,10 @@ function clientsView() {
 function filteredPeople() {
         const search = state.assignModal.search.trim().toLowerCase();
         if (!search) {
-          return state.people;
+          return state.people.filter(personIsVisibleInNonAdmin);
         }
 
-        return state.people.filter((person) => `${person.first_name} ${person.last_name}`.toLowerCase().includes(search));
+        return state.people.filter((person) => personIsVisibleInNonAdmin(person) && `${person.first_name} ${person.last_name}`.toLowerCase().includes(search));
       }
 
       function renderAssignModal() {
@@ -1119,6 +1131,8 @@ function filteredPeople() {
         form.id.value = person?.id || '';
         form.firstName.value = person?.first_name || '';
         form.lastName.value = person?.last_name || '';
+        form.isHidden.checked = Boolean(person?.is_hidden);
+        form.isLeaver.checked = Boolean(person?.is_leaver);
         modal.classList.remove('hidden'); modal.classList.add('flex');
       }
       window.openAdminPersonModal = openAdminPersonModal;
@@ -1168,6 +1182,8 @@ function filteredPeople() {
           event.preventDefault();
           const payload = Object.fromEntries(new FormData(event.target).entries());
           const id = payload.id; delete payload.id;
+          payload.isHidden = Boolean(event.target.isHidden?.checked);
+          payload.isLeaver = Boolean(event.target.isLeaver?.checked);
           await handleMutation(() => api(id ? `/api/people/${id}` : '/api/people', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Person saved.');
           closeAdminPersonModal();
         });
@@ -2099,7 +2115,7 @@ function filteredPeople() {
         }
 
         state.selectedProjectId = '';
-        if (route.personId && state.people.some((person) => String(person.id) === String(route.personId))) {
+        if (route.personId && state.people.some((person) => String(person.id) === String(route.personId) && personIsVisibleInNonAdmin(person))) {
           state.peopleOverviewModal.open = true;
           state.peopleOverviewModal.personId = String(route.personId);
         } else {
@@ -2159,7 +2175,7 @@ function filteredPeople() {
         if (state.showAdmin) {
           document.getElementById('view').innerHTML = adminStandaloneView();
         } else {
-        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>Client Teams</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>People Overview</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.length}</span></button></nav></div>`;
+        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>Client Teams</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>People Overview</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.filter(personIsVisibleInNonAdmin).length}</span></button></nav></div>`;
         const homeContent = state.homeTab === 'people-overview' ? peopleOverviewView() : ownershipView();
         document.getElementById('view').innerHTML = homeTabs + homeContent;
 

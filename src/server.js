@@ -31,6 +31,15 @@ function badRequest(res, message) {
   return res.status(400).json({ error: message });
 }
 
+function parseOptionalBoolean(value) {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value).trim().toLowerCase();
+  if (['true', '1', 'on', 'yes'].includes(normalized)) return true;
+  if (['false', '0', 'off', 'no'].includes(normalized)) return false;
+  return null;
+}
+
 function handleDbError(res, error) {
   if (error.code === '23503') {
     return res.status(409).json({ error: 'Cannot delete record because dependencies exist.' });
@@ -254,7 +263,9 @@ app.get('/api/people', async (_req, res) => {
               t.id AS trade_id, t.name AS trade_name,
               l.id AS level_id, l.name AS level_name,
               COALESCE(COUNT(a.id), 0) AS assignment_count,
-              COALESCE(SUM(a.quantity), 0) AS assignment_quantity_total
+              COALESCE(SUM(a.quantity), 0) AS assignment_quantity_total,
+              COALESCE(p.is_hidden, FALSE) AS is_hidden,
+              COALESCE(p.is_leaver, FALSE) AS is_leaver
        FROM people p
        JOIN trades t ON p.trade_id = t.id
        JOIN levels l ON p.level_id = l.id
@@ -270,7 +281,7 @@ app.get('/api/people', async (_req, res) => {
 });
 
 app.post('/api/people', async (req, res) => {
-  const { firstName, lastName, tradeId, levelId } = req.body;
+  const { firstName, lastName, tradeId, levelId, isHidden, isLeaver } = req.body;
 
   if (!firstName || !lastName || !tradeId || !levelId) {
     return badRequest(res, 'firstName, lastName, tradeId and levelId are required.');
@@ -278,10 +289,10 @@ app.post('/api/people', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO people (first_name, last_name, trade_id, level_id)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO people (first_name, last_name, trade_id, level_id, is_hidden, is_leaver)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [firstName.trim(), lastName.trim(), tradeId, levelId]
+      [firstName.trim(), lastName.trim(), tradeId, levelId, parseOptionalBoolean(isHidden), parseOptionalBoolean(isLeaver)]
     );
 
     return res.status(201).json({ id: result.rows[0].id });
@@ -291,7 +302,7 @@ app.post('/api/people', async (req, res) => {
 });
 
 app.put('/api/people/:id', async (req, res) => {
-  const { firstName, lastName, tradeId, levelId } = req.body;
+  const { firstName, lastName, tradeId, levelId, isHidden, isLeaver } = req.body;
 
   if (!firstName || !lastName || !tradeId || !levelId) {
     return badRequest(res, 'firstName, lastName, tradeId and levelId are required.');
@@ -300,9 +311,9 @@ app.put('/api/people/:id', async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE people
-       SET first_name = $1, last_name = $2, trade_id = $3, level_id = $4
-       WHERE id = $5`,
-      [firstName.trim(), lastName.trim(), tradeId, levelId, req.params.id]
+       SET first_name = $1, last_name = $2, trade_id = $3, level_id = $4, is_hidden = $5, is_leaver = $6
+       WHERE id = $7`,
+      [firstName.trim(), lastName.trim(), tradeId, levelId, parseOptionalBoolean(isHidden), parseOptionalBoolean(isLeaver), req.params.id]
     );
 
     if (result.rowCount === 0) {
@@ -762,7 +773,8 @@ app.get('/api/export', async (req, res) => {
       pool.query('SELECT id, name, location, since_month, priority_id FROM clients ORDER BY id'),
       pool.query('SELECT id, client_id, name, status, start_month, end_month, budget_cents FROM projects ORDER BY id'),
       pool.query(
-        `SELECT p.id, p.first_name, p.last_name, t.name AS trade, l.name AS level
+        `SELECT p.id, p.first_name, p.last_name, t.name AS trade, l.name AS level,
+                COALESCE(p.is_hidden, FALSE) AS is_hidden, COALESCE(p.is_leaver, FALSE) AS is_leaver
          FROM people p
          JOIN trades t ON p.trade_id = t.id
          JOIN levels l ON p.level_id = l.id
@@ -865,6 +877,14 @@ function validateImportPayload(payload) {
     if (!isPositiveInteger(row.id) || !row.first_name || !row.last_name || !isPositiveInteger(row.trade_id) || !isPositiveInteger(row.level_id)) {
       return `Invalid person row with id ${row.id}.`;
     }
+
+    if (row.is_hidden !== undefined && row.is_hidden !== null && typeof row.is_hidden !== 'boolean') {
+      return `Invalid is_hidden flag in person row with id ${row.id}.`;
+    }
+
+    if (row.is_leaver !== undefined && row.is_leaver !== null && typeof row.is_leaver !== 'boolean') {
+      return `Invalid is_leaver flag in person row with id ${row.id}.`;
+    }
   }
 
   for (const row of payload.challenges) {
@@ -937,7 +957,7 @@ function csvEscape(value) {
 function payloadToCsv(payload) {
   const headers = [
     'entity', 'id', 'client_id', 'project_id', 'challenge_id', 'person_id', 'name', 'location', 'since_month', 'priority_id',
-    'status', 'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade', 'level', 'title', 'description',
+    'status', 'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade', 'level', 'is_hidden', 'is_leaver', 'title', 'description',
     'is_owner', 'is_leader', 'quantity'
   ];
 
@@ -1103,7 +1123,9 @@ function csvToPayload(text) {
         trade: record.trade,
         level: record.level,
         trade_id: parseCsvInteger(record.trade_id),
-        level_id: parseCsvInteger(record.level_id)
+        level_id: parseCsvInteger(record.level_id),
+        is_hidden: parseCsvBoolean(record.is_hidden),
+        is_leaver: parseCsvBoolean(record.is_leaver)
       });
     } else if (entity === 'challenges') {
       payload.challenges.push({
@@ -1221,8 +1243,8 @@ app.post('/api/import', async (req, res) => {
 
     for (const row of payload.people) {
       await client.query(
-        'INSERT INTO people (id, first_name, last_name, trade_id, level_id) VALUES ($1, $2, $3, $4, $5)',
-        [row.id, row.first_name, row.last_name, row.trade_id, row.level_id]
+        'INSERT INTO people (id, first_name, last_name, trade_id, level_id, is_hidden, is_leaver) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [row.id, row.first_name, row.last_name, row.trade_id, row.level_id, row.is_hidden ?? null, row.is_leaver ?? null]
       );
     }
 
