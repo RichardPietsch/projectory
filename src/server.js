@@ -454,7 +454,7 @@ app.get('/api/projects', async (_req, res) => {
     const assignments = await pool.query(
       `SELECT a.id, a.project_id, a.challenge_id, a.person_id,
               a.is_owner, a.is_leader, a.quantity,
-              pe.first_name, pe.last_name, ch.title AS challenge_title
+              pe.first_name, pe.last_name, COALESCE(pe.is_leaver, FALSE) AS is_leaver, ch.title AS challenge_title
        FROM assignments a
        JOIN people pe ON pe.id = a.person_id
        JOIN challenges ch ON ch.id = a.challenge_id

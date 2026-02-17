@@ -488,6 +488,10 @@
         return person.is_hidden ? '<span class="ml-2 rounded border border-slate-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">Hidden</span>' : '';
       }
 
+      function leaverRunIcon(isLeaver) {
+        return isLeaver ? ' <span class="iconify inline-block align-[-1px]" data-icon="mdi:run" aria-label="Leaver"></span>' : '';
+      }
+
       function peopleView() {
         const sortedPeople = [...state.people].sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
         const rows = sortedPeople.map((person) => `<tr class="border-t border-slate-800"><td class="p-2">${person.first_name} ${person.last_name}${personLeaverBadge(person)}${personHiddenBadge(person)}</td><td class="p-2">${person.trade_name}</td><td class="p-2">${person.level_name}</td><td class="p-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminPersonModal(${JSON.stringify(person)})'>Edit</button><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button></td></tr>`).join('');
@@ -753,6 +757,7 @@ function clientsView() {
                   firstName: String(assignment.first_name || ''),
                   lastName: String(assignment.last_name || ''),
                   name: `${assignment.first_name} ${assignment.last_name}`,
+                  isLeaver: Boolean(assignment.is_leaver),
                   owner: false,
                   leader: false
                 });
@@ -818,7 +823,7 @@ function clientsView() {
           const projectRows = sortedProjects
             .map((project) => {
               const ownerPills = project.ownerEntries.length
-                ? project.ownerEntries.map((person) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${person.name}</span>`).join('')
+                ? project.ownerEntries.map((person) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${person.name}${leaverRunIcon(person.isLeaver)}</span>`).join('')
                 : `<span class="text-slate-400">No client ownership assigned</span>`;
               const leaderPills = project.leaderEntries.length
                 ? project.leaderEntries
@@ -826,7 +831,7 @@ function clientsView() {
                       const leaderClass = person.owner
                         ? 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200'
                         : 'border-emerald-400/70 bg-emerald-600 text-emerald-50';
-                      return `<span class="mb-1 mr-1 inline-flex rounded border px-2 py-1 text-xs ${leaderClass}">${person.name}</span>`;
+                      return `<span class="mb-1 mr-1 inline-flex rounded border px-2 py-1 text-xs ${leaderClass}">${person.name}${leaverRunIcon(person.isLeaver)}</span>`;
                     })
                     .join('')
                 : `<span class="text-slate-400">No client leadership assigned</span>`;
@@ -924,7 +929,7 @@ function clientsView() {
               const sample = personAssignments[0];
               const totalQuantity = personAssignments.reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
               const quantity = Math.round(totalQuantity);
-              const name = `${sample.first_name} ${sample.last_name}`;
+              const name = `${sample.first_name} ${sample.last_name}${leaverRunIcon(sample.is_leaver)}`;
               const tierClass = isSecondaryRole(personId) ? secondaryTierClass : primaryTierClass;
               return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}%)</button>`;
             })
@@ -1009,7 +1014,7 @@ function clientsView() {
                           ? 'border-slate-500 border-dotted bg-transparent text-slate-300'
                           : 'border-slate-500 bg-slate-700 text-slate-100';
                     const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
-                    return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name} (${roleLabel})</button>`;
+                    return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</button>`;
                   })
                   .join('')
               : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
