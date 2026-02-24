@@ -636,6 +636,7 @@
           <div class="mb-3 flex items-center gap-2">
             <input
               type="search"
+              id="people-overview-search-input"
               value="${state.peopleOverviewSearch || ''}"
               oninput="setPeopleOverviewSearch(this.value)"
               placeholder="Search people overview..."
@@ -919,6 +920,7 @@ function clientsView() {
             <div class="mb-3 flex items-center gap-2">
               <input
                 type="search"
+                id="client-teams-search-input"
                 value="${state.clientTeamsSearch || ''}"
                 oninput="setClientTeamsSearch(this.value)"
                 placeholder="Search client teams..."
@@ -1869,6 +1871,13 @@ function filteredPeople() {
       window.setPeopleOverviewSearch = function setPeopleOverviewSearch(value) {
         state.peopleOverviewSearch = String(value || '');
         render();
+        requestAnimationFrame(() => {
+          const input = document.getElementById('people-overview-search-input');
+          if (!input) return;
+          input.focus();
+          const pos = input.value.length;
+          input.setSelectionRange(pos, pos);
+        });
       };
 
       window.clearPeopleOverviewSearch = function clearPeopleOverviewSearch() {
@@ -1927,6 +1936,13 @@ function filteredPeople() {
       window.setClientTeamsSearch = function setClientTeamsSearch(value) {
         state.clientTeamsSearch = String(value || '');
         render();
+        requestAnimationFrame(() => {
+          const input = document.getElementById('client-teams-search-input');
+          if (!input) return;
+          input.focus();
+          const pos = input.value.length;
+          input.setSelectionRange(pos, pos);
+        });
       };
 
       window.clearClientTeamsSearch = function clearClientTeamsSearch() {
