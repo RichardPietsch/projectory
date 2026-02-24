@@ -2078,13 +2078,15 @@ function filteredPeople() {
 
                 return `<tr class="border-t border-slate-800">
                   <td class="p-2 pl-6">
-                    <div class="font-medium text-slate-100">${assignment.challenge_title}</div>
-                    <div class="text-slate-400">${challengeDescription}</div>
+                    <button class="w-full text-left hover:opacity-90" onclick='openChallengeModal(${JSON.stringify(challenge || { id: assignment.challenge_id, title: assignment.challenge_title, description: challengeDescription, project_id: assignment.project_id })})'>
+                      <div class="font-medium text-slate-100 underline decoration-slate-600 underline-offset-2">${assignment.challenge_title}</div>
+                      <div class="text-slate-400">${challengeDescription}</div>
+                    </button>
                   </td>
                   <td class="p-2"><span class="font-semibold ${roleClass}">${roleLabel}</span></td>
-                  <td class="p-2">
+                  <td class="p-2 text-right">
                     <div class="font-semibold">${quantity}% (${formatWorkloadDuration(quantity, person.working_hours)})</div>
-                    <div class="mt-1 h-2 w-32 overflow-hidden rounded bg-slate-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
+                    <div class="mt-1 ml-auto h-2 w-32 overflow-hidden rounded bg-slate-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
                   </td>
                 </tr>`;
               })
