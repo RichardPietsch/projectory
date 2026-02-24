@@ -165,7 +165,7 @@
       </div>
     </div>
 
-    <div id="challenge-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+    <div id="challenge-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 id="challenge-modal-title" class="text-lg font-semibold">Add Challenge</h3>
@@ -2078,7 +2078,7 @@ function filteredPeople() {
 
                 return `<tr class="border-t border-slate-800">
                   <td class="p-2 pl-6">
-                    <button class="w-full text-left hover:opacity-90" onclick='openChallengeModal(${JSON.stringify(challenge || { id: assignment.challenge_id, title: assignment.challenge_title, description: challengeDescription, project_id: assignment.project_id })})'>
+                    <button class="w-full text-left hover:opacity-90" onclick='openChallengeFromPeopleOverviewModal(${JSON.stringify(challenge || { id: assignment.challenge_id, title: assignment.challenge_title, description: challengeDescription, project_id: assignment.project_id })})'>
                       <div class="font-medium text-slate-100 underline decoration-slate-600 underline-offset-2">${assignment.challenge_title}</div>
                       <div class="text-slate-400">${challengeDescription}</div>
                     </button>
@@ -2149,6 +2149,13 @@ function filteredPeople() {
           form.description.dataset.prefilled = challenge ? 'false' : 'true';
         }
         renderChallengeModal();
+      };
+
+      window.openChallengeFromPeopleOverviewModal = function openChallengeFromPeopleOverviewModal(challenge) {
+        state.peopleOverviewModal.open = false;
+        state.peopleOverviewModal.personId = null;
+        renderPeopleOverviewModal();
+        window.openChallengeModal(challenge);
       };
 
       window.editChallenge = function editChallenge(challenge) {
