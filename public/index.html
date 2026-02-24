@@ -301,10 +301,12 @@
         adminProjectsSort: 'project_asc',
         challengesSort: 'title_asc',
         clientTeamsSort: 'status_desc',
+        clientTeamsSearch: '',
         exportModalOpen: false,
         importModalOpen: false,
         importPreviewData: null,
         peopleOverviewSort: 'name_asc',
+        peopleOverviewSearch: '',
         peopleOverviewModal: { open: false, personId: null }
       };
 
@@ -563,7 +565,21 @@
           };
         });
 
-        const sorted = [...rowsData].sort((a, b) => {
+        const peopleOverviewTerm = String(state.peopleOverviewSearch || '').trim().toLowerCase();
+        const filteredRows = peopleOverviewTerm
+          ? rowsData.filter((person) => {
+              const searchable = [
+                `${person.first_name} ${person.last_name}`,
+                person.trade_name,
+                person.level_name
+              ]
+                .join(' ')
+                .toLowerCase();
+              return searchable.includes(peopleOverviewTerm);
+            })
+          : rowsData;
+
+        const sorted = [...filteredRows].sort((a, b) => {
           switch (state.peopleOverviewSort) {
             case 'name_desc':
               return b.nameSort.localeCompare(a.nameSort);
@@ -616,6 +632,21 @@
           <div class="mb-3">
             <h3 class="text-lg font-semibold">People Overview</h3>
             <p class="text-xs text-slate-400">Organization-wide assignment, role and workload insights.</p>
+          </div>
+          <div class="mb-3 flex items-center gap-2">
+            <input
+              type="search"
+              value="${state.peopleOverviewSearch || ''}"
+              oninput="setPeopleOverviewSearch(this.value)"
+              placeholder="Search people overview..."
+              class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm"
+            />
+            <button
+              class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800 ${state.peopleOverviewSearch ? '' : 'opacity-50'}"
+              onclick="clearPeopleOverviewSearch()"
+              ${state.peopleOverviewSearch ? '' : 'disabled'}
+              title="Clear search"
+            >✕</button>
           </div>
           <table class="w-full text-left text-sm">
             <thead><tr class="text-slate-400">
@@ -833,7 +864,24 @@ function clientsView() {
             }
           });
 
-          const projectRows = sortedProjects
+          const clientTeamsTerm = String(state.clientTeamsSearch || '').trim().toLowerCase();
+          const filteredProjects = clientTeamsTerm
+            ? sortedProjects.filter((project) => {
+                const searchable = [
+                  project.name,
+                  project.client_name,
+                  project.priority_name,
+                  project.ownerSort,
+                  project.leaderSort,
+                  getProjectStatusPresentation(project.status).label
+                ]
+                  .join(' ')
+                  .toLowerCase();
+                return searchable.includes(clientTeamsTerm);
+              })
+            : sortedProjects;
+
+          const projectRows = filteredProjects
             .map((project) => {
               const ownerPills = project.ownerEntries.length
                 ? project.ownerEntries.map((person) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${person.name}${leaverRunIcon(person.isLeaver)}</span>`).join('')
@@ -867,6 +915,21 @@ function clientsView() {
             <div class="mb-3">
               <h3 class="text-lg font-semibold">Client Teams</h3>
               <p class="text-xs text-slate-400">Select a client-team to see and update their challenges</p>
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+              <input
+                type="search"
+                value="${state.clientTeamsSearch || ''}"
+                oninput="setClientTeamsSearch(this.value)"
+                placeholder="Search client teams..."
+                class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm"
+              />
+              <button
+                class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800 ${state.clientTeamsSearch ? '' : 'opacity-50'}"
+                onclick="clearClientTeamsSearch()"
+                ${state.clientTeamsSearch ? '' : 'disabled'}
+                title="Clear search"
+              >✕</button>
             </div>
             <table class="w-full text-left text-sm">
               <thead>
@@ -1803,6 +1866,16 @@ function filteredPeople() {
         render();
       };
 
+      window.setPeopleOverviewSearch = function setPeopleOverviewSearch(value) {
+        state.peopleOverviewSearch = String(value || '');
+        render();
+      };
+
+      window.clearPeopleOverviewSearch = function clearPeopleOverviewSearch() {
+        state.peopleOverviewSearch = '';
+        render();
+      };
+
       window.openPeopleOverviewModal = function openPeopleOverviewModal(personId) {
         state.homeTab = 'people-overview';
         state.peopleOverviewModal.open = true;
@@ -1848,6 +1921,16 @@ function filteredPeople() {
         const asc = `${field}_asc`;
         const desc = `${field}_desc`;
         state.clientTeamsSort = state.clientTeamsSort === asc ? desc : asc;
+        render();
+      };
+
+      window.setClientTeamsSearch = function setClientTeamsSearch(value) {
+        state.clientTeamsSearch = String(value || '');
+        render();
+      };
+
+      window.clearClientTeamsSearch = function clearClientTeamsSearch() {
+        state.clientTeamsSearch = '';
         render();
       };
 
