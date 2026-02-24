@@ -274,7 +274,9 @@
         },
         challengeModal: {
           open: false,
-          challengeId: null
+          challengeId: null,
+          returnToPeopleOverview: false,
+          returnPersonId: null
         },
         projectStatusModal: {
           open: false,
@@ -2128,14 +2130,33 @@ function filteredPeople() {
       }
 
       function closeChallengeModal() {
+        const shouldReturnToPeopleOverview = state.challengeModal.returnToPeopleOverview && state.challengeModal.returnPersonId;
+        const returnPersonId = state.challengeModal.returnPersonId;
+
         state.challengeModal.open = false;
         state.challengeModal.challengeId = null;
+        state.challengeModal.returnToPeopleOverview = false;
+        state.challengeModal.returnPersonId = null;
+
         const form = document.getElementById('challenge-modal-form');
         if (form) form.reset();
         renderChallengeModal();
+
+        if (shouldReturnToPeopleOverview) {
+          state.homeTab = 'people-overview';
+          state.peopleOverviewModal.open = true;
+          state.peopleOverviewModal.personId = String(returnPersonId);
+          navigateFromState();
+          render();
+        }
       }
 
-      window.openChallengeModal = function openChallengeModal(challenge = null) {
+      window.openChallengeModal = function openChallengeModal(challenge = null, options = {}) {
+        if (!options.preserveReturnTarget) {
+          state.challengeModal.returnToPeopleOverview = false;
+          state.challengeModal.returnPersonId = null;
+        }
+
         state.challengeModal.open = true;
         state.challengeModal.challengeId = challenge ? String(challenge.id) : null;
         const title = document.getElementById('challenge-modal-title');
@@ -2152,10 +2173,12 @@ function filteredPeople() {
       };
 
       window.openChallengeFromPeopleOverviewModal = function openChallengeFromPeopleOverviewModal(challenge) {
+        state.challengeModal.returnToPeopleOverview = true;
+        state.challengeModal.returnPersonId = state.peopleOverviewModal.personId;
+
         state.peopleOverviewModal.open = false;
-        state.peopleOverviewModal.personId = null;
         renderPeopleOverviewModal();
-        window.openChallengeModal(challenge);
+        window.openChallengeModal(challenge, { preserveReturnTarget: true });
       };
 
       window.editChallenge = function editChallenge(challenge) {
