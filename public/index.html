@@ -2066,22 +2066,22 @@ function filteredPeople() {
           .map(([projectId, projectAssignments]) => {
             const project = projectById.get(projectId);
             const projectName = project ? `${project.name} (${project.client_name})` : `Project ${projectId}`;
-            const projectQuantity = Math.round(projectAssignments.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
 
             const assignmentRows = projectAssignments
               .map((assignment) => {
                 const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+                const roleClass = assignment.is_owner ? 'text-blue-300' : assignment.is_leader ? 'text-emerald-300' : 'text-slate-100';
                 const challenge = challengeById.get(String(assignment.challenge_id));
                 const challengeDescription = challenge?.description || 'No description available.';
                 const quantity = Math.round(Number(assignment.quantity || 0));
-                const barColor = quantity > 100 ? 'bg-rose-500' : quantity === 100 ? 'bg-emerald-500' : quantity > 0 ? 'bg-amber-400' : 'bg-slate-600';
+                const barColor = assignment.is_owner ? 'bg-blue-500' : assignment.is_leader ? 'bg-emerald-500' : 'bg-slate-100';
 
                 return `<tr class="border-t border-slate-800">
-                  <td class="p-2">
+                  <td class="p-2 pl-6">
                     <div class="font-medium text-slate-100">${assignment.challenge_title}</div>
                     <div class="text-slate-400">${challengeDescription}</div>
                   </td>
-                  <td class="p-2">${roleLabel}</td>
+                  <td class="p-2"><span class="font-semibold ${roleClass}">${roleLabel}</span></td>
                   <td class="p-2">
                     <div class="font-semibold">${quantity}% (${formatWorkloadDuration(quantity, person.working_hours)})</div>
                     <div class="mt-1 h-2 w-32 overflow-hidden rounded bg-slate-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
@@ -2090,7 +2090,7 @@ function filteredPeople() {
               })
               .join('');
 
-            return `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2" colspan="3"><div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-100">${projectName}</span><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust workload (${projectQuantity}% · ${formatWorkloadDuration(projectQuantity, person.working_hours)})</button></div></td></tr>${assignmentRows}`;
+            return `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2 font-semibold text-slate-100" colspan="2">${projectName}</td><td class="p-2 text-right"><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust Workload</button></td></tr>${assignmentRows}`;
           })
           .join('');
 
