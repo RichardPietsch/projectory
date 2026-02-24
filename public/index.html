@@ -2090,14 +2090,7 @@ function filteredPeople() {
               })
               .join('');
 
-            const adjustRow = `<tr class="border-t border-slate-700 bg-slate-900/50">
-              <td class="p-2 text-slate-300" colspan="2">Project total workload</td>
-              <td class="p-2">
-                <button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust workload (${projectQuantity}% · ${formatWorkloadDuration(projectQuantity, person.working_hours)})</button>
-              </td>
-            </tr>`;
-
-            return `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2 font-semibold text-slate-100" colspan="3">${projectName}</td></tr>${assignmentRows}${adjustRow}`;
+            return `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2" colspan="3"><div class="flex items-center justify-between gap-2"><span class="font-semibold text-slate-100">${projectName}</span><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust workload (${projectQuantity}% · ${formatWorkloadDuration(projectQuantity, person.working_hours)})</button></div></td></tr>${assignmentRows}`;
           })
           .join('');
 
