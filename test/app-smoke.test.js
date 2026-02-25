@@ -52,3 +52,54 @@ test('GET /api/meta returns priority/trade/level payload', async () => {
     pool.query = originalQuery;
   }
 });
+
+test('POST /api/people validates required fields', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ firstName: 'A' })
+    });
+    assert.equal(response.status, 400);
+    const body = await response.json();
+    assert.equal(body.error, 'firstName, lastName, tradeId and levelId are required.');
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /api/people creates person and returns id', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('INSERT INTO people')) {
+      return { rows: [{ id: 42 }] };
+    }
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        tradeId: 1,
+        levelId: 2,
+        workingHours: 40
+      })
+    });
+    assert.equal(response.status, 201);
+    const body = await response.json();
+    assert.deepEqual(body, { id: 42 });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});

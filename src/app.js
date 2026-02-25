@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
+const { registerPeopleRoutes } = require('./modules/people/routes');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -284,97 +285,12 @@ app.get('/api/meta', async (_req, res) => {
   }
 });
 
-app.get('/api/people', async (_req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT p.id, p.first_name, p.last_name,
-              t.id AS trade_id, t.name AS trade_name,
-              l.id AS level_id, l.name AS level_name,
-              COALESCE(COUNT(a.id), 0) AS assignment_count,
-              COALESCE(SUM(a.quantity), 0) AS assignment_quantity_total,
-              COALESCE(p.is_hidden, FALSE) AS is_hidden,
-              COALESCE(p.is_leaver, FALSE) AS is_leaver,
-              p.working_hours
-       FROM people p
-       JOIN trades t ON p.trade_id = t.id
-       JOIN levels l ON p.level_id = l.id
-       LEFT JOIN assignments a ON a.person_id = p.id
-       GROUP BY p.id, t.id, l.id
-       ORDER BY p.last_name, p.first_name`
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    handleDbError(res, error);
-  }
-});
-
-app.post('/api/people', async (req, res) => {
-  const { firstName, lastName, tradeId, levelId, isHidden, isLeaver, workingHours } = req.body;
-  const parsedWorkingHours = parseWorkingHours(workingHours);
-
-  if (!firstName || !lastName || !tradeId || !levelId) {
-    return badRequest(res, 'firstName, lastName, tradeId and levelId are required.');
-  }
-
-  if (parsedWorkingHours === null) {
-    return badRequest(res, 'workingHours must be a positive integer.');
-  }
-
-  try {
-    const result = await pool.query(
-      `INSERT INTO people (first_name, last_name, trade_id, level_id, is_hidden, is_leaver, working_hours)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id`,
-      [firstName.trim(), lastName.trim(), tradeId, levelId, parseOptionalBoolean(isHidden), parseOptionalBoolean(isLeaver), parsedWorkingHours]
-    );
-
-    return res.status(201).json({ id: result.rows[0].id });
-  } catch (error) {
-    return handleDbError(res, error);
-  }
-});
-
-app.put('/api/people/:id', async (req, res) => {
-  const { firstName, lastName, tradeId, levelId, isHidden, isLeaver, workingHours } = req.body;
-  const parsedWorkingHours = parseWorkingHours(workingHours);
-
-  if (!firstName || !lastName || !tradeId || !levelId) {
-    return badRequest(res, 'firstName, lastName, tradeId and levelId are required.');
-  }
-
-  if (parsedWorkingHours === null) {
-    return badRequest(res, 'workingHours must be a positive integer.');
-  }
-
-  try {
-    const result = await pool.query(
-      `UPDATE people
-       SET first_name = $1, last_name = $2, trade_id = $3, level_id = $4, is_hidden = $5, is_leaver = $6, working_hours = $7
-       WHERE id = $8`,
-      [firstName.trim(), lastName.trim(), tradeId, levelId, parseOptionalBoolean(isHidden), parseOptionalBoolean(isLeaver), parsedWorkingHours, req.params.id]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Person not found.' });
-    }
-
-    return res.json({ ok: true });
-  } catch (error) {
-    return handleDbError(res, error);
-  }
-});
-
-app.delete('/api/people/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM people WHERE id = $1', [req.params.id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Person not found.' });
-    }
-    return res.json({ ok: true });
-  } catch (error) {
-    return handleDbError(res, error);
-  }
+registerPeopleRoutes(app, {
+  pool,
+  badRequest,
+  handleDbError,
+  parseOptionalBoolean,
+  parseWorkingHours
 });
 
 app.get('/api/clients', async (_req, res) => {
