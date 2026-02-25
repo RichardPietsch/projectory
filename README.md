@@ -87,6 +87,10 @@ YAML
 ## Useful commands
 
 ```bash
+
+# Run syntax and smoke checks
+npm run check:syntax
+npm test
 # Start in background
 docker compose up -d --build
 
