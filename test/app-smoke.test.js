@@ -63,6 +63,57 @@ test('GET /api/meta returns priority/trade/level payload', async () => {
   }
 });
 
+
+test('POST /api/clients validates required payload', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/clients`, {
+      method: 'POST',
+      headers: PLANNER_HEADERS,
+      body: JSON.stringify({ name: 'Acme' })
+    });
+    assert.equal(response.status, 400);
+    const body = await response.json();
+    assert.equal(body.error, 'sinceMonth must be in yyyy-mm format.');
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /api/clients creates client and returns id', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('INSERT INTO clients')) {
+      return { rows: [{ id: 7 }] };
+    }
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/clients`, {
+      method: 'POST',
+      headers: PLANNER_HEADERS,
+      body: JSON.stringify({
+        name: 'Acme',
+        location: 'Berlin',
+        sinceMonth: '2025-01',
+        priorityId: 1
+      })
+    });
+    assert.equal(response.status, 201);
+    const body = await response.json();
+    assert.deepEqual(body, { id: 7 });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
 test('POST /api/people forbids viewer role', async () => {
   const server = app.listen(0);
   const port = server.address().port;

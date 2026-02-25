@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const { registerPeopleRoutes } = require('./modules/people/routes');
+const { registerClientsRoutes } = require('./modules/clients/routes');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
 const { PERMISSIONS } = require('./auth/permissions');
 
@@ -356,83 +357,11 @@ registerPeopleRoutes(app, {
   PERMISSIONS
 });
 
-app.get('/api/clients', async (_req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT c.id, c.name, c.location, c.since_month,
-              p.id AS priority_id, p.name AS priority_name,
-              COALESCE(COUNT(pr.id), 0) AS project_count
-       FROM clients c
-       JOIN priorities p ON c.priority_id = p.id
-       LEFT JOIN projects pr ON pr.client_id = c.id
-       GROUP BY c.id, p.id
-       ORDER BY c.name`
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    handleDbError(res, error);
-  }
-});
-
-app.post('/api/clients', async (req, res) => {
-  const { name, location, sinceMonth, priorityId } = req.body;
-  const monthError = requireMonth(sinceMonth, 'sinceMonth');
-
-  if (!name || !location || !priorityId || monthError) {
-    return badRequest(res, monthError || 'name, location, sinceMonth and priorityId are required.');
-  }
-
-  try {
-    const result = await pool.query(
-      `INSERT INTO clients (name, location, since_month, priority_id)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id`,
-      [name.trim(), location.trim(), sinceMonth, priorityId]
-    );
-
-    return res.status(201).json({ id: result.rows[0].id });
-  } catch (error) {
-    return handleDbError(res, error);
-  }
-});
-
-app.put('/api/clients/:id', async (req, res) => {
-  const { name, location, sinceMonth, priorityId } = req.body;
-  const monthError = requireMonth(sinceMonth, 'sinceMonth');
-
-  if (!name || !location || !priorityId || monthError) {
-    return badRequest(res, monthError || 'name, location, sinceMonth and priorityId are required.');
-  }
-
-  try {
-    const result = await pool.query(
-      `UPDATE clients
-       SET name = $1, location = $2, since_month = $3, priority_id = $4
-       WHERE id = $5`,
-      [name.trim(), location.trim(), sinceMonth, priorityId, req.params.id]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Client not found.' });
-    }
-
-    return res.json({ ok: true });
-  } catch (error) {
-    return handleDbError(res, error);
-  }
-});
-
-app.delete('/api/clients/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM clients WHERE id = $1', [req.params.id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Client not found.' });
-    }
-    return res.json({ ok: true });
-  } catch (error) {
-    return handleDbError(res, error);
-  }
+registerClientsRoutes(app, {
+  pool,
+  badRequest,
+  handleDbError,
+  requireMonth
 });
 
 app.get('/api/projects', async (_req, res) => {
