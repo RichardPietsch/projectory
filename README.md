@@ -119,12 +119,27 @@ Default role is `admin` (override with `AUTH_DEFAULT_ROLE`).
 
 
 
+
+## Localization foundation
+
+UI texts are now centralized via browser-side locale dictionaries and an i18n runtime:
+- locale dictionaries: `public/js/locales/en.js`, `public/js/locales/de.js`
+- i18n runtime: `public/js/i18n.js`
+- language switcher in the top header (`en`/`de`) with persistence in `localStorage`
+
+Translation keys are bound in two ways:
+- static DOM binding via `data-i18n` / `data-i18n-title` attributes
+- dynamic rendering via `window.ProjectoryI18n.t(key)` in inline view templates
+
+See `docs/localization.md` for conventions and rollout guidance for translating additional UI sections.
+
 ## Developer docs
 
 - Architecture overview: `docs/architecture.md`
 - API authorization matrix: `docs/api-authz-matrix.md`
 - Backend module template: `docs/module-template.md`
 - Testing strategy: `docs/testing-strategy.md`
+- Localization guide: `docs/localization.md`
 
 ## Continuous Integration
 

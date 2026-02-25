@@ -8,6 +8,9 @@
     <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/state.js"></script>
+    <script src="/js/locales/en.js"></script>
+    <script src="/js/locales/de.js"></script>
+    <script src="/js/i18n.js"></script>
     <script src="/js/views-people.js"></script>
     <script src="/js/views-clients.js"></script>
     <script src="/js/views-admin-projects.js"></script>
@@ -27,18 +30,26 @@
 </svg>
           </button>
           <div>
-            <h1 class="text-3xl font-bold leading-tight">Projectory</h1>
-            <p class="mt-1 text-sm text-slate-300">A challenge-first ownership approach for setting up autonomous client-teams</p>
+            <h1 class="text-3xl font-bold leading-tight" data-i18n="app.title">Projectory</h1>
+            <p class="mt-1 text-sm text-slate-300" data-i18n="app.tagline">A challenge-first ownership approach for setting up autonomous client-teams</p>
           </div>
         </div>
+        <div class="flex items-center gap-2">
+        <label class="sr-only" for="locale-select" data-i18n="header.language">Language</label>
+        <select id="locale-select" class="rounded-lg border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-200">
+          <option value="en" data-i18n="locale.en">English</option>
+          <option value="de" data-i18n="locale.de">Deutsch</option>
+        </select>
         <button
           id="admin-toggle"
           class="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
           title="Open Administration"
+          data-i18n-title="header.openAdministration"
         >
           <span aria-hidden="true">⚙️</span>
-          <span>Admin</span>
+          <span data-i18n="header.admin">Admin</span>
         </button>
+        </div>
       </header>
 
       <section id="view"></section>
@@ -46,8 +57,8 @@
       <section id="admin-panel" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 p-4">
         <div class="h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
           <div class="mb-4 flex items-center justify-between gap-3">
-            <h2 class="text-lg font-semibold">Administration Mode</h2>
-            <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+            <h2 class="text-lg font-semibold" data-i18n="admin.mode">Administration Mode</h2>
+            <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
           </div>
           <nav class="mb-6 flex gap-2" id="admin-tabs"></nav>
           <section id="admin-view"></section>
@@ -60,18 +71,18 @@
     <div id="export-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-lg font-semibold">Export data</h3>
-          <button id="export-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+          <h3 class="text-lg font-semibold" data-i18n="modal.export.title">Export data</h3>
+          <button id="export-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
         </div>
-        <label class="mb-4 block text-sm">Format
+        <label class="mb-4 block text-sm"><span data-i18n="modal.format">Format</span>
           <select id="export-format" class="mt-1 w-full rounded bg-slate-950 p-2">
             <option value="json">JSON</option>
             <option value="csv">CSV</option>
           </select>
         </label>
         <div class="flex justify-end gap-2">
-          <button id="export-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
-          <button id="export-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Export</button>
+          <button id="export-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="export-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" data-i18n="common.export">Export</button>
         </div>
       </div>
     </div>
@@ -79,27 +90,27 @@
     <div id="import-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-lg font-semibold">Import data</h3>
-          <button id="import-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+          <h3 class="text-lg font-semibold" data-i18n="modal.import.title">Import data</h3>
+          <button id="import-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
         </div>
 
         <input id="import-file" type="file" accept=".json,.csv,application/json,text/csv" class="mb-3 block w-full text-sm" />
 
         <div id="import-preview" class="hidden rounded border border-slate-700 bg-slate-950/60 p-3 text-sm">
-          <p class="mb-2 text-amber-300">⚠️ Warning: importing will replace and permanently delete all current data.</p>
-          <p class="mb-2 text-slate-300">Import summary:</p>
+          <p class="mb-2 text-amber-300" data-i18n="modal.import.warning">⚠️ Warning: importing will replace and permanently delete all current data.</p>
+          <p class="mb-2 text-slate-300" data-i18n="modal.import.summary">Import summary:</p>
           <ul class="list-disc pl-5 text-slate-200">
-            <li>People: <span id="import-count-people">0</span></li>
-            <li>Clients: <span id="import-count-clients">0</span></li>
-            <li>Projects: <span id="import-count-projects">0</span></li>
-            <li>Challenges: <span id="import-count-challenges">0</span></li>
-            <li>Assignments: <span id="import-count-assignments">0</span></li>
+            <li><span data-i18n="entity.people">People</span>: <span id="import-count-people">0</span></li>
+            <li><span data-i18n="entity.clients">Clients</span>: <span id="import-count-clients">0</span></li>
+            <li><span data-i18n="entity.projects">Projects</span>: <span id="import-count-projects">0</span></li>
+            <li><span data-i18n="entity.challenges">Challenges</span>: <span id="import-count-challenges">0</span></li>
+            <li><span data-i18n="entity.assignments">Assignments</span>: <span id="import-count-assignments">0</span></li>
           </ul>
         </div>
 
         <div class="mt-4 flex justify-end gap-2">
-          <button id="import-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
-          <button id="import-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold" disabled>Confirm Import</button>
+          <button id="import-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="import-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold" disabled data-i18n="modal.import.confirm">Confirm Import</button>
         </div>
       </div>
     </div>
@@ -107,20 +118,20 @@
     <div id="project-status-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-lg font-semibold">Update project status</h3>
-          <button id="project-status-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+          <h3 class="text-lg font-semibold" data-i18n="modal.projectStatus.title">Update project status</h3>
+          <button id="project-status-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
         </div>
-        <label class="mb-4 block text-sm">Status
+        <label class="mb-4 block text-sm"><span data-i18n="modal.projectStatus.status">Status</span>
           <select id="project-status-select" class="mt-1 w-full rounded bg-slate-950 p-2">
-            <option value="green">Formed Team</option>
-            <option value="blue">In Progress</option>
-            <option value="yellow">Needs Attention</option>
-            <option value="red">Needs Problem-Solving</option>
-            <option value="white">New</option>
+            <option value="green" data-i18n="projectStatus.green">Formed Team</option>
+            <option value="blue" data-i18n="projectStatus.blue">In Progress</option>
+            <option value="yellow" data-i18n="projectStatus.yellow">Needs Attention</option>
+            <option value="red" data-i18n="projectStatus.red">Needs Problem-Solving</option>
+            <option value="white" data-i18n="projectStatus.white">New</option>
           </select>
         </label>
         <div class="flex justify-end gap-2">
-          <button id="project-status-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
+          <button id="project-status-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
           <button id="project-status-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Status</button>
         </div>
       </div>
@@ -237,11 +248,11 @@
           <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">Status
             <select required name="status" class="mt-1 w-full rounded bg-slate-950 p-2">
-              <option value="green">Formed Team</option>
-              <option value="blue">In Progress</option>
-              <option value="yellow">Needs Attention</option>
-              <option value="red">Needs Problem-Solving</option>
-              <option value="white">New</option>
+              <option value="green" data-i18n="projectStatus.green">Formed Team</option>
+              <option value="blue" data-i18n="projectStatus.blue">In Progress</option>
+              <option value="yellow" data-i18n="projectStatus.yellow">Needs Attention</option>
+              <option value="red" data-i18n="projectStatus.red">Needs Problem-Solving</option>
+              <option value="white" data-i18n="projectStatus.white">New</option>
             </select>
           </label>
           <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
@@ -254,11 +265,12 @@
 
     <script>
       const state = window.ProjectoryState.createInitialState();
+      const i18n = window.ProjectoryI18n;
 
       const adminTabs = [
-        { id: 'people', label: 'People View' },
-        { id: 'clients', label: 'Client View' },
-        { id: 'projects', label: 'Project View' }
+        { id: 'people', labelKey: 'admin.tabs.people' },
+        { id: 'clients', labelKey: 'admin.tabs.clients' },
+        { id: 'projects', labelKey: 'admin.tabs.projects' }
       ];
 
       const CHALLENGE_TITLE_PREFILL = 'Placeholder Challenge';
@@ -1478,6 +1490,11 @@ function filteredPeople() {
           navigateFromState();
           render();
         });
+
+        document.getElementById('locale-select')?.addEventListener('change', (event) => {
+          i18n.setLocale(event.target.value);
+          render();
+        });
       }
 
       function bindChallengeModalActions() {
@@ -2163,9 +2180,9 @@ function filteredPeople() {
       };
 
       function adminStandaloneView() {
-        const tabs = adminTabs.map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setAdminTab('${tab.id}')">${tab.label}</button>`).join('');
+        const tabs = adminTabs.map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-emerald-400 bg-emerald-500/15 text-emerald-200' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setAdminTab('${tab.id}')">${i18n.t(tab.labelKey)}</button>`).join('');
         const body = state.adminTab === 'people' ? peopleView() : state.adminTab === 'clients' ? clientsView() : administrationProjectsView();
-        return `<div class="space-y-4"><div class="flex items-center justify-between"><h2 class="text-2xl font-bold">Administration</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="closeAdminStandalone()">Back to app</button></div><div class="flex gap-2">${tabs}</div>${body}<footer class="mt-6 border-t border-slate-800 pt-4 text-sm text-slate-300"><div class="flex flex-wrap items-center gap-3"><button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">Export</button><button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">Import</button></div></footer></div>`;
+        return `<div class="space-y-4"><div class="flex items-center justify-between"><h2 class="text-2xl font-bold">${i18n.t('admin.title')}</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="closeAdminStandalone()">${i18n.t('common.backToApp')}</button></div><div class="flex gap-2">${tabs}</div>${body}<footer class="mt-6 border-t border-slate-800 pt-4 text-sm text-slate-300"><div class="flex flex-wrap items-center gap-3"><button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.export')}</button><button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.import')}</button></div></footer></div>`;
       }
 
       window.setAdminTab = function setAdminTab(tabId) { state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
@@ -2175,7 +2192,7 @@ function filteredPeople() {
         if (state.showAdmin) {
           document.getElementById('view').innerHTML = adminStandaloneView();
         } else {
-        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>Client Teams</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>People Overview</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.filter(personIsVisibleInNonAdmin).length}</span></button></nav></div>`;
+        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>${i18n.t('home.clientTeams')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>${i18n.t('home.peopleOverview')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.filter(personIsVisibleInNonAdmin).length}</span></button></nav></div>`;
         const homeContent = state.homeTab === 'people-overview' ? peopleOverviewView() : ownershipView();
         document.getElementById('view').innerHTML = homeTabs + homeContent;
 
@@ -2191,11 +2208,16 @@ function filteredPeople() {
         renderImportModal();
         renderProjectStatusModal();
         renderPeopleOverviewModal();
+        i18n.applyToDom(document);
       }
 
       async function init() {
         try {
           await loadData();
+          const localeSelect = document.getElementById('locale-select');
+          if (localeSelect) localeSelect.value = i18n.getLocale();
+          i18n.applyToDom(document);
+
           bindHeaderActions();
           bindFooterActions();
           bindChallengeModalActions();

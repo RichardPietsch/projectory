@@ -1,5 +1,6 @@
 (function registerClientsView(globalScope) {
   function renderClientsView({ state, renderPriorityPill }) {
+    const t = globalScope.ProjectoryI18n?.t || ((key) => key);
     const sortedClients = [...state.clients].sort((a, b) => {
       const nameA = String(a.name || '').toLowerCase();
       const nameB = String(b.name || '').toLowerCase();
@@ -46,18 +47,18 @@
               <td class="p-2">${renderPriorityPill(client.priority_name)}</td>
               <td class="p-2">${client.project_count}</td>
               <td class="p-2">
-                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminClientModal(${JSON.stringify(client)})'>Edit</button>
-                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteClient(${client.id})'>Delete</button>
+                <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminClientModal(${JSON.stringify(client)})'>${t('common.edit')}</button>
+                <button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deleteClient(${client.id})'>${t('common.delete')}</button>
               </td>
             </tr>`
       )
       .join('');
 
     return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-semibold">Clients</h2><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick="openAdminClientModal()">Add Client</button></div>
+              <div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-semibold">${t('entity.clients')}</h2><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick="openAdminClientModal()">${t('clients.add')}</button></div>
               <table class="w-full text-left text-sm">
               
-                <thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('name')">Name ${state.clientsSort.startsWith('name_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('location')">Location ${state.clientsSort.startsWith('location_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('since')">Since ${state.clientsSort.startsWith('since_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('priority')">Priority ${state.clientsSort.startsWith('priority_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('projects')">Projects ${state.clientsSort.startsWith('projects_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead>
+                <thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('name')">${t('clients.columns.name')} ${state.clientsSort.startsWith('name_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('location')">${t('clients.columns.location')} ${state.clientsSort.startsWith('location_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('since')">${t('clients.columns.since')} ${state.clientsSort.startsWith('since_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('priority')">${t('clients.columns.priority')} ${state.clientsSort.startsWith('priority_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientsSortField('projects')">${t('clients.columns.projects')} ${state.clientsSort.startsWith('projects_') ? (state.clientsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">${t('common.actions')}</th></tr></thead>
                 <tbody>${rows}</tbody>
               </table>
             </div>`;
