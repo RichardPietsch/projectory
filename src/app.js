@@ -357,7 +357,7 @@ registerModuleRoutes(app, {
   requireMonth
 });
 
-app.get('/api/projects', async (_req, res) => {
+app.get('/api/projects', requirePermission(PERMISSIONS.PROJECTS_READ), async (_req, res) => {
   try {
     const projects = await pool.query(
       `SELECT p.id, p.name, p.status, p.start_month, p.end_month, p.budget_cents,
@@ -399,7 +399,7 @@ app.get('/api/projects', async (_req, res) => {
   }
 });
 
-app.post('/api/projects', async (req, res) => {
+app.post('/api/projects', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
   const { clientId, name, status, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
 
   if (!clientId || !name || !startMonth || (budgetEuros === undefined && budgetCents === undefined)) {
@@ -437,7 +437,7 @@ app.post('/api/projects', async (req, res) => {
   }
 });
 
-app.put('/api/projects/:id', async (req, res) => {
+app.put('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
   const { clientId, name, status, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
 
   if (!clientId || !name || !startMonth || (budgetEuros === undefined && budgetCents === undefined)) {
@@ -479,7 +479,7 @@ app.put('/api/projects/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/projects/:id', async (req, res) => {
+app.delete('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM projects WHERE id = $1', [req.params.id]);
     if (result.rowCount === 0) {
@@ -491,7 +491,7 @@ app.delete('/api/projects/:id', async (req, res) => {
   }
 });
 
-app.post('/api/projects/:projectId/challenges', async (req, res) => {
+app.post('/api/projects/:projectId/challenges', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
   const { title, description } = req.body;
   if (!title || !description) {
     return badRequest(res, 'title and description are required.');
@@ -511,7 +511,7 @@ app.post('/api/projects/:projectId/challenges', async (req, res) => {
   }
 });
 
-app.put('/api/challenges/:id', async (req, res) => {
+app.put('/api/challenges/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
   const { title, description } = req.body;
   if (!title || !description) {
     return badRequest(res, 'title and description are required.');
@@ -535,7 +535,7 @@ app.put('/api/challenges/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/challenges/:id', async (req, res) => {
+app.delete('/api/challenges/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM challenges WHERE id = $1', [req.params.id]);
     if (result.rowCount === 0) {
@@ -547,7 +547,7 @@ app.delete('/api/challenges/:id', async (req, res) => {
   }
 });
 
-app.post('/api/assignments', async (req, res) => {
+app.post('/api/assignments', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), async (req, res) => {
   const { projectId, challengeId, personId, isOwner, isLeader } = req.body;
 
   if (!projectId || !challengeId || !personId) {
@@ -614,7 +614,7 @@ app.post('/api/assignments', async (req, res) => {
   }
 });
 
-app.put('/api/assignments/:id', async (req, res) => {
+app.put('/api/assignments/:id', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), async (req, res) => {
   const { isOwner, isLeader } = req.body;
 
   if (isOwner && isLeader) {
@@ -640,7 +640,7 @@ app.put('/api/assignments/:id', async (req, res) => {
 });
 
 
-app.put('/api/projects/:projectId/people/:personId/quantity', async (req, res) => {
+app.put('/api/projects/:projectId/people/:personId/quantity', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), async (req, res) => {
   const quantity = Number(req.body.quantity);
 
   if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100) {
@@ -675,7 +675,7 @@ app.put('/api/projects/:projectId/people/:personId/quantity', async (req, res) =
   }
 });
 
-app.delete('/api/assignments/:id', async (req, res) => {
+app.delete('/api/assignments/:id', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -707,7 +707,7 @@ app.delete('/api/assignments/:id', async (req, res) => {
 });
 
 
-app.get('/api/export', async (req, res) => {
+app.get('/api/export', requirePermission(PERMISSIONS.EXPORT_RUN), async (req, res) => {
   try {
     const [clients, projects, people, challenges, assignments] = await Promise.all([
       pool.query('SELECT id, name, location, since_month, priority_id FROM clients ORDER BY id'),
@@ -1113,7 +1113,7 @@ function summarizeImportPayload(payload) {
   };
 }
 
-app.post('/api/import/preview', async (req, res) => {
+app.post('/api/import/preview', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
   const format = String(req.body?.format || '').toLowerCase();
 
   try {
@@ -1149,7 +1149,7 @@ app.post('/api/import/preview', async (req, res) => {
   }
 });
 
-app.post('/api/import', async (req, res) => {
+app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
   const payload = req.body?.data;
 
   if (!payload) {

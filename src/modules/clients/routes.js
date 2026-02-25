@@ -1,9 +1,9 @@
 const clientsService = require('./service');
 
 function registerClientsRoutes(app, deps) {
-  const { pool, badRequest, handleDbError, requireMonth } = deps;
+  const { pool, badRequest, handleDbError, requireMonth, requirePermission, PERMISSIONS } = deps;
 
-  app.get('/api/clients', async (_req, res) => {
+  app.get('/api/clients', requirePermission(PERMISSIONS.CLIENTS_READ), async (_req, res) => {
     try {
       const clients = await clientsService.getClients(pool);
       return res.json(clients);
@@ -12,7 +12,7 @@ function registerClientsRoutes(app, deps) {
     }
   });
 
-  app.post('/api/clients', async (req, res) => {
+  app.post('/api/clients', requirePermission(PERMISSIONS.CLIENTS_WRITE), async (req, res) => {
     try {
       const result = await clientsService.createClient(pool, req.body, requireMonth);
       if (result.error) {
@@ -25,7 +25,7 @@ function registerClientsRoutes(app, deps) {
     }
   });
 
-  app.put('/api/clients/:id', async (req, res) => {
+  app.put('/api/clients/:id', requirePermission(PERMISSIONS.CLIENTS_WRITE), async (req, res) => {
     try {
       const result = await clientsService.updateClient(pool, req.params.id, req.body, requireMonth);
       if (result.error) {
@@ -42,7 +42,7 @@ function registerClientsRoutes(app, deps) {
     }
   });
 
-  app.delete('/api/clients/:id', async (req, res) => {
+  app.delete('/api/clients/:id', requirePermission(PERMISSIONS.CLIENTS_WRITE), async (req, res) => {
     try {
       const result = await clientsService.removeClient(pool, req.params.id);
       if (result.rowCount === 0) {

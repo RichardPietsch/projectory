@@ -238,3 +238,79 @@ test('POST /api/people allows planner role and returns id', async () => {
     pool.query = originalQuery;
   }
 });
+
+
+test('POST /api/projects forbids viewer role', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/projects`, {
+      method: 'POST',
+      headers: VIEWER_HEADERS,
+      body: JSON.stringify({ clientId: 1, name: 'Website', startMonth: '2024-01', budgetEuros: 1000 })
+    });
+    assert.equal(response.status, 403);
+    const body = await response.json();
+    assert.equal(body.error, 'Forbidden.');
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /api/import forbids planner role', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/import`, {
+      method: 'POST',
+      headers: PLANNER_HEADERS,
+      body: JSON.stringify({ clients: [], projects: [], people: [], challenges: [], assignments: [] })
+    });
+    assert.equal(response.status, 403);
+    const body = await response.json();
+    assert.equal(body.error, 'Forbidden.');
+  } finally {
+    server.close();
+  }
+});
+
+test('GET /api/export allows viewer role', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM clients')) return { rows: [] };
+    if (sql.includes('FROM projects')) return { rows: [] };
+    if (sql.includes('FROM people')) return { rows: [] };
+    if (sql.includes('FROM challenges')) return { rows: [] };
+    if (sql.includes('FROM assignments')) return { rows: [] };
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/export`, {
+      headers: {
+        'x-projectory-user-role': 'viewer'
+      }
+    });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body, {
+      exportedAt: body.exportedAt,
+      version: 1,
+      data: {
+        clients: [],
+        projects: [],
+        people: [],
+        challenges: [],
+        assignments: []
+      }
+    });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});

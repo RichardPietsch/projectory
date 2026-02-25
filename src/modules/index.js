@@ -17,7 +17,9 @@ function registerModuleRoutes(app, deps) {
     pool: deps.pool,
     badRequest: deps.badRequest,
     handleDbError: deps.handleDbError,
-    requireMonth: deps.requireMonth
+    requireMonth: deps.requireMonth,
+    requirePermission: deps.requirePermission,
+    PERMISSIONS: deps.PERMISSIONS
   });
 
   registerOnboardingRoutes(app, {
