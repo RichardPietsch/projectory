@@ -118,6 +118,13 @@ Headers supported for local/dev simulation:
 Default role is `admin` (override with `AUTH_DEFAULT_ROLE`).
 
 
+
+## Developer docs
+
+- Architecture overview: `docs/architecture.md`
+- API authorization matrix: `docs/api-authz-matrix.md`
+- Backend module template: `docs/module-template.md`
+
 ## Continuous Integration
 
 GitHub Actions workflow is available at `.github/workflows/ci.yml` and runs on pushes/PRs.

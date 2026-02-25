@@ -1,9 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
-const { registerPeopleRoutes } = require('./modules/people/routes');
-const { registerClientsRoutes } = require('./modules/clients/routes');
-const { registerOnboardingRoutes } = require('./modules/onboarding/routes');
+const { registerModuleRoutes } = require('./modules');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
 const { PERMISSIONS } = require('./auth/permissions');
 
@@ -348,30 +346,15 @@ app.get('/api/meta', async (_req, res) => {
   }
 });
 
-registerPeopleRoutes(app, {
+registerModuleRoutes(app, {
   pool,
   badRequest,
   handleDbError,
   parseOptionalBoolean,
   parseWorkingHours,
   requirePermission,
-  PERMISSIONS
-});
-
-registerClientsRoutes(app, {
-  pool,
-  badRequest,
-  handleDbError,
+  PERMISSIONS,
   requireMonth
-});
-
-
-registerOnboardingRoutes(app, {
-  pool,
-  badRequest,
-  handleDbError,
-  requirePermission,
-  PERMISSIONS
 });
 
 app.get('/api/projects', async (_req, res) => {
