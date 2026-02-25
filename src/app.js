@@ -26,6 +26,7 @@ const TRADE_CATALOG = [
 
 const LEVEL_CATALOG = ['—', 'JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LEVEL'];
 const PROJECT_STATUS_VALUES = ['green', 'blue', 'yellow', 'red', 'white'];
+const PEOPLE_STATUS_VALUES = ['active', 'paused', 'leaver'];
 
 app.use(express.json());
 app.use(attachAuthContext);
@@ -78,6 +79,13 @@ function requireMonth(value, fieldName) {
 function normalizeProjectStatus(status, fallback = 'white') {
   const normalized = String(status || '').trim().toLowerCase();
   if (PROJECT_STATUS_VALUES.includes(normalized)) return normalized;
+  return fallback;
+}
+
+
+function normalizePeopleStatus(status, fallback = 'active') {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (PEOPLE_STATUS_VALUES.includes(normalized)) return normalized;
   return fallback;
 }
 
@@ -246,6 +254,45 @@ async function ensurePeopleFlagsColumns() {
   await pool.query(`
     ALTER TABLE people
     ADD COLUMN IF NOT EXISTS is_leaver BOOLEAN
+  `);
+}
+
+
+async function ensurePeopleStatusColumn() {
+  await pool.query(`
+    ALTER TABLE people
+    ADD COLUMN IF NOT EXISTS status TEXT
+  `);
+
+  await pool.query(`
+    UPDATE people
+    SET status = CASE
+      WHEN COALESCE(is_leaver, FALSE) THEN 'leaver'
+      ELSE 'active'
+    END
+    WHERE status IS NULL
+  `);
+
+  await pool.query(`
+    ALTER TABLE people
+    ALTER COLUMN status SET DEFAULT 'active'
+  `);
+
+  await pool.query(`
+    ALTER TABLE people
+    ALTER COLUMN status SET NOT NULL
+  `);
+
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'people_status_allowed'
+      ) THEN
+        ALTER TABLE people
+        ADD CONSTRAINT people_status_allowed CHECK (status IN ('active', 'paused', 'leaver'));
+      END IF;
+    END $$;
   `);
 }
 
@@ -745,7 +792,7 @@ app.get('/api/export', async (req, res) => {
       pool.query('SELECT id, client_id, name, status, start_month, end_month, budget_cents FROM projects ORDER BY id'),
       pool.query(
         `SELECT p.id, p.first_name, p.last_name, t.name AS trade, l.name AS level,
-                COALESCE(p.is_hidden, FALSE) AS is_hidden, COALESCE(p.is_leaver, FALSE) AS is_leaver, p.working_hours
+                COALESCE(p.is_hidden, FALSE) AS is_hidden, COALESCE(p.is_leaver, FALSE) AS is_leaver, p.status, p.working_hours
          FROM people p
          JOIN trades t ON p.trade_id = t.id
          JOIN levels l ON p.level_id = l.id
@@ -860,6 +907,10 @@ function validateImportPayload(payload) {
     if (row.working_hours !== undefined && row.working_hours !== null && !isPositiveInteger(row.working_hours)) {
       return `Invalid working_hours in person row with id ${row.id}.`;
     }
+
+    if (row.status !== undefined && row.status !== null && !PEOPLE_STATUS_VALUES.includes(String(row.status).toLowerCase())) {
+      return `Invalid status in person row with id ${row.id}.`;
+    }
   }
 
   for (const row of payload.challenges) {
@@ -917,6 +968,7 @@ async function normalizeImportPeople(payload) {
     row.trade_id = tradeId;
     row.level_id = levelId;
     row.working_hours = isPositiveInteger(row.working_hours) ? Number(row.working_hours) : 40;
+    row.status = normalizePeopleStatus(row.status);
   }
 
   return null;
@@ -933,7 +985,7 @@ function csvEscape(value) {
 function payloadToCsv(payload) {
   const headers = [
     'entity', 'id', 'client_id', 'project_id', 'challenge_id', 'person_id', 'name', 'location', 'since_month', 'priority_id',
-    'status', 'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade', 'level', 'is_hidden', 'is_leaver', 'working_hours', 'title', 'description',
+    'status', 'start_month', 'end_month', 'budget_cents', 'first_name', 'last_name', 'trade', 'level', 'is_hidden', 'is_leaver', 'person_status', 'working_hours', 'title', 'description',
     'is_owner', 'is_leader', 'quantity'
   ];
 
@@ -942,6 +994,7 @@ function payloadToCsv(payload) {
   function pushRow(entity, row) {
     const values = headers.map((header) => {
       if (header === 'entity') return entity;
+      if (entity === 'people' && header === 'person_status') return row.status;
       return row[header];
     });
     rows.push(values.map(csvEscape).join(','));
@@ -1102,6 +1155,7 @@ function csvToPayload(text) {
         level_id: parseCsvInteger(record.level_id),
         is_hidden: parseCsvBoolean(record.is_hidden),
         is_leaver: parseCsvBoolean(record.is_leaver),
+        status: normalizePeopleStatus(record.person_status || record.status),
         working_hours: parseCsvInteger(record.working_hours)
       });
     } else if (entity === 'challenges') {
@@ -1220,8 +1274,8 @@ app.post('/api/import', async (req, res) => {
 
     for (const row of payload.people) {
       await client.query(
-        'INSERT INTO people (id, first_name, last_name, trade_id, level_id, is_hidden, is_leaver, working_hours) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [row.id, row.first_name, row.last_name, row.trade_id, row.level_id, row.is_hidden ?? null, row.is_leaver ?? null, row.working_hours ?? 40]
+        'INSERT INTO people (id, first_name, last_name, trade_id, level_id, is_hidden, is_leaver, status, working_hours) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [row.id, row.first_name, row.last_name, row.trade_id, row.level_id, row.is_hidden ?? null, row.is_leaver ?? null, normalizePeopleStatus(row.status), row.working_hours ?? 40]
       );
     }
 
@@ -1275,6 +1329,7 @@ async function startServer() {
   try {
     await ensureProjectStatusColumn();
     await ensurePeopleFlagsColumns();
+    await ensurePeopleStatusColumn();
     await ensurePeopleWorkingHoursColumn();
     await ensurePriorityCatalog();
     await ensurePeopleCatalog();

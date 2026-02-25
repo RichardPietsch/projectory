@@ -7,6 +7,7 @@ async function listPeople(pool) {
             COALESCE(SUM(a.quantity), 0) AS assignment_quantity_total,
             COALESCE(p.is_hidden, FALSE) AS is_hidden,
             COALESCE(p.is_leaver, FALSE) AS is_leaver,
+            p.status,
             p.working_hours
      FROM people p
      JOIN trades t ON p.trade_id = t.id
@@ -19,8 +20,8 @@ async function listPeople(pool) {
 
 async function createPerson(pool, person) {
   return pool.query(
-    `INSERT INTO people (first_name, last_name, trade_id, level_id, is_hidden, is_leaver, working_hours)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO people (first_name, last_name, trade_id, level_id, is_hidden, is_leaver, status, working_hours)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id`,
     [
       person.firstName,
@@ -29,6 +30,7 @@ async function createPerson(pool, person) {
       person.levelId,
       person.isHidden,
       person.isLeaver,
+      person.status,
       person.workingHours
     ]
   );
@@ -37,8 +39,8 @@ async function createPerson(pool, person) {
 async function updatePerson(pool, id, person) {
   return pool.query(
     `UPDATE people
-     SET first_name = $1, last_name = $2, trade_id = $3, level_id = $4, is_hidden = $5, is_leaver = $6, working_hours = $7
-     WHERE id = $8`,
+     SET first_name = $1, last_name = $2, trade_id = $3, level_id = $4, is_hidden = $5, is_leaver = $6, status = COALESCE($7, status), working_hours = $8
+     WHERE id = $9`,
     [
       person.firstName,
       person.lastName,
@@ -46,6 +48,7 @@ async function updatePerson(pool, id, person) {
       person.levelId,
       person.isHidden,
       person.isLeaver,
+      person.status,
       person.workingHours,
       id
     ]

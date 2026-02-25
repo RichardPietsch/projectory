@@ -8,7 +8,7 @@ Browser-based resource planning tool with three management views:
 ## What v1 includes
 
 ### Entities
-- **Person**: first name, last name, trade, level, working hours (default 40), optional `isHidden` + `isLeaver` flags
+- **Person**: first name, last name, trade, level, status (`active`/`paused`/`leaver`), working hours (default 40), optional `isHidden` + `isLeaver` flags
 - **Client**: name, location, since month (`yyyy-mm`), priority
 - **Project**: belongs to exactly one client, start/end month (`yyyy-mm`), budget entered in **euros** (stored as cents internally)
 - **Challenge**: belongs to a project
@@ -87,7 +87,7 @@ YAML
 
 ## Database migrations
 
-The project now includes a migration foundation under `db/migrations/` with baseline schema in `0001_init.sql`.
+The project now includes a migration foundation under `db/migrations/` with baseline schema in `0001_init.sql` and an incremental people-status migration in `0003_people_status.sql`.
 
 ```bash
 # Show pending migrations

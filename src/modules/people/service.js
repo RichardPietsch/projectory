@@ -7,7 +7,7 @@ function buildPersonInput(body, parseOptionalBoolean, parseWorkingHours) {
     return { error: validation.error };
   }
 
-  const { firstName, lastName, tradeId, levelId, parsedWorkingHours } = validation.value;
+  const { firstName, lastName, tradeId, levelId, parsedWorkingHours, hasStatus, normalizedStatus } = validation.value;
   const { isHidden, isLeaver } = body;
 
   return {
@@ -16,6 +16,8 @@ function buildPersonInput(body, parseOptionalBoolean, parseWorkingHours) {
       lastName,
       tradeId,
       levelId,
+      hasStatus,
+      normalizedStatus,
       isHidden: parseOptionalBoolean(isHidden),
       isLeaver: parseOptionalBoolean(isLeaver),
       workingHours: parsedWorkingHours
@@ -34,7 +36,10 @@ async function createPerson(pool, body, parseOptionalBoolean, parseWorkingHours)
     return { error: parsed.error };
   }
 
-  const result = await peopleRepo.createPerson(pool, parsed.value);
+  const result = await peopleRepo.createPerson(pool, {
+    ...parsed.value,
+    status: parsed.value.hasStatus ? parsed.value.normalizedStatus : 'active'
+  });
   return { value: { id: result.rows[0].id } };
 }
 
@@ -44,7 +49,10 @@ async function updatePerson(pool, id, body, parseOptionalBoolean, parseWorkingHo
     return { error: parsed.error };
   }
 
-  const result = await peopleRepo.updatePerson(pool, id, parsed.value);
+  const result = await peopleRepo.updatePerson(pool, id, {
+    ...parsed.value,
+    status: parsed.value.hasStatus ? parsed.value.normalizedStatus : null
+  });
   return { value: { rowCount: result.rowCount } };
 }
 

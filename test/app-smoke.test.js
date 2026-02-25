@@ -106,6 +106,32 @@ test('POST /api/people validates required fields for planner role', async () => 
   }
 });
 
+
+test('POST /api/people rejects invalid status values', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
+      method: 'POST',
+      headers: PLANNER_HEADERS,
+      body: JSON.stringify({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        tradeId: 1,
+        levelId: 2,
+        workingHours: 40,
+        status: 'unknown'
+      })
+    });
+    assert.equal(response.status, 400);
+    const body = await response.json();
+    assert.equal(body.error, 'status must be one of: active, paused, leaver.');
+  } finally {
+    server.close();
+  }
+});
+
 test('POST /api/people allows planner role and returns id', async () => {
   const originalQuery = pool.query;
   pool.query = async (sql) => {
