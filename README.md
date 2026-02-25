@@ -99,6 +99,22 @@ npm run migrate
 
 Migration scripts use the same DB env vars as the app (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`) and track state in `schema_migrations`.
 
+
+### Roles and permissions foundation
+
+A first authz foundation is now included:
+- migration `db/migrations/0002_auth_foundation.sql` adds `users`, `roles`, `permissions`, `user_roles`, and `role_permissions`
+- app-level auth context middleware derives identity/role from request headers
+- inspection endpoint: `GET /api/auth/me`
+
+Headers supported for local/dev simulation:
+- `x-projectory-user-id`
+- `x-projectory-user-email`
+- `x-projectory-user-name`
+- `x-projectory-user-role` (`admin`, `planner`, `viewer`)
+
+Default role is `admin` (override with `AUTH_DEFAULT_ROLE`).
+
 ## Useful commands
 
 ```bash

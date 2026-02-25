@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const { registerPeopleRoutes } = require('./modules/people/routes');
+const { attachAuthContext } = require('./auth/middleware');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -26,6 +27,7 @@ const LEVEL_CATALOG = ['—', 'JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LE
 const PROJECT_STATUS_VALUES = ['green', 'blue', 'yellow', 'red', 'white'];
 
 app.use(express.json());
+app.use(attachAuthContext);
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 function badRequest(res, message) {
@@ -266,6 +268,17 @@ async function getPeopleCatalogLookups(client = pool) {
     levelByName: new Map(levels.rows.map((row) => [String(row.name).toUpperCase(), row.id]))
   };
 }
+
+
+app.get('/api/auth/me', (req, res) => {
+  res.json({
+    userId: req.auth.userId,
+    email: req.auth.email,
+    displayName: req.auth.displayName,
+    role: req.auth.role,
+    permissions: req.auth.permissions
+  });
+});
 
 app.get('/api/meta', async (_req, res) => {
   try {
