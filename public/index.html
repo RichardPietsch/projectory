@@ -132,7 +132,7 @@
         </label>
         <div class="flex justify-end gap-2">
           <button id="project-status-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
-          <button id="project-status-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Status</button>
+          <button id="project-status-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" data-i18n="common.saveStatus">Save Status</button>
         </div>
       </div>
     </div>
@@ -140,29 +140,29 @@
     <div id="assign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
-          <h3 id="assign-modal-title" class="text-lg font-semibold">Assign People</h3>
-          <button id="assign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+          <h3 id="assign-modal-title" class="text-lg font-semibold" data-i18n="assign.title">Assign People</h3>
+          <button id="assign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
         </div>
 
         <label class="mb-3 block text-sm">
-          Search people
-          <input id="assign-search" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="Type a name..." />
+          <span data-i18n="assign.searchLabel">Search people</span>
+          <input id="assign-search" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="Type a name..." data-i18n-placeholder="assign.searchPlaceholder" />
         </label>
 
         <label class="mb-3 block text-sm">
-          Role
+          <span data-i18n="assign.role">Role</span>
           <select id="assign-role" class="mt-1 w-full rounded bg-slate-950 p-2">
-            <option value="contributor">Contributor</option>
-            <option value="owner">Owner</option>
-            <option value="leader">Leader</option>
+            <option value="contributor" data-i18n="assign.roleContributor">Contributor</option>
+            <option value="owner" data-i18n="assign.roleOwner">Owner</option>
+            <option value="leader" data-i18n="assign.roleLeader">Leader</option>
           </select>
         </label>
 
         <div id="assign-people-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2"></div>
 
         <div class="mt-4 flex justify-end gap-2">
-          <button id="assign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
-          <button id="assign-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Assign</button>
+          <button id="assign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="assign-confirm" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" data-i18n="assign.confirm">Assign</button>
         </div>
       </div>
     </div>
@@ -170,13 +170,13 @@
     <div id="unassign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-xl rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
-          <h3 id="unassign-modal-title" class="text-lg font-semibold">Unassign People</h3>
-          <button id="unassign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+          <h3 id="unassign-modal-title" class="text-lg font-semibold" data-i18n="unassign.title">Unassign People</h3>
+          <button id="unassign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
         </div>
         <div id="unassign-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2 text-sm"></div>
         <div class="mt-4 flex justify-end gap-2">
-          <button id="unassign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
-          <button id="unassign-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold">Unassign selected</button>
+          <button id="unassign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="unassign-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold" data-i18n="unassign.confirm">Unassign selected</button>
         </div>
       </div>
     </div>
@@ -184,16 +184,16 @@
     <div id="challenge-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
-          <h3 id="challenge-modal-title" class="text-lg font-semibold">Add Challenge</h3>
-          <button id="challenge-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button>
+          <h3 id="challenge-modal-title" class="text-lg font-semibold" data-i18n="challenge.add">Add Challenge</h3>
+          <button id="challenge-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
         </div>
         <form id="challenge-modal-form">
           <input type="hidden" name="id" />
-          <label class="mb-2 block text-sm">Title<input required name="title" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm">Description<textarea required name="description" class="mt-1 w-full rounded bg-slate-950 p-2"></textarea></label>
+          <label class="mb-2 block text-sm"><span data-i18n="challenge.title">Title</span><input required name="title" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="challenge.description">Description</span><textarea required name="description" class="mt-1 w-full rounded bg-slate-950 p-2"></textarea></label>
           <div class="mt-4 flex justify-end gap-2">
-            <button type="button" id="challenge-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button>
-            <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Challenge</button>
+            <button type="button" id="challenge-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+            <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" data-i18n="challenge.save">Save Challenge</button>
           </div>
         </form>
       </div>
@@ -213,39 +213,39 @@
 
     <div id="admin-person-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
-        <div class="mb-4 flex items-center justify-between"><h3 id="admin-person-modal-title" class="text-lg font-semibold">Add Person</h3><button id="admin-person-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button></div>
+        <div class="mb-4 flex items-center justify-between"><h3 id="admin-person-modal-title" class="text-lg font-semibold" data-i18n="people.add">Add Person</h3><button id="admin-person-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
         <form id="admin-person-form"><input type="hidden" name="id" />
-          <label class="mb-2 block text-sm">First Name<input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm">Last Name<input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm">Trade<select required name="tradeId" id="admin-person-trade" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
-          <label class="mb-2 block text-sm">Level<select required name="levelId" id="admin-person-level" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
-          <label class="mb-2 block text-sm">Working Hours<input required name="workingHours" type="number" min="1" step="1" class="mt-1 w-full rounded bg-slate-950 p-2" value="40" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.firstName">First Name</span><input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.lastName">Last Name</span><input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.trade">Trade</span><select required name="tradeId" id="admin-person-trade" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.level">Level</span><select required name="levelId" id="admin-person-level" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.workingHours">Working Hours</span><input required name="workingHours" type="number" min="1" step="1" class="mt-1 w-full rounded bg-slate-950 p-2" value="40" /></label>
           <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isHidden" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Hidden in non-admin views (if unassigned)</label>
           <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isLeaver" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Mark as future leaver</label>
-          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-person-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Person</button></div>
+          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-person-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" data-i18n="people.save">Save Person</button></div>
         </form>
       </div>
     </div>
 
     <div id="admin-client-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
-        <div class="mb-4 flex items-center justify-between"><h3 id="admin-client-modal-title" class="text-lg font-semibold">Add Client</h3><button id="admin-client-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button></div>
+        <div class="mb-4 flex items-center justify-between"><h3 id="admin-client-modal-title" class="text-lg font-semibold" data-i18n="clients.add">Add Client</h3><button id="admin-client-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
         <form id="admin-client-form"><input type="hidden" name="id" />
-          <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm">Location<input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm">Since (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm">Priority<select required name="priorityId" id="admin-client-priority" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
-          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-client-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Client</button></div>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.location">Location</span><input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.since">Since</span> (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.priority">Priority</span><select required name="priorityId" id="admin-client-priority" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-client-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" data-i18n="clients.save">Save Client</button></div>
         </form>
       </div>
     </div>
 
     <div id="admin-project-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
-        <div class="mb-4 flex items-center justify-between"><h3 id="admin-project-modal-title" class="text-lg font-semibold">Add Project</h3><button id="admin-project-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800">Close</button></div>
+        <div class="mb-4 flex items-center justify-between"><h3 id="admin-project-modal-title" class="text-lg font-semibold" data-i18n="projects.add">Add Project</h3><button id="admin-project-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
         <form id="admin-project-form"><input type="hidden" name="id" />
-          <label class="mb-2 block text-sm">Client<select required name="clientId" id="admin-project-client" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
-          <label class="mb-2 block text-sm">Name<input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="projects.form.client">Client</span><select required name="clientId" id="admin-project-client" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">Status
             <select required name="status" class="mt-1 w-full rounded bg-slate-950 p-2">
               <option value="green" data-i18n="projectStatus.green">Formed Team</option>
@@ -257,8 +257,8 @@
           </label>
           <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">End (yyyy-mm)<input name="endMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm">Budget in EUR<input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-project-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold">Save Project</button></div>
+          <label class="mb-2 block text-sm"><span data-i18n="projects.form.budget">Budget in EUR</span><input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-project-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" data-i18n="projects.save">Save Project</button></div>
         </form>
       </div>
     </div>
@@ -573,7 +573,7 @@
 
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
           <div class="mb-3">
-            <h3 class="text-lg font-semibold">People Overview</h3>
+            <h3 class="text-lg font-semibold">${i18n.t('home.peopleOverview')}</h3>
             <p class="text-xs text-slate-400">Organization-wide assignment, role and workload insights.</p>
           </div>
           <div class="mb-3 flex items-center gap-2">
@@ -582,7 +582,7 @@
               id="people-overview-search-input"
               value="${state.peopleOverviewSearch || ''}"
               oninput="setPeopleOverviewSearch(this.value)"
-              placeholder="Search people overview..."
+              placeholder="${i18n.t('peopleOverview.searchPlaceholder')}"
               class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm"
             />
             <button
@@ -594,14 +594,14 @@
           </div>
           <table class="w-full text-left text-sm">
             <thead><tr class="text-slate-400">
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('name')">Name ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('trade')">Title ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('level')">Level ${state.peopleOverviewSort.startsWith('level_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">Assignments ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">Ownerships ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">Leaderships ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('contributions')">Contributions ${state.peopleOverviewSort.startsWith('contributions_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">Workload ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('name')">${i18n.t('people.columns.name')} ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('trade')">${i18n.t('people.columns.trade')} ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('level')">${i18n.t('people.columns.level')} ${state.peopleOverviewSort.startsWith('level_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">${i18n.t('peopleOverview.columns.assignments')} ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">${i18n.t('peopleOverview.columns.ownerships')} ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">${i18n.t('peopleOverview.columns.leaderships')} ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('contributions')">${i18n.t('peopleOverview.columns.contributions')} ${state.peopleOverviewSort.startsWith('contributions_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">${i18n.t('peopleOverview.columns.workload')} ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
             </tr></thead>
             <tbody>${rows}</tbody>
           </table>
@@ -778,13 +778,13 @@ function clientsView() {
             <table class="w-full text-left text-sm">
               <thead>
                 <tr class="text-slate-400">
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('status')">Status ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('product')">Product ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('client')">Client ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('budget')">Budget ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('priority')">Priority ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('owner')">Owner ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">Leaders ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                 </tr>
               </thead>
               <tbody>${projectRows}</tbody>
@@ -933,7 +933,7 @@ function clientsView() {
                         : hasOwnerRole || hasLeaderRole
                           ? 'border-slate-500 border-dotted bg-transparent text-slate-300'
                           : 'border-slate-500 bg-slate-700 text-slate-100';
-                    const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+                    const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
                     return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</button>`;
                   })
                   .join('')
@@ -982,9 +982,9 @@ function clientsView() {
                 <p class="text-xs text-slate-400">What challenges need to be tackled to build a successful customer relationship?</p>
                 <p class="mt-2 text-xs text-slate-300">Status: ${renderProjectStatusPill(selectedProject.status, selectedProject.id)}</p>
               </div>
-              <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>Add Challenge</button>
+              <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>${i18n.t('challenge.add')}</button>
             </div>
-            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('title')">Title ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('description')">Description ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('assignees')">Assignee ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">Actions</th></tr></thead><tbody>${challengeRows}</tbody></table>
+            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
           </div>
 
           ${projectPeopleOverview}`;
@@ -1008,14 +1008,14 @@ function filteredPeople() {
           return;
         }
 
-        document.getElementById('assign-modal-title').textContent = `${state.assignModal.assignmentId ? 'Change Assignment' : 'Assign People'} · ${state.assignModal.challengeTitle}`;
+        document.getElementById('assign-modal-title').textContent = `${state.assignModal.assignmentId ? i18n.t('assign.changeTitle') : i18n.t('assign.title')} · ${state.assignModal.challengeTitle}`;
         document.getElementById('assign-search').value = state.assignModal.search;
         document.getElementById('assign-role').value = state.assignModal.role;
         const people = filteredPeople();
         const list = document.getElementById('assign-people-list');
 
         if (people.length === 0) {
-          list.innerHTML = '<p class="p-2 text-sm text-slate-400">No matching people found.</p>';
+          list.innerHTML = `<p class="p-2 text-sm text-slate-400">${i18n.t('assign.noMatches')}</p>`;
           state.assignModal.selectedPersonId = '';
           return;
         }
@@ -1053,7 +1053,7 @@ function filteredPeople() {
 
       function openAdminPersonModal(person = null) {
         const modal = document.getElementById('admin-person-modal');
-        document.getElementById('admin-person-modal-title').textContent = person ? 'Edit Person' : 'Add Person';
+        document.getElementById('admin-person-modal-title').textContent = person ? i18n.t('people.edit') : i18n.t('people.add');
         document.getElementById('admin-person-trade').innerHTML = optionList(state.meta.trades, person?.trade_id);
         document.getElementById('admin-person-level').innerHTML = optionList(state.meta.levels, person?.level_id);
         const form = document.getElementById('admin-person-form');
@@ -1070,7 +1070,7 @@ function filteredPeople() {
 
       function openAdminClientModal(client = null) {
         const modal = document.getElementById('admin-client-modal');
-        document.getElementById('admin-client-modal-title').textContent = client ? 'Edit Client' : 'Add Client';
+        document.getElementById('admin-client-modal-title').textContent = client ? i18n.t('clients.edit') : i18n.t('clients.add');
         document.getElementById('admin-client-priority').innerHTML = optionList(state.meta.priorities, client?.priority_id);
         const form = document.getElementById('admin-client-form');
         form.id.value = client?.id || '';
@@ -1084,7 +1084,7 @@ function filteredPeople() {
 
       function openAdminProjectModal(project = null) {
         const modal = document.getElementById('admin-project-modal');
-        document.getElementById('admin-project-modal-title').textContent = project ? 'Edit Project' : 'Add Project';
+        document.getElementById('admin-project-modal-title').textContent = project ? i18n.t('projects.edit') : i18n.t('projects.add');
         document.getElementById('admin-project-client').innerHTML = optionList(state.clients, project?.client_id);
         const form = document.getElementById('admin-project-form');
         form.id.value = project?.id || '';
@@ -1527,7 +1527,7 @@ function filteredPeople() {
           return;
         }
 
-        document.getElementById('unassign-modal-title').textContent = `Unassign People · ${state.unassignModal.challengeTitle}`;
+        document.getElementById('unassign-modal-title').textContent = `${i18n.t('unassign.title')} · ${state.unassignModal.challengeTitle}`;
 
         const assignments = state.projectsPayload.assignments.filter(
           (assignment) => String(assignment.challenge_id) === String(state.unassignModal.challengeId)
@@ -1537,7 +1537,7 @@ function filteredPeople() {
         list.innerHTML = assignments
           .map((assignment) => {
             const checked = state.unassignModal.selectedAssignmentIds.includes(String(assignment.id)) ? 'checked' : '';
-            const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+            const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
             return `<label class="mb-1 flex items-center gap-2 rounded px-2 py-1 hover:bg-slate-900">
               <input type="checkbox" data-unassign-id="${assignment.id}" ${checked} />
               <span>${assignment.first_name} ${assignment.last_name} (${roleLabel})</span>
@@ -1916,7 +1916,7 @@ function filteredPeople() {
 
             const assignmentRows = projectAssignments
               .map((assignment) => {
-                const roleLabel = assignment.is_owner ? 'Owner' : assignment.is_leader ? 'Leader' : 'Contributor';
+                const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
                 const roleClass = assignment.is_owner ? 'text-blue-300' : assignment.is_leader ? 'text-emerald-300' : 'text-slate-100';
                 const challenge = challengeById.get(String(assignment.challenge_id));
                 const challengeDescription = challenge?.description || 'No description available.';
@@ -1939,16 +1939,16 @@ function filteredPeople() {
               })
               .join('');
 
-            return `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2 font-semibold text-slate-100" colspan="2">${projectName}</td><td class="p-2 text-right"><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">Adjust Workload</button></td></tr>${assignmentRows}`;
+            return `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2 font-semibold text-slate-100" colspan="2">${projectName}</td><td class="p-2 text-right"><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">${i18n.t('peopleOverview.adjustWorkload')}</button></td></tr>${assignmentRows}`;
           })
           .join('');
 
         document.getElementById('people-overview-modal-body').innerHTML = `<table class="w-full text-left text-xs rounded border border-slate-700 overflow-hidden">
           <thead>
             <tr class="text-slate-400 bg-slate-950/70">
-              <th class="p-2">Challenge</th>
-              <th class="p-2">Role</th>
-              <th class="p-2">Workload</th>
+              <th class="p-2">${i18n.t('entity.challenges')}</th>
+              <th class="p-2">${i18n.t('assign.role')}</th>
+              <th class="p-2">${i18n.t('peopleOverview.columns.workload')}</th>
             </tr>
           </thead>
           <tbody>${tableRows}</tbody>
@@ -2005,7 +2005,7 @@ function filteredPeople() {
         state.challengeModal.open = true;
         state.challengeModal.challengeId = challenge ? String(challenge.id) : null;
         const title = document.getElementById('challenge-modal-title');
-        title.textContent = challenge ? 'Edit Challenge' : 'Add Challenge';
+        title.textContent = challenge ? i18n.t('challenge.edit') : i18n.t('challenge.add');
         const form = document.getElementById('challenge-modal-form');
         if (form) {
           form.id.value = challenge ? challenge.id : '';
