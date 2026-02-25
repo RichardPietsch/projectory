@@ -6,6 +6,7 @@
     <title>Projectory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+    <script src="/js/api.js"></script>
   </head>
   <body class="min-h-screen bg-slate-950 text-slate-100">
     <main class="mx-auto max-w-7xl p-6">
@@ -449,23 +450,7 @@
         return `<span class="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold ${priority.classes}"${styleAttribute}><span class="iconify" data-icon="${priority.icon}" aria-hidden="true"></span><span>${priority.label}</span></span>`;
       }
 
-      async function api(url, options = {}) {
-        const response = await fetch(url, {
-          headers: { 'Content-Type': 'application/json' },
-          ...options
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({ error: 'Request failed.' }));
-          throw new Error(data.error || 'Request failed.');
-        }
-
-        if (response.status === 204) {
-          return null;
-        }
-
-        return response.json();
-      }
+      const { api } = window.ProjectoryApi;
 
       async function loadData() {
         state.meta = await api('/api/meta');
