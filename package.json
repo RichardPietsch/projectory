@@ -1,0 +1,17 @@
+{
+  "name": "projectory-hello-world",
+  "version": "1.0.0",
+  "description": "Dockerized Hello World web app with Express, Tailwind frontend, and Postgres",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test",
+    "check:syntax": "node --check src/server.js && node --check src/app.js && node --check src/auth/permissions.js && node --check src/auth/middleware.js && node --check src/modules/people/routes.js && node --check src/modules/people/service.js && node --check src/modules/people/repo.js && node --check src/modules/people/schema.js && node --check src/modules/clients/routes.js && node --check src/modules/clients/service.js && node --check src/modules/clients/repo.js && node --check src/modules/clients/schema.js && node --check scripts/run-migrations.js && node --check public/js/api.js",
+    "migrate": "node scripts/run-migrations.js",
+    "migrate:status": "node scripts/run-migrations.js --status"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}
