@@ -84,6 +84,21 @@ volumes:
 YAML
 ```
 
+
+## Database migrations
+
+The project now includes a migration foundation under `db/migrations/` with baseline schema in `0001_init.sql`.
+
+```bash
+# Show pending migrations
+npm run migrate:status
+
+# Apply pending migrations
+npm run migrate
+```
+
+Migration scripts use the same DB env vars as the app (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`) and track state in `schema_migrations`.
+
 ## Useful commands
 
 ```bash
