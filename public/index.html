@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
     <script src="/js/api.js"></script>
+    <script src="/js/state.js"></script>
+    <script src="/js/views-people.js"></script>
   </head>
   <body class="min-h-screen bg-slate-950 text-slate-100">
     <main class="mx-auto max-w-7xl p-6">
@@ -249,69 +251,7 @@
     </div>
 
     <script>
-      const state = {
-        showAdmin: false,
-        adminTab: 'people',
-        homeTab: 'client-teams',
-        selectedProjectId: '',
-        meta: { trades: [], levels: [], priorities: [] },
-        people: [],
-        clients: [],
-        projectsPayload: { projects: [], challenges: [], assignments: [] },
-        assignModal: {
-          open: false,
-          challengeId: null,
-          challengeTitle: '',
-          assignmentId: null,
-          selectedPersonId: '',
-          search: '',
-          role: 'contributor'
-        },
-        unassignModal: {
-          open: false,
-          challengeId: null,
-          challengeTitle: '',
-          selectedAssignmentIds: []
-        },
-        challengeModal: {
-          open: false,
-          challengeId: null,
-          returnToPeopleOverview: false,
-          returnPersonId: null
-        },
-        projectStatusModal: {
-          open: false,
-          projectId: null,
-          status: 'white'
-        },
-        listenersBound: {
-          header: false,
-          footer: false,
-          assignModal: false,
-          unassignModal: false,
-          challengeModal: false,
-          challengeModalForm: false,
-          exportModal: false,
-          importModal: false,
-          peopleOverviewModal: false,
-          adminEntityModals: false,
-          projectStatusModal: false
-        },
-        assignSubmitting: false,
-        challengeSubmitting: false,
-        peopleSort: 'name_asc',
-        clientsSort: 'name_asc',
-        adminProjectsSort: 'project_asc',
-        challengesSort: 'title_asc',
-        clientTeamsSort: 'status_desc',
-        clientTeamsSearch: '',
-        exportModalOpen: false,
-        importModalOpen: false,
-        importPreviewData: null,
-        peopleOverviewSort: 'name_asc',
-        peopleOverviewSearch: '',
-        peopleOverviewModal: { open: false, personId: null }
-      };
+      const state = window.ProjectoryState.createInitialState();
 
       const adminTabs = [
         { id: 'people', label: 'People View' },
@@ -495,9 +435,11 @@
       }
 
       function peopleView() {
-        const sortedPeople = [...state.people].sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
-        const rows = sortedPeople.map((person) => `<tr class="border-t border-slate-800"><td class="p-2">${person.first_name} ${person.last_name}${personLeaverBadge(person)}${personHiddenBadge(person)}</td><td class="p-2">${person.trade_name}</td><td class="p-2">${person.level_name}</td><td class="p-2">${Number(person.working_hours || 40)}hrs</td><td class="p-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminPersonModal(${JSON.stringify(person)})'>Edit</button><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300" onclick='deletePerson(${person.id})'>Delete</button></td></tr>`).join('');
-        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4"><div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-semibold">People</h2><button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick="openAdminPersonModal()">Add Person</button></div><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Trade</th><th class="p-2">Level</th><th class="p-2">Working Hours</th><th class="p-2">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        return window.ProjectoryViews.renderPeopleView({
+          state,
+          personLeaverBadge,
+          personHiddenBadge
+        });
       }
 
 
