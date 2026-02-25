@@ -1,0 +1,64 @@
+const peopleService = require('./service');
+
+function registerPeopleRoutes(app, deps) {
+  const { pool, badRequest, handleDbError, parseOptionalBoolean, parseWorkingHours } = deps;
+
+  app.get('/api/people', async (_req, res) => {
+    try {
+      const people = await peopleService.getPeople(pool);
+      return res.json(people);
+    } catch (error) {
+      return handleDbError(res, error);
+    }
+  });
+
+  app.post('/api/people', async (req, res) => {
+    try {
+      const result = await peopleService.createPerson(pool, req.body, parseOptionalBoolean, parseWorkingHours);
+      if (result.error) {
+        return badRequest(res, result.error);
+      }
+
+      return res.status(201).json(result.value);
+    } catch (error) {
+      return handleDbError(res, error);
+    }
+  });
+
+  app.put('/api/people/:id', async (req, res) => {
+    try {
+      const result = await peopleService.updatePerson(
+        pool,
+        req.params.id,
+        req.body,
+        parseOptionalBoolean,
+        parseWorkingHours
+      );
+      if (result.error) {
+        return badRequest(res, result.error);
+      }
+
+      if (result.value.rowCount === 0) {
+        return res.status(404).json({ error: 'Person not found.' });
+      }
+
+      return res.json({ ok: true });
+    } catch (error) {
+      return handleDbError(res, error);
+    }
+  });
+
+  app.delete('/api/people/:id', async (req, res) => {
+    try {
+      const result = await peopleService.removePerson(pool, req.params.id);
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Person not found.' });
+      }
+      return res.json({ ok: true });
+    } catch (error) {
+      return handleDbError(res, error);
+    }
+  });
+}
+
+module.exports = { registerPeopleRoutes };
