@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { app, pool, startServer } = require('../src/app');
+const { buildPersonPayload, buildClientPayload, buildOnboardingProfilePayload } = require('../test-utils/builders');
 
 const PLANNER_HEADERS = {
   'content-type': 'application/json',
@@ -73,7 +74,7 @@ test('POST /api/onboarding/profiles forbids viewer role', async () => {
     const response = await fetch(`http://127.0.0.1:${port}/api/onboarding/profiles`, {
       method: 'POST',
       headers: VIEWER_HEADERS,
-      body: JSON.stringify({ firstName: 'New', lastName: 'Hire' })
+      body: JSON.stringify(buildOnboardingProfilePayload({ email: undefined, status: undefined }))
     });
     assert.equal(response.status, 403);
     const body = await response.json();
@@ -99,12 +100,7 @@ test('POST /api/onboarding/profiles creates profile for planner', async () => {
     const response = await fetch(`http://127.0.0.1:${port}/api/onboarding/profiles`, {
       method: 'POST',
       headers: PLANNER_HEADERS,
-      body: JSON.stringify({
-        firstName: 'New',
-        lastName: 'Hire',
-        email: 'new.hire@example.com',
-        status: 'planned'
-      })
+      body: JSON.stringify(buildOnboardingProfilePayload())
     });
     assert.equal(response.status, 201);
     const body = await response.json();
@@ -149,12 +145,7 @@ test('POST /api/clients creates client and returns id', async () => {
     const response = await fetch(`http://127.0.0.1:${port}/api/clients`, {
       method: 'POST',
       headers: PLANNER_HEADERS,
-      body: JSON.stringify({
-        name: 'Acme',
-        location: 'Berlin',
-        sinceMonth: '2025-01',
-        priorityId: 1
-      })
+      body: JSON.stringify(buildClientPayload())
     });
     assert.equal(response.status, 201);
     const body = await response.json();
@@ -173,13 +164,7 @@ test('POST /api/people forbids viewer role', async () => {
     const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
       method: 'POST',
       headers: VIEWER_HEADERS,
-      body: JSON.stringify({
-        firstName: 'Ada',
-        lastName: 'Lovelace',
-        tradeId: 1,
-        levelId: 2,
-        workingHours: 40
-      })
+      body: JSON.stringify(buildPersonPayload())
     });
 
     assert.equal(response.status, 403);
@@ -217,14 +202,7 @@ test('POST /api/people rejects invalid status values', async () => {
     const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
       method: 'POST',
       headers: PLANNER_HEADERS,
-      body: JSON.stringify({
-        firstName: 'Ada',
-        lastName: 'Lovelace',
-        tradeId: 1,
-        levelId: 2,
-        workingHours: 40,
-        status: 'unknown'
-      })
+      body: JSON.stringify(buildPersonPayload({ status: 'unknown' }))
     });
     assert.equal(response.status, 400);
     const body = await response.json();
@@ -250,13 +228,7 @@ test('POST /api/people allows planner role and returns id', async () => {
     const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
       method: 'POST',
       headers: PLANNER_HEADERS,
-      body: JSON.stringify({
-        firstName: 'Ada',
-        lastName: 'Lovelace',
-        tradeId: 1,
-        levelId: 2,
-        workingHours: 40
-      })
+      body: JSON.stringify(buildPersonPayload())
     });
     assert.equal(response.status, 201);
     const body = await response.json();

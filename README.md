@@ -124,6 +124,7 @@ Default role is `admin` (override with `AUTH_DEFAULT_ROLE`).
 - Architecture overview: `docs/architecture.md`
 - API authorization matrix: `docs/api-authz-matrix.md`
 - Backend module template: `docs/module-template.md`
+- Testing strategy: `docs/testing-strategy.md`
 
 ## Continuous Integration
 
