@@ -3,6 +3,7 @@ const path = require('path');
 const { Pool } = require('pg');
 const { registerPeopleRoutes } = require('./modules/people/routes');
 const { registerClientsRoutes } = require('./modules/clients/routes');
+const { registerOnboardingRoutes } = require('./modules/onboarding/routes');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
 const { PERMISSIONS } = require('./auth/permissions');
 
@@ -362,6 +363,15 @@ registerClientsRoutes(app, {
   badRequest,
   handleDbError,
   requireMonth
+});
+
+
+registerOnboardingRoutes(app, {
+  pool,
+  badRequest,
+  handleDbError,
+  requirePermission,
+  PERMISSIONS
 });
 
 app.get('/api/projects', async (_req, res) => {

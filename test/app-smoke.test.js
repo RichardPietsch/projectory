@@ -64,6 +64,57 @@ test('GET /api/meta returns priority/trade/level payload', async () => {
 });
 
 
+
+test('POST /api/onboarding/profiles forbids viewer role', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/onboarding/profiles`, {
+      method: 'POST',
+      headers: VIEWER_HEADERS,
+      body: JSON.stringify({ firstName: 'New', lastName: 'Hire' })
+    });
+    assert.equal(response.status, 403);
+    const body = await response.json();
+    assert.equal(body.error, 'Forbidden.');
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /api/onboarding/profiles creates profile for planner', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('INSERT INTO onboarding_profiles')) {
+      return { rows: [{ id: 99 }] };
+    }
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/onboarding/profiles`, {
+      method: 'POST',
+      headers: PLANNER_HEADERS,
+      body: JSON.stringify({
+        firstName: 'New',
+        lastName: 'Hire',
+        email: 'new.hire@example.com',
+        status: 'planned'
+      })
+    });
+    assert.equal(response.status, 201);
+    const body = await response.json();
+    assert.deepEqual(body, { id: 99 });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
 test('POST /api/clients validates required payload', async () => {
   const server = app.listen(0);
   const port = server.address().port;

@@ -13,6 +13,7 @@ Browser-based resource planning tool with three management views:
 - **Project**: belongs to exactly one client, start/end month (`yyyy-mm`), budget entered in **euros** (stored as cents internally)
 - **Challenge**: belongs to a project
 - **Assignment**: links person + project + challenge with optional `isOwner` or `isLeader`
+- **Onboarding Profile**: optional person-linked onboarding workflow with progress steps
 
 ### Business rules implemented
 - Footer actions export/import operational data as JSON (clients, projects, people, challenges, assignments). Static lists (priorities, trades, levels) are excluded and cannot be changed via import/export. Import performs strict schema/reference validation and rejects malformed files.
@@ -87,7 +88,7 @@ YAML
 
 ## Database migrations
 
-The project now includes a migration foundation under `db/migrations/` with baseline schema in `0001_init.sql` and an incremental people-status migration in `0003_people_status.sql`.
+The project now includes a migration foundation under `db/migrations/` with baseline schema in `0001_init.sql` and an incremental people-status migration in `0003_people_status.sql`, and onboarding foundation migration `0004_onboarding_foundation.sql`.
 
 ```bash
 # Show pending migrations
