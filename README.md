@@ -106,6 +106,7 @@ A first authz foundation is now included:
 - migration `db/migrations/0002_auth_foundation.sql` adds `users`, `roles`, `permissions`, `user_roles`, and `role_permissions`
 - app-level auth context middleware derives identity/role from request headers
 - inspection endpoint: `GET /api/auth/me`
+- people write routes (`POST/PUT/DELETE /api/people`) are now guarded by `people:write`
 
 Headers supported for local/dev simulation:
 - `x-projectory-user-id`

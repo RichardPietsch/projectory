@@ -3,6 +3,16 @@ const assert = require('node:assert/strict');
 
 const { app, pool, startServer } = require('../src/app');
 
+const PLANNER_HEADERS = {
+  'content-type': 'application/json',
+  'x-projectory-user-role': 'planner'
+};
+
+const VIEWER_HEADERS = {
+  'content-type': 'application/json',
+  'x-projectory-user-role': 'viewer'
+};
+
 test('app module exports app and startServer', () => {
   assert.equal(typeof app, 'function');
   assert.equal(typeof startServer, 'function');
@@ -53,14 +63,39 @@ test('GET /api/meta returns priority/trade/level payload', async () => {
   }
 });
 
-test('POST /api/people validates required fields', async () => {
+test('POST /api/people forbids viewer role', async () => {
   const server = app.listen(0);
   const port = server.address().port;
 
   try {
     const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: VIEWER_HEADERS,
+      body: JSON.stringify({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        tradeId: 1,
+        levelId: 2,
+        workingHours: 40
+      })
+    });
+
+    assert.equal(response.status, 403);
+    const body = await response.json();
+    assert.equal(body.error, 'Forbidden.');
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /api/people validates required fields for planner role', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
+      method: 'POST',
+      headers: PLANNER_HEADERS,
       body: JSON.stringify({ firstName: 'A' })
     });
     assert.equal(response.status, 400);
@@ -71,7 +106,7 @@ test('POST /api/people validates required fields', async () => {
   }
 });
 
-test('POST /api/people creates person and returns id', async () => {
+test('POST /api/people allows planner role and returns id', async () => {
   const originalQuery = pool.query;
   pool.query = async (sql) => {
     if (sql.includes('INSERT INTO people')) {
@@ -86,7 +121,7 @@ test('POST /api/people creates person and returns id', async () => {
   try {
     const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: PLANNER_HEADERS,
       body: JSON.stringify({
         firstName: 'Ada',
         lastName: 'Lovelace',

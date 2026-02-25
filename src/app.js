@@ -2,7 +2,8 @@ const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const { registerPeopleRoutes } = require('./modules/people/routes');
-const { attachAuthContext } = require('./auth/middleware');
+const { attachAuthContext, requirePermission } = require('./auth/middleware');
+const { PERMISSIONS } = require('./auth/permissions');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -303,7 +304,9 @@ registerPeopleRoutes(app, {
   badRequest,
   handleDbError,
   parseOptionalBoolean,
-  parseWorkingHours
+  parseWorkingHours,
+  requirePermission,
+  PERMISSIONS
 });
 
 app.get('/api/clients', async (_req, res) => {

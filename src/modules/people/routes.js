@@ -1,7 +1,7 @@
 const peopleService = require('./service');
 
 function registerPeopleRoutes(app, deps) {
-  const { pool, badRequest, handleDbError, parseOptionalBoolean, parseWorkingHours } = deps;
+  const { pool, badRequest, handleDbError, parseOptionalBoolean, parseWorkingHours, requirePermission, PERMISSIONS } = deps;
 
   app.get('/api/people', async (_req, res) => {
     try {
@@ -12,7 +12,7 @@ function registerPeopleRoutes(app, deps) {
     }
   });
 
-  app.post('/api/people', async (req, res) => {
+  app.post('/api/people', requirePermission(PERMISSIONS.PEOPLE_WRITE), async (req, res) => {
     try {
       const result = await peopleService.createPerson(pool, req.body, parseOptionalBoolean, parseWorkingHours);
       if (result.error) {
@@ -25,7 +25,7 @@ function registerPeopleRoutes(app, deps) {
     }
   });
 
-  app.put('/api/people/:id', async (req, res) => {
+  app.put('/api/people/:id', requirePermission(PERMISSIONS.PEOPLE_WRITE), async (req, res) => {
     try {
       const result = await peopleService.updatePerson(
         pool,
@@ -48,7 +48,7 @@ function registerPeopleRoutes(app, deps) {
     }
   });
 
-  app.delete('/api/people/:id', async (req, res) => {
+  app.delete('/api/people/:id', requirePermission(PERMISSIONS.PEOPLE_WRITE), async (req, res) => {
     try {
       const result = await peopleService.removePerson(pool, req.params.id);
       if (result.rowCount === 0) {
