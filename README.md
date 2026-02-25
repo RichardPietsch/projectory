@@ -117,6 +117,16 @@ Headers supported for local/dev simulation:
 
 Default role is `admin` (override with `AUTH_DEFAULT_ROLE`).
 
+
+## Continuous Integration
+
+GitHub Actions workflow is available at `.github/workflows/ci.yml` and runs on pushes/PRs.
+
+It executes:
+- `npm run migrate` against a temporary Postgres service container
+- `npm run check:syntax`
+- `npm test`
+
 ## Useful commands
 
 ```bash
