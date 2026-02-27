@@ -42,8 +42,8 @@ Open: <http://localhost:3000>
 For quick role testing with default auth role preconfigured:
 
 ```bash
-# admin-default (existing)
-curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.richard.yml | docker compose -f - up --build
+# admin-default
+curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.admin.yml | docker compose -f - up --build
 
 # viewer-default
 curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.viewer.yml | docker compose -f - up --build
@@ -55,7 +55,7 @@ curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/dock
 ## No-clone run from GitHub (your repo)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.richard.yml \
+curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.admin.yml \
 | docker compose -f - up --build
 ```
 
