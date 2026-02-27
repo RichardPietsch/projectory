@@ -9,6 +9,7 @@
       people: [],
       clients: [],
       projectsPayload: { projects: [], challenges: [], assignments: [] },
+      auth: { role: 'admin', permissions: [] },
       assignModal: {
         open: false,
         challengeId: null,

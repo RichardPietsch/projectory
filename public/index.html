@@ -347,8 +347,9 @@
 
       function renderProjectStatusPill(status, projectId = null) {
         const presentation = getProjectStatusPresentation(status);
-        const clickAttr = projectId ? ` onclick="openProjectStatusPicker(${projectId}, event)"` : '';
-        const interactiveClass = projectId ? ' cursor-pointer hover:scale-110' : '';
+        const canOpenStatus = projectId && !isViewerMode();
+        const clickAttr = canOpenStatus ? ` onclick="openProjectStatusPicker(${projectId}, event)"` : '';
+        const interactiveClass = canOpenStatus ? ' cursor-pointer hover:scale-110' : '';
         return `<span class="inline-flex h-3 w-3 rounded-full border ${presentation.classes}${interactiveClass}" title="${presentation.label}" aria-label="${presentation.label}"${clickAttr}></span>`;
       }
 
@@ -406,7 +407,16 @@
 
       const { api } = window.ProjectoryApi;
 
+      function currentRole() {
+        return String(state.auth?.role || 'admin').toLowerCase();
+      }
+
+      function isViewerMode() {
+        return currentRole() === 'viewer';
+      }
+
       async function loadData() {
+        state.auth = await api('/api/auth/me');
         state.meta = await api('/api/meta');
         state.people = await api('/api/people');
         state.clients = await api('/api/clients');
@@ -623,6 +633,7 @@ function clientsView() {
 
       function ownershipView() {
         const projects = state.projectsPayload.projects;
+        const viewerMode = isViewerMode();
 
         if (projects.length === 0) {
           return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-300">No projects available yet. Ask an admin to create one first.</div>`;
@@ -851,6 +862,9 @@ function clientsView() {
               const quantity = Math.round(totalQuantity);
               const name = `${sample.first_name} ${sample.last_name}${leaverRunIcon(sample.is_leaver)}`;
               const tierClass = isSecondaryRole(personId) ? secondaryTierClass : primaryTierClass;
+              if (viewerMode) {
+                return `<span class="rounded border px-2 py-1 text-xs ${tierClass}">${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</span>`;
+              }
               return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</button>`;
             })
             .filter(Boolean)
@@ -934,11 +948,14 @@ function clientsView() {
                           ? 'border-slate-500 border-dotted bg-transparent text-slate-300'
                           : 'border-slate-500 bg-slate-700 text-slate-100';
                     const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
+                    if (viewerMode) {
+                      return `<span class="mb-1 mr-1 inline-flex rounded border px-2 py-1 text-xs ${roleClass}">${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</span>`;
+                    }
                     return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</button>`;
                   })
                   .join('')
-              : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
-            const actionItems = [
+              : viewerMode ? `<span class="text-slate-400">—</span>` : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
+            const actionItems = viewerMode ? [] : [
               `<button class="w-full rounded border border-slate-600 px-2 py-1 text-left text-xs hover:bg-slate-800" onclick='openChallengeModal(${JSON.stringify(challenge)})'>Edit</button>`,
               `<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteChallenge(${challenge.id})'>Delete</button>`
             ];
@@ -953,7 +970,7 @@ function clientsView() {
               actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='openUnassignModal(${challenge.id})'>Unassign</button>`);
             }
 
-            const actionsMenu = `<details class="relative inline-block">
+            const actionsMenu = viewerMode ? '' : `<details class="relative inline-block">
               <summary class="list-none cursor-pointer rounded border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800">...</summary>
               <div class="absolute right-0 z-30 mt-1 w-52 space-y-1 rounded border border-slate-700 bg-slate-900 p-2 shadow-xl">${actionItems.join('')}</div>
             </details>`;
@@ -982,7 +999,7 @@ function clientsView() {
                 <p class="text-xs text-slate-400">What challenges need to be tackled to build a successful customer relationship?</p>
                 <p class="mt-2 text-xs text-slate-300">Status: ${renderProjectStatusPill(selectedProject.status, selectedProject.id)}</p>
               </div>
-              <button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>${i18n.t('challenge.add')}</button>
+              ${viewerMode ? '' : `<button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>${i18n.t('challenge.add')}</button>`}
             </div>
             <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
           </div>
@@ -1480,6 +1497,7 @@ function filteredPeople() {
         });
 
         document.getElementById('admin-toggle')?.addEventListener('click', () => {
+          if (isViewerMode()) return;
           state.showAdmin = true;
           navigateFromState();
           render();
@@ -1568,6 +1586,7 @@ function filteredPeople() {
       }
 
       window.openUnassignModal = function openUnassignModal(challengeId) {
+        if (isViewerMode()) return;
         const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(challengeId));
         state.unassignModal.open = true;
         state.unassignModal.challengeId = String(challengeId);
@@ -1678,6 +1697,7 @@ function filteredPeople() {
       }
 
       window.openAssignModal = function openAssignModal(challengeId, challengeTitle, assignment = null) {
+        if (isViewerMode()) return;
         state.assignModal.open = true;
         state.assignModal.challengeId = String(challengeId);
         state.assignModal.challengeTitle = challengeTitle;
@@ -1741,6 +1761,7 @@ function filteredPeople() {
       };
 
       window.openProjectStatusPicker = async function openProjectStatusPicker(projectId, event) {
+        if (isViewerMode()) return;
         event?.stopPropagation?.();
 
         const project = state.projectsPayload.projects.find((item) => String(item.id) === String(projectId));
@@ -1846,6 +1867,7 @@ function filteredPeople() {
       };
 
       window.adjustProjectPersonQuantity = async function adjustProjectPersonQuantity(projectId, personId, keepModalOpen = false) {
+        if (isViewerMode()) return;
         const currentAssignments = state.projectsPayload.assignments.filter(
           (assignment) => String(assignment.project_id) === String(projectId) && String(assignment.person_id) === String(personId)
         );
@@ -1939,7 +1961,8 @@ function filteredPeople() {
               })
               .join('');
 
-            return `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2 font-semibold text-slate-100" colspan="2">${projectName}</td><td class="p-2 text-right"><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">${i18n.t('peopleOverview.adjustWorkload')}</button></td></tr>${assignmentRows}`;
+            const adjustControl = isViewerMode() ? '' : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">${i18n.t('peopleOverview.adjustWorkload')}</button>`;
+            return `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2 font-semibold text-slate-100" colspan="2">${projectName}</td><td class="p-2 text-right">${adjustControl}</td></tr>${assignmentRows}`;
           })
           .join('');
 
@@ -1997,6 +2020,7 @@ function filteredPeople() {
       }
 
       window.openChallengeModal = function openChallengeModal(challenge = null, options = {}) {
+        if (isViewerMode()) return;
         if (!options.preserveReturnTarget) {
           state.challengeModal.returnToPeopleOverview = false;
           state.challengeModal.returnPersonId = null;
@@ -2067,10 +2091,12 @@ function filteredPeople() {
       };
 
       window.deleteAssignment = async function deleteAssignment(id) {
+        if (isViewerMode()) return;
         await handleMutation(() => api(`/api/assignments/${id}`, { method: 'DELETE' }), 'Assignment deleted.');
       };
 
       window.toggleAssignmentRole = async function toggleAssignmentRole(id, isOwner, isLeader) {
+        if (isViewerMode()) return;
         let next = { isOwner: false, isLeader: false };
         if (!isOwner && !isLeader) next = { isOwner: true, isLeader: false };
         else if (isOwner) next = { isOwner: false, isLeader: true };
@@ -2113,6 +2139,12 @@ function filteredPeople() {
         if (!route) return false;
 
         if (route.mode === 'admin') {
+          if (isViewerMode()) {
+            state.showAdmin = false;
+            state.homeTab = 'client-teams';
+            state.selectedProjectId = '';
+            return true;
+          }
           state.showAdmin = true;
           state.adminTab = route.adminTab || 'people';
           state.peopleOverviewModal.open = false;
@@ -2185,10 +2217,15 @@ function filteredPeople() {
         return `<div class="space-y-4"><div class="flex items-center justify-between"><h2 class="text-2xl font-bold">${i18n.t('admin.title')}</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="closeAdminStandalone()">${i18n.t('common.backToApp')}</button></div><div class="flex gap-2">${tabs}</div>${body}<footer class="mt-6 border-t border-slate-800 pt-4 text-sm text-slate-300"><div class="flex flex-wrap items-center gap-3"><button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.export')}</button><button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.import')}</button></div></footer></div>`;
       }
 
-      window.setAdminTab = function setAdminTab(tabId) { state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
+      window.setAdminTab = function setAdminTab(tabId) { if (isViewerMode()) return; state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
       window.closeAdminStandalone = function closeAdminStandalone() { state.showAdmin = false; navigateFromState(); render(); };
 
       function render() {
+        if (isViewerMode()) state.showAdmin = false;
+
+        const adminToggle = document.getElementById('admin-toggle');
+        if (adminToggle) adminToggle.style.display = isViewerMode() ? 'none' : '';
+
         if (state.showAdmin) {
           document.getElementById('view').innerHTML = adminStandaloneView();
         } else {
