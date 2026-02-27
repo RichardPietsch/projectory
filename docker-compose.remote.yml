@@ -1,7 +1,7 @@
 services:
   web:
     build:
-      context: https://github.com/RichardPietsch/projectory.git#main
+      context: ${REPO_GIT_URL:?Set REPO_GIT_URL to your git URL with ref, e.g. https://github.com/owner/repo.git#main}
     ports:
       - "3000:3000"
     environment:
@@ -17,7 +17,7 @@ services:
 
   db:
     build:
-      context: https://github.com/RichardPietsch/projectory.git#main:db
+      context: ${REPO_GIT_URL:?Set REPO_GIT_URL to your git URL with ref, e.g. https://github.com/owner/repo.git#main}:db
     environment:
       POSTGRES_DB: helloapp
       POSTGRES_USER: hello
@@ -29,14 +29,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
-  adminer:
-    image: adminer:4
-    ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
 
 volumes:
   pgdata:

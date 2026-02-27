@@ -44,6 +44,9 @@ For quick role testing with default auth role preconfigured:
 ```bash
 # admin-default
 curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.admin.yml | docker compose -f - up --build
+# app: http://localhost:3000
+# db browser view (Adminer): http://localhost:8080
+# Adminer login -> System: PostgreSQL, Server: db, Username: hello, Password: hello, Database: helloapp
 
 # viewer-default
 curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.viewer.yml | docker compose -f - up --build
@@ -52,12 +55,16 @@ curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/dock
 curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.planner.yml | docker compose -f - up --build
 ```
 
+For `docker-compose.admin.yml`, a database browser UI is also exposed at `http://localhost:8080` (Adminer).
+Use: System `PostgreSQL`, Server `db`, Username `hello`, Password `hello`, Database `helloapp`.
+
 ## No-clone run from GitHub (your repo)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.admin.yml \
 | docker compose -f - up --build
 ```
+
 
 If raw GitHub file is missing, use this fallback:
 

@@ -1,7 +1,6 @@
 services:
   web:
-    build:
-      context: https://github.com/RichardPietsch/projectory.git#main
+    build: .
     ports:
       - "3000:3000"
     environment:
@@ -17,7 +16,7 @@ services:
 
   db:
     build:
-      context: https://github.com/RichardPietsch/projectory.git#main:db
+      context: ./db
     environment:
       POSTGRES_DB: helloapp
       POSTGRES_USER: hello
@@ -29,14 +28,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
-  adminer:
-    image: adminer:4
-    ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
 
 volumes:
   pgdata:
