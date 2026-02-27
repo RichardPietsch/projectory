@@ -415,6 +415,10 @@
         return currentRole() === 'viewer';
       }
 
+      function canAccessAdmin() {
+        return currentRole() === 'admin';
+      }
+
       async function loadData() {
         state.auth = await api('/api/auth/me');
         state.meta = await api('/api/meta');
@@ -1497,7 +1501,7 @@ function filteredPeople() {
         });
 
         document.getElementById('admin-toggle')?.addEventListener('click', () => {
-          if (isViewerMode()) return;
+          if (!canAccessAdmin()) return;
           state.showAdmin = true;
           navigateFromState();
           render();
@@ -2139,7 +2143,7 @@ function filteredPeople() {
         if (!route) return false;
 
         if (route.mode === 'admin') {
-          if (isViewerMode()) {
+          if (!canAccessAdmin()) {
             state.showAdmin = false;
             state.homeTab = 'client-teams';
             state.selectedProjectId = '';
@@ -2217,14 +2221,14 @@ function filteredPeople() {
         return `<div class="space-y-4"><div class="flex items-center justify-between"><h2 class="text-2xl font-bold">${i18n.t('admin.title')}</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="closeAdminStandalone()">${i18n.t('common.backToApp')}</button></div><div class="flex gap-2">${tabs}</div>${body}<footer class="mt-6 border-t border-slate-800 pt-4 text-sm text-slate-300"><div class="flex flex-wrap items-center gap-3"><button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.export')}</button><button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.import')}</button></div></footer></div>`;
       }
 
-      window.setAdminTab = function setAdminTab(tabId) { if (isViewerMode()) return; state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
+      window.setAdminTab = function setAdminTab(tabId) { if (!canAccessAdmin()) return; state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
       window.closeAdminStandalone = function closeAdminStandalone() { state.showAdmin = false; navigateFromState(); render(); };
 
       function render() {
-        if (isViewerMode()) state.showAdmin = false;
+        if (!canAccessAdmin()) state.showAdmin = false;
 
         const adminToggle = document.getElementById('admin-toggle');
-        if (adminToggle) adminToggle.style.display = isViewerMode() ? 'none' : '';
+        if (adminToggle) adminToggle.style.display = canAccessAdmin() ? '' : 'none';
 
         if (state.showAdmin) {
           document.getElementById('view').innerHTML = adminStandaloneView();
