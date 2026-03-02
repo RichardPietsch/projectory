@@ -37,7 +37,7 @@
         <div class="flex items-center gap-2">
         <button id="onboarding-demo-start" class="inline-flex items-center gap-2 rounded-lg border border-indigo-500/50 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200 hover:bg-indigo-500/20"><span class="iconify text-base" data-icon="mdi:school-outline" aria-hidden="true"></span><span data-i18n="onboarding.demo.start">Start tour demo</span></button>
         <label class="sr-only" for="locale-select" data-i18n="header.language">Language</label>
-        <select id="locale-select" class="rounded-lg border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-200">
+        <select id="locale-select" class="rounded-lg border border-slate-700 bg-slate-950 px-2 pr-8 py-2 text-sm text-slate-200">
           <option value="en" data-i18n="locale.en">English</option>
           <option value="de" data-i18n="locale.de">Deutsch</option>
         </select>
@@ -601,7 +601,7 @@
         function workloadWarningClass(workload) {
           if (workload === 0) return 'text-slate-100';
           if (workload < 100) return 'text-amber-300';
-          if (workload === 100) return 'text-[#00d8ff]';
+          if (workload === 100) return 'text-emerald-300';
           return 'text-rose-300';
         }
 
@@ -717,16 +717,16 @@
               title="Clear search"
             >✕</button>
           </div>
-          <table id="onboarding-people-overview-table" class="w-full text-left text-sm">
+          <table id="onboarding-people-overview-table" class="w-full table-fixed text-left text-sm">
             <thead><tr class="text-slate-400">
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('name')">${i18n.t('people.columns.name')} ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('trade')">${i18n.t('people.columns.trade')} ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('level')">${i18n.t('people.columns.level')} ${state.peopleOverviewSort.startsWith('level_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">${i18n.t('peopleOverview.columns.assignments')} ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">${i18n.t('peopleOverview.columns.ownerships')} ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">${i18n.t('peopleOverview.columns.leaderships')} ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('contributions')">${i18n.t('peopleOverview.columns.contributions')} ${state.peopleOverviewSort.startsWith('contributions_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">${i18n.t('peopleOverview.columns.workload')} ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[20%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('name')">${i18n.t('people.columns.name')} ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('trade')">${i18n.t('people.columns.trade')} ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('level')">${i18n.t('people.columns.level')} ${state.peopleOverviewSort.startsWith('level_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">${i18n.t('peopleOverview.columns.assignments')} ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">${i18n.t('peopleOverview.columns.ownerships')} ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">${i18n.t('peopleOverview.columns.leaderships')} ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('contributions')">${i18n.t('peopleOverview.columns.contributions')} ${state.peopleOverviewSort.startsWith('contributions_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">${i18n.t('peopleOverview.columns.workload')} ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
             </tr></thead>
             <tbody>${rows}</tbody>
           </table>
@@ -901,16 +901,16 @@ function clientsView() {
                 title="Clear search"
               >✕</button>
             </div>
-            <table id="onboarding-project-overview-table" class="w-full text-left text-sm">
+            <table id="onboarding-project-overview-table" class="w-full table-fixed text-left text-sm">
               <thead>
                 <tr class="text-slate-400">
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[5%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[10%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[10%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[30%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                 </tr>
               </thead>
               <tbody>${projectRows}</tbody>
@@ -1114,9 +1114,9 @@ function clientsView() {
                 <p class="text-xs text-slate-400">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
                 <p class="mt-2 text-xs text-slate-300">Status: ${renderProjectStatusPill(selectedProject.status, selectedProject.id)}</p>
               </div>
-              ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>${i18n.t('challenge.add')}</button>`}
+              ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center gap-2 rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'><span class="iconify text-base" data-icon="mdi:puzzle-plus" aria-hidden="true"></span><span>${i18n.t('challenge.add')}</span></button>`}
             </div>
-            <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
+            <table class="w-full table-fixed text-left text-sm"><thead><tr class="text-slate-400"><th class="w-[20%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[40%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[30%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[10%] p-2">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
           </div>
 
           ${projectPeopleOverview}`;
