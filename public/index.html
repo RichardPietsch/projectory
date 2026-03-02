@@ -265,7 +265,7 @@
     </div>
 
     <div id="onboarding-overlay" class="fixed inset-0 z-[80] hidden bg-slate-950/60"></div>
-    <div id="onboarding-popover" class="fixed z-[81] hidden w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-indigo-400/50 bg-slate-900 p-4 shadow-2xl">
+    <div id="onboarding-popover" class="fixed z-[81] hidden w-[26rem] max-w-[calc(100vw-2rem)] rounded-xl border border-indigo-400/50 bg-slate-900 p-4 shadow-2xl">
       <div class="mb-2 text-xs uppercase tracking-wide text-indigo-300" id="onboarding-step-indicator">Step 1 / 3</div>
       <h3 id="onboarding-title" class="text-base font-semibold text-slate-100">Welcome</h3>
       <p id="onboarding-description" class="mt-2 text-sm text-slate-300"></p>
@@ -291,7 +291,6 @@
       const CHALLENGE_TITLE_PREFILL = 'Placeholder Challenge';
       const CHALLENGE_DESCRIPTION_PREFILL = 'Please edit this to reflect an actual challenge!';
 
-
       const onboardingDemo = {
         open: false,
         stepIndex: 0,
@@ -301,20 +300,92 @@
           {
             target: '#app-logo-button',
             titleKey: 'onboarding.demo.step1.title',
-            descriptionKey: 'onboarding.demo.step1.description'
+            descriptionKey: 'onboarding.demo.step1.description',
+            onEnter: () => {
+              state.showAdmin = false;
+              state.homeTab = 'client-teams';
+              state.selectedProjectId = '';
+              navigateFromState();
+              render();
+            }
           },
           {
-            target: '#onboarding-tab-client-teams',
+            target: '#onboarding-project-overview-table',
             titleKey: 'onboarding.demo.step2.title',
-            descriptionKey: 'onboarding.demo.step2.description'
+            descriptionKey: 'onboarding.demo.step2.description',
+            onEnter: () => {
+              state.showAdmin = false;
+              state.homeTab = 'client-teams';
+              state.selectedProjectId = '';
+              navigateFromState();
+              render();
+            }
           },
           {
-            target: '#onboarding-tab-people-overview',
+            target: '#onboarding-challenge-overview',
             titleKey: 'onboarding.demo.step3.title',
-            descriptionKey: 'onboarding.demo.step3.description'
+            descriptionKey: 'onboarding.demo.step3.description',
+            onEnter: () => {
+              state.showAdmin = false;
+              state.homeTab = 'client-teams';
+              const hasProject52 = state.projectsPayload.projects.some((project) => Number(project.id) === 52);
+              state.selectedProjectId = hasProject52 ? '52' : String(state.projectsPayload.projects[0]?.id || '');
+              navigateFromState();
+              render();
+            }
+          },
+          {
+            target: '#onboarding-add-challenge',
+            titleKey: 'onboarding.demo.step4.title',
+            descriptionKey: 'onboarding.demo.step4.description'
+          },
+          {
+            target: '#onboarding-project-team-overview',
+            titleKey: 'onboarding.demo.step5.title',
+            descriptionKey: 'onboarding.demo.step5.description'
+          },
+          {
+            target: '#onboarding-client-owners',
+            titleKey: 'onboarding.demo.step6.title',
+            descriptionKey: 'onboarding.demo.step6.description'
+          },
+          {
+            target: '#onboarding-client-leaders',
+            titleKey: 'onboarding.demo.step7.title',
+            descriptionKey: 'onboarding.demo.step7.description'
+          },
+          {
+            target: '#onboarding-contributors',
+            titleKey: 'onboarding.demo.step8.title',
+            descriptionKey: 'onboarding.demo.step8.description'
+          },
+          {
+            target: '#onboarding-people-overview-table',
+            titleKey: 'onboarding.demo.step9.title',
+            descriptionKey: 'onboarding.demo.step9.description',
+            onEnter: () => {
+              state.showAdmin = false;
+              state.homeTab = 'people-overview';
+              state.selectedProjectId = '';
+              navigateFromState();
+              render();
+            }
+          },
+          {
+            target: null,
+            titleKey: 'onboarding.demo.step10.title',
+            descriptionKey: 'onboarding.demo.step10.description',
+            onEnter: () => {
+              state.showAdmin = false;
+              state.homeTab = 'client-teams';
+              state.selectedProjectId = '';
+              navigateFromState();
+              render();
+            }
           }
         ]
       };
+
 
       function showMessage(message, type = 'ok', options = {}) {
         const { actionLabel, onAction } = options;
@@ -646,7 +717,7 @@
               title="Clear search"
             >✕</button>
           </div>
-          <table class="w-full text-left text-sm">
+          <table id="onboarding-people-overview-table" class="w-full text-left text-sm">
             <thead><tr class="text-slate-400">
               <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('name')">${i18n.t('people.columns.name')} ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
               <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setPeopleOverviewSortField('trade')">${i18n.t('people.columns.trade')} ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
@@ -830,7 +901,7 @@ function clientsView() {
                 title="Clear search"
               >✕</button>
             </div>
-            <table class="w-full text-left text-sm">
+            <table id="onboarding-project-overview-table" class="w-full text-left text-sm">
               <thead>
                 <tr class="text-slate-400">
                   <th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
@@ -886,7 +957,7 @@ function clientsView() {
           }
         }
 
-        function renderTierPeople(ids, tierLabel, primaryTierClass, secondaryTierClass, isSecondaryRole = () => false) {
+        function renderTierPeople(ids, tierLabel, primaryTierClass, secondaryTierClass, isSecondaryRole = () => false, containerId = '') {
           const sortedIds = Array.from(ids).sort((a, b) => {
             const sampleA = (assignmentsByPerson.get(a) || [])[0] || {};
             const sampleB = (assignmentsByPerson.get(b) || [])[0] || {};
@@ -914,19 +985,19 @@ function clientsView() {
             .filter(Boolean)
             .join(' ');
 
-          return `<div class="rounded border border-slate-700 bg-slate-950/60 p-3">
+          return `<div ${containerId ? `id="${containerId}"` : ''} class="rounded border border-slate-700 bg-slate-950/60 p-3">
             <h4 class="mb-2 text-sm font-semibold text-slate-200">${tierLabel}</h4>
             <div class="flex flex-wrap gap-2">${entries || '<span class="text-xs text-slate-400">None</span>'}</div>
           </div>`;
         }
 
-        const projectPeopleOverview = `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+        const projectPeopleOverview = `<div id="onboarding-project-team-overview" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
           <h3 class="mb-3 text-lg font-semibold">${i18n.t('projectDetail.teamOverview.title')}</h3>
           <p class="mb-3 text-xs text-slate-400">${i18n.t('projectDetail.teamOverview.subtitle')}</p>
           <div class="space-y-3">
-            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50', 'border-blue-400/70 bg-blue-600 text-blue-50')}
-            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50', 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200', (personId) => ownerIds.has(personId))}
-            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-500 bg-slate-700 text-slate-100', 'border-slate-500 border-dotted bg-transparent text-slate-300', (personId) => ownerIds.has(personId) || leaderIds.has(personId))}
+            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50', 'border-blue-400/70 bg-blue-600 text-blue-50', () => false, 'onboarding-client-owners')}
+            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50', 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200', (personId) => ownerIds.has(personId), 'onboarding-client-leaders')}
+            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-500 bg-slate-700 text-slate-100', 'border-slate-500 border-dotted bg-transparent text-slate-300', (personId) => ownerIds.has(personId) || leaderIds.has(personId), 'onboarding-contributors')}
           </div>
         </div>`;
 
@@ -1036,14 +1107,14 @@ function clientsView() {
             </div>
           </div>
 
-          <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <div id="onboarding-challenge-overview" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 class="text-lg font-semibold">${i18n.t('projectDetail.challengeOverview.title')}</h3>
                 <p class="text-xs text-slate-400">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
                 <p class="mt-2 text-xs text-slate-300">Status: ${renderProjectStatusPill(selectedProject.status, selectedProject.id)}</p>
               </div>
-              ${viewerMode ? '' : `<button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>${i18n.t('challenge.add')}</button>`}
+              ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>${i18n.t('challenge.add')}</button>`}
             </div>
             <table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2"><button class="inline-flex items-center gap-1 hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="p-2">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
           </div>
@@ -1447,7 +1518,6 @@ function filteredPeople() {
         showMessage('Import completed.');
       }
 
-
       function clearOnboardingHighlight() {
         if (!onboardingDemo.highlightedElement) return;
         onboardingDemo.highlightedElement.classList.remove('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[82]');
@@ -1459,6 +1529,20 @@ function filteredPeople() {
         document.getElementById('onboarding-overlay')?.classList.add('hidden');
         document.getElementById('onboarding-popover')?.classList.add('hidden');
         clearOnboardingHighlight();
+      }
+
+      function runOnboardingStepEnter(stepIndex) {
+        const step = onboardingDemo.steps[stepIndex];
+        if (step && typeof step.onEnter === 'function') {
+          step.onEnter();
+        }
+      }
+
+      function moveOnboardingStep(nextIndex) {
+        const clamped = Math.max(0, Math.min(onboardingDemo.steps.length - 1, nextIndex));
+        onboardingDemo.stepIndex = clamped;
+        runOnboardingStepEnter(clamped);
+        renderOnboardingDemo();
       }
 
       function renderOnboardingDemo() {
@@ -1477,19 +1561,17 @@ function filteredPeople() {
         }
 
         const step = onboardingDemo.steps[onboardingDemo.stepIndex];
-        const target = document.querySelector(step.target);
-        if (!target) {
-          closeOnboardingDemo();
-          return;
-        }
+        const target = step.target ? document.querySelector(step.target) : null;
 
         overlay.classList.remove('hidden');
         popover.classList.remove('hidden');
 
         clearOnboardingHighlight();
-        target.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[82]');
-        onboardingDemo.highlightedElement = target;
-        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (target) {
+          target.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[82]');
+          onboardingDemo.highlightedElement = target;
+          target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
 
         document.getElementById('onboarding-step-indicator').textContent = i18n.t('onboarding.demo.stepIndicator', {
           current: onboardingDemo.stepIndex + 1,
@@ -1504,27 +1586,28 @@ function filteredPeople() {
         const isLastStep = onboardingDemo.stepIndex === onboardingDemo.steps.length - 1;
         nextButton.textContent = isLastStep ? i18n.t('onboarding.demo.finish') : i18n.t('onboarding.demo.next');
 
+        if (!target) {
+          const popoverWidth = 420;
+          popover.style.left = `${Math.max(12, (window.innerWidth - popoverWidth) / 2)}px`;
+          popover.style.top = `${Math.max(20, (window.innerHeight - 230) / 2)}px`;
+          return;
+        }
+
         const rect = target.getBoundingClientRect();
-        const popoverWidth = 320;
+        const popoverWidth = 420;
         const gap = 12;
         const left = Math.min(Math.max(12, rect.left), window.innerWidth - popoverWidth - 12);
-        const top = rect.bottom + gap + 180 < window.innerHeight
+        const top = rect.bottom + gap + 240 < window.innerHeight
           ? rect.bottom + gap
-          : Math.max(12, rect.top - gap - 180);
+          : Math.max(12, rect.top - gap - 240);
 
         popover.style.left = `${left}px`;
         popover.style.top = `${top}px`;
       }
 
       function startOnboardingDemo() {
-        if (state.showAdmin) {
-          state.showAdmin = false;
-          navigateFromState();
-          render();
-        }
         onboardingDemo.open = true;
-        onboardingDemo.stepIndex = 0;
-        renderOnboardingDemo();
+        moveOnboardingStep(0);
       }
 
       function bindOnboardingDemoActions() {
@@ -1534,17 +1617,13 @@ function filteredPeople() {
         document.getElementById('onboarding-demo-start')?.addEventListener('click', startOnboardingDemo);
         document.getElementById('onboarding-overlay')?.addEventListener('click', closeOnboardingDemo);
         document.getElementById('onboarding-close')?.addEventListener('click', closeOnboardingDemo);
-        document.getElementById('onboarding-prev')?.addEventListener('click', () => {
-          onboardingDemo.stepIndex = Math.max(0, onboardingDemo.stepIndex - 1);
-          renderOnboardingDemo();
-        });
+        document.getElementById('onboarding-prev')?.addEventListener('click', () => moveOnboardingStep(onboardingDemo.stepIndex - 1));
         document.getElementById('onboarding-next')?.addEventListener('click', () => {
           if (onboardingDemo.stepIndex >= onboardingDemo.steps.length - 1) {
             closeOnboardingDemo();
             return;
           }
-          onboardingDemo.stepIndex += 1;
-          renderOnboardingDemo();
+          moveOnboardingStep(onboardingDemo.stepIndex + 1);
         });
 
         window.addEventListener('resize', () => {
@@ -1553,6 +1632,7 @@ function filteredPeople() {
       }
 
       function bindFooterActions() {
+
         if (state.listenersBound.footer) return;
         state.listenersBound.footer = true;
         document.addEventListener('click', (event) => {
