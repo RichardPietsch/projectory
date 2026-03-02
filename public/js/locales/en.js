@@ -139,7 +139,7 @@
     'projectDetail.actions.addAssignee': 'Add additional assignee',
     'projectDetail.actions.unassign': 'Unassign',
     'projectDetail.actions.unassignNamed': 'Unassign {{name}}',
-    'projectDetail.actionsMenu': 'Action',
+    'projectDetail.actionsMenu': 'Show Actions',
     'peopleOverview.subtitle': 'Organization-wide assignment, role and workload insights.',
     'peopleOverview.searchPlaceholder': 'Search people overview...',
     'peopleOverview.columns.assignments': 'Assignments',
