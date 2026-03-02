@@ -36,6 +36,11 @@
         projectId: null,
         status: 'white'
       },
+      projectPriorityModal: {
+        open: false,
+        clientId: null,
+        priorityId: null
+      },
       listenersBound: {
         header: false,
         footer: false,
@@ -47,7 +52,8 @@
         importModal: false,
         peopleOverviewModal: false,
         adminEntityModals: false,
-        projectStatusModal: false
+        projectStatusModal: false,
+        projectPriorityModal: false
       },
       assignSubmitting: false,
       challengeSubmitting: false,
