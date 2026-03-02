@@ -107,7 +107,7 @@
     'assign.noMatches': 'Keine passenden Personen gefunden.',
     'assign.searchPlaceholder': 'Namen eingeben...',
     'assign.role': 'Rolle',
-    'assign.roleContributor': 'Beitragend',
+    'assign.roleContributor': 'Contributor',
     'assign.roleOwner': 'Owner',
     'assign.roleLeader': 'Leader',
     'unassign.title': 'Personen entkoppeln',
