@@ -759,8 +759,8 @@ app.get('/api/export', requirePermission(PERMISSIONS.EXPORT_RUN), async (req, re
 app.get('/api/export/config', requirePermission(PERMISSIONS.EXPORT_RUN), async (req, res) => {
   try {
     const [trades, levels] = await Promise.all([
-      pool.query('SELECT name FROM trades ORDER BY name'),
-      pool.query('SELECT name FROM levels ORDER BY name')
+      pool.query('SELECT id, name FROM trades ORDER BY name'),
+      pool.query('SELECT id, name FROM levels ORDER BY name')
     ]);
 
     const payload = {
@@ -785,22 +785,35 @@ app.get('/api/export/config', requirePermission(PERMISSIONS.EXPORT_RUN), async (
   }
 });
 
-function normalizeConfigurationNames(list, label) {
+function normalizeConfigurationItems(list, label) {
   if (!Array.isArray(list) || list.length === 0) {
     throw new Error(`${label} must be a non-empty array.`);
   }
 
   const normalized = list
-    .map((item) => (typeof item === 'string' ? item : item?.name))
-    .map((name) => String(name || '').trim())
-    .filter(Boolean);
+    .map((item) => {
+      if (typeof item === 'string') {
+        return { id: null, name: item };
+      }
+      return {
+        id: Number.isInteger(Number(item?.id)) ? Number(item.id) : null,
+        name: item?.name
+      };
+    })
+    .map((item) => ({ id: item.id, name: String(item.name || '').trim() }))
+    .filter((item) => item.name);
 
   if (normalized.length === 0) {
     throw new Error(`${label} must contain at least one non-empty value.`);
   }
 
-  if (new Set(normalized.map((value) => value.toLowerCase())).size !== normalized.length) {
+  if (new Set(normalized.map((value) => value.name.toLowerCase())).size !== normalized.length) {
     throw new Error(`${label} contains duplicate values.`);
+  }
+
+  const ids = normalized.filter((item) => Number.isInteger(item.id) && item.id > 0).map((item) => item.id);
+  if (new Set(ids).size !== ids.length) {
+    throw new Error(`${label} contains duplicate ids.`);
   }
 
   return normalized;
@@ -832,8 +845,8 @@ app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), async
 });
 
 async function applyConfigurationCatalog({ trades, levels }) {
-  const nextTrades = normalizeConfigurationNames(trades, 'trades');
-  const nextLevels = normalizeConfigurationNames(levels, 'levels');
+  const nextTrades = normalizeConfigurationItems(trades, 'trades');
+  const nextLevels = normalizeConfigurationItems(levels, 'levels');
 
   const client = await pool.connect();
   try {
@@ -854,35 +867,74 @@ async function applyConfigurationCatalog({ trades, levels }) {
       )
     ]);
 
-    const nextTradeSet = new Set(nextTrades.map((value) => value.toLowerCase()));
+    const tradeById = new Map(existingTrades.rows.map((row) => [Number(row.id), row]));
+    const levelById = new Map(existingLevels.rows.map((row) => [Number(row.id), row]));
+
+    for (const item of nextTrades) {
+      if (item.id && !tradeById.has(item.id)) {
+        throw new Error(`Trade id '${item.id}' does not exist.`);
+      }
+    }
+    for (const item of nextLevels) {
+      if (item.id && !levelById.has(item.id)) {
+        throw new Error(`Level id '${item.id}' does not exist.`);
+      }
+    }
+
+    const nextTradeIds = new Set(nextTrades.filter((item) => item.id).map((item) => item.id));
     for (const row of existingTrades.rows) {
-      if (!nextTradeSet.has(String(row.name).toLowerCase()) && Number(row.usage_count || 0) > 0) {
+      const rowId = Number(row.id);
+      if (!nextTradeIds.has(rowId) && Number(row.usage_count || 0) > 0) {
         throw new Error(`Trade '${row.name}' is in use and cannot be removed.`);
       }
     }
 
-    const nextLevelSet = new Set(nextLevels.map((value) => value.toLowerCase()));
+    const nextLevelIds = new Set(nextLevels.filter((item) => item.id).map((item) => item.id));
     for (const row of existingLevels.rows) {
-      if (!nextLevelSet.has(String(row.name).toLowerCase()) && Number(row.usage_count || 0) > 0) {
+      const rowId = Number(row.id);
+      if (!nextLevelIds.has(rowId) && Number(row.usage_count || 0) > 0) {
         throw new Error(`Level '${row.name}' is in use and cannot be removed.`);
       }
     }
 
-    await client.query('DELETE FROM trades WHERE LOWER(name) <> ALL($1::text[])', [Array.from(nextTradeSet)]);
-    await client.query('DELETE FROM levels WHERE LOWER(name) <> ALL($1::text[])', [Array.from(nextLevelSet)]);
+    for (const item of nextTrades.filter((item) => item.id)) {
+      await client.query('UPDATE trades SET name = $1 WHERE id = $2', [item.name, item.id]);
+    }
+    for (const item of nextLevels.filter((item) => item.id)) {
+      await client.query('UPDATE levels SET name = $1 WHERE id = $2', [item.name, item.id]);
+    }
 
-    await client.query(
-      `INSERT INTO trades (name)
-       SELECT value FROM UNNEST($1::text[]) AS value
-       ON CONFLICT (name) DO NOTHING`,
-      [nextTrades]
-    );
-    await client.query(
-      `INSERT INTO levels (name)
-       SELECT value FROM UNNEST($1::text[]) AS value
-       ON CONFLICT (name) DO NOTHING`,
-      [nextLevels]
-    );
+    const deleteTradeIds = existingTrades.rows
+      .map((row) => Number(row.id))
+      .filter((id) => !nextTradeIds.has(id));
+    const deleteLevelIds = existingLevels.rows
+      .map((row) => Number(row.id))
+      .filter((id) => !nextLevelIds.has(id));
+
+    if (deleteTradeIds.length > 0) {
+      await client.query('DELETE FROM trades WHERE id = ANY($1::int[])', [deleteTradeIds]);
+    }
+    if (deleteLevelIds.length > 0) {
+      await client.query('DELETE FROM levels WHERE id = ANY($1::int[])', [deleteLevelIds]);
+    }
+
+    const newTradeNames = nextTrades.filter((item) => !item.id).map((item) => item.name);
+    const newLevelNames = nextLevels.filter((item) => !item.id).map((item) => item.name);
+
+    if (newTradeNames.length > 0) {
+      await client.query(
+        `INSERT INTO trades (name)
+         SELECT value FROM UNNEST($1::text[]) AS value`,
+        [newTradeNames]
+      );
+    }
+    if (newLevelNames.length > 0) {
+      await client.query(
+        `INSERT INTO levels (name)
+         SELECT value FROM UNNEST($1::text[]) AS value`,
+        [newLevelNames]
+      );
+    }
 
     await client.query('COMMIT');
     return { trades: nextTrades.length, levels: nextLevels.length };
@@ -1258,9 +1310,9 @@ function csvToPayload(text) {
 }
 
 function configurationPayloadToCsv(payload) {
-  const rows = ['entity,name'];
-  (payload.trades || []).forEach((row) => rows.push([csvEscape('trades'), csvEscape(row.name)].join(',')));
-  (payload.levels || []).forEach((row) => rows.push([csvEscape('levels'), csvEscape(row.name)].join(',')));
+  const rows = ['entity,id,name'];
+  (payload.trades || []).forEach((row) => rows.push([csvEscape('trades'), csvEscape(row.id), csvEscape(row.name)].join(',')));
+  (payload.levels || []).forEach((row) => rows.push([csvEscape('levels'), csvEscape(row.id), csvEscape(row.name)].join(',')));
   return rows.join('\n');
 }
 
@@ -1290,7 +1342,7 @@ function csvToConfigurationPayload(text) {
       throw new Error(`CSV contains unknown entity '${entity}' on row ${i + 1}.`);
     }
 
-    payload[entity].push({ name: String(record.name || '').trim() });
+    payload[entity].push({ id: parseCsvInteger(record.id), name: String(record.name || '').trim() });
   }
 
   return payload;
@@ -1365,8 +1417,8 @@ app.post('/api/import/config/preview', requirePermission(PERMISSIONS.IMPORT_RUN)
       return badRequest(res, 'Unsupported import format.');
     }
 
-    const trades = normalizeConfigurationNames(payload.trades, 'trades');
-    const levels = normalizeConfigurationNames(payload.levels, 'levels');
+    const trades = normalizeConfigurationItems(payload.trades, 'trades');
+    const levels = normalizeConfigurationItems(payload.levels, 'levels');
 
     return res.json({
       ok: true,
