@@ -141,6 +141,7 @@
     'projectDetail.actions.addAssignee': 'Weitere zugewiesene Person hinzufügen',
     'projectDetail.actions.unassign': 'Zuweisung aufheben',
     'projectDetail.actions.unassignNamed': 'Zuweisung von {{name}} aufheben',
+    'projectDetail.actionsMenu': 'Aktionen',
     'peopleOverview.subtitle': 'Organisationsweite Einblicke zu Assignments, Rollen und Auslastung.',
     'peopleOverview.searchPlaceholder': 'Personenübersicht durchsuchen...',
     'peopleOverview.columns.assignments': 'Zuweisungen',
