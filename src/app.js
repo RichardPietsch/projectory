@@ -311,8 +311,8 @@ async function ensurePeopleWorkingHoursColumn() {
 
 async function getPeopleCatalogLookups(client = pool) {
   const [trades, levels] = await Promise.all([
-    client.query('SELECT id, name FROM trades WHERE name = ANY($1::text[]) ORDER BY name', [TRADE_CATALOG]),
-    client.query('SELECT id, name FROM levels WHERE name = ANY($1::text[]) ORDER BY name', [LEVEL_CATALOG])
+    client.query('SELECT id, name FROM trades ORDER BY name'),
+    client.query('SELECT id, name FROM levels ORDER BY name')
   ]);
 
   return {
@@ -336,8 +336,8 @@ app.get('/api/meta', async (_req, res) => {
   try {
     const [priorities, trades, levels] = await Promise.all([
       pool.query('SELECT id, name FROM priorities ORDER BY id'),
-      pool.query('SELECT id, name FROM trades WHERE name = ANY($1::text[]) ORDER BY array_position($1::text[], name)', [TRADE_CATALOG]),
-      pool.query('SELECT id, name FROM levels WHERE name = ANY($1::text[]) ORDER BY array_position($1::text[], name)', [LEVEL_CATALOG])
+      pool.query('SELECT id, name FROM trades ORDER BY name'),
+      pool.query('SELECT id, name FROM levels ORDER BY name')
     ]);
 
     res.json({
@@ -756,6 +756,153 @@ app.get('/api/export', requirePermission(PERMISSIONS.EXPORT_RUN), async (req, re
   }
 });
 
+app.get('/api/export/config', requirePermission(PERMISSIONS.EXPORT_RUN), async (req, res) => {
+  try {
+    const [trades, levels] = await Promise.all([
+      pool.query('SELECT name FROM trades ORDER BY name'),
+      pool.query('SELECT name FROM levels ORDER BY name')
+    ]);
+
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      data: {
+        trades: trades.rows,
+        levels: levels.rows
+      }
+    };
+
+    if ((req.query.format || '').toLowerCase() === 'csv') {
+      const csv = configurationPayloadToCsv(payload.data);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="projectory-configuration-export-${new Date().toISOString().slice(0, 10)}.csv"`);
+      return res.send(csv);
+    }
+
+    return res.json(payload);
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+function normalizeConfigurationNames(list, label) {
+  if (!Array.isArray(list) || list.length === 0) {
+    throw new Error(`${label} must be a non-empty array.`);
+  }
+
+  const normalized = list
+    .map((item) => (typeof item === 'string' ? item : item?.name))
+    .map((name) => String(name || '').trim())
+    .filter(Boolean);
+
+  if (normalized.length === 0) {
+    throw new Error(`${label} must contain at least one non-empty value.`);
+  }
+
+  if (new Set(normalized.map((value) => value.toLowerCase())).size !== normalized.length) {
+    throw new Error(`${label} contains duplicate values.`);
+  }
+
+  return normalized;
+}
+
+app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
+  try {
+    const [trades, levels] = await Promise.all([
+      pool.query(
+        `SELECT t.id, t.name, COUNT(p.id)::int AS usage_count
+         FROM trades t
+         LEFT JOIN people p ON p.trade_id = t.id
+         GROUP BY t.id, t.name
+         ORDER BY t.name`
+      ),
+      pool.query(
+        `SELECT l.id, l.name, COUNT(p.id)::int AS usage_count
+         FROM levels l
+         LEFT JOIN people p ON p.level_id = l.id
+         GROUP BY l.id, l.name
+         ORDER BY l.name`
+      )
+    ]);
+
+    return res.json({ trades: trades.rows, levels: levels.rows });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+async function applyConfigurationCatalog({ trades, levels }) {
+  const nextTrades = normalizeConfigurationNames(trades, 'trades');
+  const nextLevels = normalizeConfigurationNames(levels, 'levels');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const [existingTrades, existingLevels] = await Promise.all([
+      client.query(
+        `SELECT t.id, t.name, COUNT(p.id)::int AS usage_count
+         FROM trades t
+         LEFT JOIN people p ON p.trade_id = t.id
+         GROUP BY t.id, t.name`
+      ),
+      client.query(
+        `SELECT l.id, l.name, COUNT(p.id)::int AS usage_count
+         FROM levels l
+         LEFT JOIN people p ON p.level_id = l.id
+         GROUP BY l.id, l.name`
+      )
+    ]);
+
+    const nextTradeSet = new Set(nextTrades.map((value) => value.toLowerCase()));
+    for (const row of existingTrades.rows) {
+      if (!nextTradeSet.has(String(row.name).toLowerCase()) && Number(row.usage_count || 0) > 0) {
+        throw new Error(`Trade '${row.name}' is in use and cannot be removed.`);
+      }
+    }
+
+    const nextLevelSet = new Set(nextLevels.map((value) => value.toLowerCase()));
+    for (const row of existingLevels.rows) {
+      if (!nextLevelSet.has(String(row.name).toLowerCase()) && Number(row.usage_count || 0) > 0) {
+        throw new Error(`Level '${row.name}' is in use and cannot be removed.`);
+      }
+    }
+
+    await client.query('DELETE FROM trades WHERE LOWER(name) <> ALL($1::text[])', [Array.from(nextTradeSet)]);
+    await client.query('DELETE FROM levels WHERE LOWER(name) <> ALL($1::text[])', [Array.from(nextLevelSet)]);
+
+    await client.query(
+      `INSERT INTO trades (name)
+       SELECT value FROM UNNEST($1::text[]) AS value
+       ON CONFLICT (name) DO NOTHING`,
+      [nextTrades]
+    );
+    await client.query(
+      `INSERT INTO levels (name)
+       SELECT value FROM UNNEST($1::text[]) AS value
+       ON CONFLICT (name) DO NOTHING`,
+      [nextLevels]
+    );
+
+    await client.query('COMMIT');
+    return { trades: nextTrades.length, levels: nextLevels.length };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+app.put('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  try {
+    await applyConfigurationCatalog({ trades: req.body?.trades, levels: req.body?.levels });
+    return res.json({ ok: true });
+  } catch (error) {
+    return badRequest(res, error.message || 'Invalid configuration payload.');
+  }
+});
+
 function isPositiveInteger(value) {
   return Number.isInteger(value) && value > 0;
 }
@@ -1110,6 +1257,52 @@ function csvToPayload(text) {
   return payload;
 }
 
+function configurationPayloadToCsv(payload) {
+  const rows = ['entity,name'];
+  (payload.trades || []).forEach((row) => rows.push([csvEscape('trades'), csvEscape(row.name)].join(',')));
+  (payload.levels || []).forEach((row) => rows.push([csvEscape('levels'), csvEscape(row.name)].join(',')));
+  return rows.join('\n');
+}
+
+function csvToConfigurationPayload(text) {
+  const rows = parseCsv(text);
+  if (rows.length === 0) {
+    throw new Error('CSV file is empty.');
+  }
+
+  const headers = rows[0];
+  if (!headers.includes('entity') || !headers.includes('name')) {
+    throw new Error('CSV missing required headers: entity,name');
+  }
+
+  const payload = { trades: [], levels: [] };
+  for (let i = 1; i < rows.length; i += 1) {
+    const line = rows[i];
+    if (line.every((cell) => !String(cell).trim())) continue;
+
+    const record = {};
+    for (let h = 0; h < headers.length; h += 1) {
+      record[headers[h]] = line[h] ?? '';
+    }
+
+    const entity = String(record.entity || '').trim().toLowerCase();
+    if (!['trades', 'levels'].includes(entity)) {
+      throw new Error(`CSV contains unknown entity '${entity}' on row ${i + 1}.`);
+    }
+
+    payload[entity].push({ name: String(record.name || '').trim() });
+  }
+
+  return payload;
+}
+
+function summarizeConfigurationPayload(payload) {
+  return {
+    trades: (payload.trades || []).length,
+    levels: (payload.levels || []).length
+  };
+}
+
 function summarizeImportPayload(payload) {
   return {
     clients: payload.clients.length,
@@ -1151,6 +1344,47 @@ app.post('/api/import/preview', requirePermission(PERMISSIONS.IMPORT_RUN), async
       summary: summarizeImportPayload(payload),
       data: payload
     });
+  } catch (error) {
+    return badRequest(res, error.message || 'Invalid import payload.');
+  }
+});
+
+app.post('/api/import/config/preview', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+  const format = String(req.body?.format || '').toLowerCase();
+
+  try {
+    let payload;
+    if (format === 'json') {
+      payload = req.body?.data;
+      if (!payload) return badRequest(res, 'Import payload must contain a data object.');
+    } else if (format === 'csv') {
+      const content = req.body?.content;
+      if (typeof content !== 'string') return badRequest(res, 'CSV preview requires a content string.');
+      payload = csvToConfigurationPayload(content);
+    } else {
+      return badRequest(res, 'Unsupported import format.');
+    }
+
+    const trades = normalizeConfigurationNames(payload.trades, 'trades');
+    const levels = normalizeConfigurationNames(payload.levels, 'levels');
+
+    return res.json({
+      ok: true,
+      summary: summarizeConfigurationPayload({ trades, levels }),
+      data: { trades, levels }
+    });
+  } catch (error) {
+    return badRequest(res, error.message || 'Invalid import payload.');
+  }
+});
+
+app.post('/api/import/config', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+  try {
+    const summary = await applyConfigurationCatalog({
+      trades: req.body?.data?.trades,
+      levels: req.body?.data?.levels
+    });
+    return res.json({ ok: true, summary });
   } catch (error) {
     return badRequest(res, error.message || 'Invalid import payload.');
   }

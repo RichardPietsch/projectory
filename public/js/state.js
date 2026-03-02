@@ -64,8 +64,11 @@
       clientTeamsSort: 'status_desc',
       clientTeamsSearch: '',
       exportModalOpen: false,
+      exportScope: 'app',
       importModalOpen: false,
+      importScope: 'app',
       importPreviewData: null,
+      configuration: { trades: [], levels: [] },
       peopleOverviewSort: 'name_asc',
       peopleOverviewSearch: '',
       peopleOverviewModal: { open: false, personId: null }
