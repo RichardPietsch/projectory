@@ -1,193 +1,146 @@
-# Projectory Resource Planner (Docker + Tailwind + PostgreSQL)
+# Projectory
 
-Browser-based resource planning tool with three management views:
-- **People View**
-- **Client View**
-- **Project View**
+Projectory is a challenge-first planning workspace for client teams.
 
-## What v1 includes
+Instead of starting with “who is free?”, Projectory starts with **what the client actually needs**:
+1. Define project challenges.
+2. Assign the right people.
+3. Clarify responsibility with owner/leader roles.
+4. Keep workloads transparent across all assignments.
 
-### Entities
-- **Person**: first name, last name, trade, level, status (`active`/`paused`/`leaver`), working hours (default 40), optional `isHidden` + `isLeaver` flags
-- **Client**: name, location, since month (`yyyy-mm`), priority
-- **Project**: belongs to exactly one client, start/end month (`yyyy-mm`), budget entered in **euros** (stored as cents internally)
-- **Challenge**: belongs to a project
-- **Assignment**: links person + project + challenge with optional `isOwner` or `isLeader`
-- **Onboarding Profile**: optional person-linked onboarding workflow with progress steps
+The result is a practical operating view for delivery teams: clearer ownership, better staffing conversations, and a shared picture of project health.
 
-### Business rules implemented
-- Footer actions export/import operational data as JSON (clients, projects, people, challenges, assignments). Static lists (priorities, trades, levels) are excluded and cannot be changed via import/export. Import performs strict schema/reference validation and rejects malformed files.
-- Static lists are pre-seeded on DB startup:
-  - Priorities: Prio 1..4
-  - Trades: UX, UI, DATA, STRATEGY, CONSULTING, DEV-FE, DEV-BE, DEV-FULLSTACK, DEV-OPS, ART, COPY, CREATIVE, IT, HR, ACCOUNT, PO, TPM, MANAGEMENT, ADMIN, CONTROLLING, TEMP, STUDENT
-  - Levels: —, JUNIOR, MIDWEIGHT, SENIOR, DIRECTOR, C-LEVEL
-- A project must belong to one client.
-- An assignment cannot be both owner and leader at once.
-- The same person cannot be assigned to the same challenge more than once.
-- Multiple owners/leaders per project are allowed.
-- Deleting records is blocked if dependencies exist (FK restrict behavior).
-- Assignment `quantity` is auto-split equally across a person's assigned projects and always sums to 100%.
-- A person with `isHidden=true` is hidden from non-admin views only when they have no challenge assignments; assigned people remain visible.
+---
 
-## Run locally with Docker Desktop (recommended)
+## What Projectory helps you do
+
+### 1) Build a client team around real challenges
+- Organize work per **Client → Project → Challenge**.
+- Assign contributors and define role overlays (Owner / Leader).
+- Keep team composition visible as challenge assignments evolve.
+
+### 2) Manage people capacity with context
+- Track people by trade, level, status, and working hours.
+- See assignment counts, role distribution, and total workload in one place.
+- Adjust assignment quantity and keep workload discussions grounded in project reality.
+
+### 3) Operate with consistent governance
+- Role-aware permissions (`admin`, `planner`, `viewer`).
+- Admin configuration for static catalogs (e.g., trades and levels).
+- Built-in import/export for operational data and configuration data.
+
+### 4) Onboard teams quickly
+- Included onboarding flow explains how to use Projectory in a practical sequence.
+- Helps new users understand challenge-first planning and role semantics.
+
+---
+
+## Core concepts
+
+- **Person**: first/last name, trade, level, status, working hours, visibility flags
+- **Client**: account-level metadata including priority
+- **Project**: client-owned delivery container with status, dates, and budget
+- **Challenge**: actionable requirement/problem inside a project
+- **Assignment**: link between person and challenge, with quantity + role flags
+- **Onboarding Profile**: optional guided onboarding progress model
+
+---
+
+## How people use it (typical flow)
+
+1. Open **Client Teams** overview and pick a project.
+2. Capture/curate project challenges.
+3. Assign people to challenges and apply owner/leader roles where needed.
+4. Review generated team composition and workload indicators.
+5. Iterate as priorities shift.
+6. Use admin/configuration and import/export when organizational catalogs or data transfers are needed.
+
+---
+
+## Run locally (Docker, recommended)
 
 ```bash
 docker compose up --build
 ```
 
-Open: <http://localhost:3000>
+App: <http://localhost:3000>
 
-## Role-specific no-clone compose files
-
-For quick role testing with default auth role preconfigured:
+### Role-specific compose options
 
 ```bash
 # admin-default
 curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.admin.yml | docker compose -f - up --build
-# app: http://localhost:3000
-# db browser view (Adminer): http://localhost:8080
-# Adminer login -> System: PostgreSQL, Server: db, Username: hello, Password: hello, Database: helloapp
-
-# viewer-default
-curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.viewer.yml | docker compose -f - up --build
 
 # planner-default
 curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.planner.yml | docker compose -f - up --build
+
+# viewer-default
+curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.viewer.yml | docker compose -f - up --build
 ```
 
-For `docker-compose.admin.yml`, a database browser UI is also exposed at `http://localhost:8080` (Adminer).
-Use: System `PostgreSQL`, Server `db`, Username `hello`, Password `hello`, Database `helloapp`.
+`docker-compose.admin.yml` also exposes Adminer at <http://localhost:8080>.
 
-## No-clone run from GitHub (your repo)
+---
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/RichardPietsch/projectory/main/docker-compose.admin.yml \
-| docker compose -f - up --build
-```
+## Import / Export
 
+Projectory supports two portability scopes:
 
-If raw GitHub file is missing, use this fallback:
+1. **Application data**
+   - clients, projects, people, challenges, assignments
+   - JSON / CSV
 
-```bash
-cat <<'YAML' | docker compose -f - up --build
-services:
-  web:
-    build:
-      context: https://github.com/RichardPietsch/projectory.git#main
-    ports:
-      - "3000:3000"
-    environment:
-      PORT: 3000
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: helloapp
-      DB_USER: hello
-      DB_PASSWORD: hello
-    depends_on:
-      db:
-        condition: service_healthy
+2. **Configuration data**
+   - static catalogs such as trades and levels
+   - JSON / CSV
 
-  db:
-    build:
-      context: https://github.com/RichardPietsch/projectory.git#main:db
-    environment:
-      POSTGRES_DB: helloapp
-      POSTGRES_USER: hello
-      POSTGRES_PASSWORD: hello
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hello -d helloapp"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+This separation allows operational data migration without forcing catalog changes (and vice versa).
 
-volumes:
-  pgdata:
-YAML
-```
+---
 
+## Permissions and roles
 
-## Database migrations
+- `admin`: full access including admin configuration and import
+- `planner`: planning/editing access with restricted admin capabilities
+- `viewer`: read-only access for transparency
 
-The project now includes a migration foundation under `db/migrations/` with baseline schema in `0001_init.sql` and an incremental people-status migration in `0003_people_status.sql`, and onboarding foundation migration `0004_onboarding_foundation.sql`.
-
-```bash
-# Show pending migrations
-npm run migrate:status
-
-# Apply pending migrations
-npm run migrate
-```
-
-Migration scripts use the same DB env vars as the app (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`) and track state in `schema_migrations`.
-
-
-### Roles and permissions foundation
-
-A first authz foundation is now included:
-- migration `db/migrations/0002_auth_foundation.sql` adds `users`, `roles`, `permissions`, `user_roles`, and `role_permissions`
-- app-level auth context middleware derives identity/role from request headers
-- inspection endpoint: `GET /api/auth/me`
-- people write routes (`POST/PUT/DELETE /api/people`) are now guarded by `people:write`
-
-Headers supported for local/dev simulation:
+Headers for local role simulation:
 - `x-projectory-user-id`
 - `x-projectory-user-email`
 - `x-projectory-user-name`
-- `x-projectory-user-role` (`admin`, `planner`, `viewer`)
+- `x-projectory-user-role`
 
-Default role is `admin` (override with `AUTH_DEFAULT_ROLE`).
+Default role is controlled by `AUTH_DEFAULT_ROLE` (defaults to `admin`).
 
+---
 
-
-
-## Localization foundation
-
-UI texts are now centralized via browser-side locale dictionaries and an i18n runtime:
-- locale dictionaries: `public/js/locales/en.js`, `public/js/locales/de.js`
-- i18n runtime: `public/js/i18n.js`
-- language switcher in the top header (`en`/`de`) with persistence in `localStorage`
-
-Translation keys are bound in two ways:
-- static DOM binding via `data-i18n` / `data-i18n-title` attributes
-- dynamic rendering via `window.ProjectoryI18n.t(key)` in inline view templates
-
-See `docs/localization.md` for conventions and rollout guidance for translating additional UI sections.
-
-## Developer docs
-
-- Architecture overview: `docs/architecture.md`
-- API authorization matrix: `docs/api-authz-matrix.md`
-- Backend module template: `docs/module-template.md`
-- Testing strategy: `docs/testing-strategy.md`
-- Localization guide: `docs/localization.md`
-
-## Continuous Integration
-
-GitHub Actions workflow is available at `.github/workflows/ci.yml` and runs on pushes/PRs.
-
-It executes:
-- `npm run migrate` against a temporary Postgres service container
-- `npm run check:syntax`
-- `npm test`
-
-## Useful commands
+## Migrations
 
 ```bash
+npm run migrate:status
+npm run migrate
+```
 
-# Run syntax and smoke checks
+Migration state is tracked in `schema_migrations`.
+
+---
+
+## Quality checks
+
+```bash
 npm run check:syntax
 npm test
-# Start in background
-docker compose up -d --build
-
-# Logs
-docker compose logs -f
-
-# Stop
-docker compose down
-
-# Stop + wipe database volume
-docker compose down -v
 ```
+
+CI (`.github/workflows/ci.yml`) runs migrations + syntax + tests on push/PR.
+
+---
+
+## Documentation
+
+- `docs/architecture.md`
+- `docs/api-authz-matrix.md`
+- `docs/module-template.md`
+- `docs/testing-strategy.md`
+- `docs/localization.md`
+
