@@ -1097,11 +1097,22 @@ function clientsView() {
           })
           .join('');
 
+        const priorityControl = viewerMode
+          ? renderPriorityPill(selectedProject.priority_name)
+          : `<select class="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100" onchange="updateProjectClientPriority(${selectedProject.client_id}, this.value)">${state.meta.priorities.map((priority) => `<option value="${priority.id}" ${String(priority.id) === String(selectedProject.priority_id) ? 'selected' : ''}>${priority.name}</option>`).join('')}</select>`;
+
         return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div class="flex flex-wrap items-center gap-2 text-sm text-slate-300">
-              <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>${i18n.t('clientTeams.title')}</button>
-              <span>/</span>
-              <span class="font-semibold text-slate-100">${selectedProject.name} (${selectedProject.client_name})</span>
+            <div class="flex flex-wrap items-start justify-between gap-3 text-sm text-slate-300">
+              <div class="flex flex-wrap items-center gap-2">
+                <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>${i18n.t('clientTeams.title')}</button>
+                <span>/</span>
+                <span class="font-semibold text-slate-100">${selectedProject.name} (${selectedProject.client_name})</span>
+              </div>
+              <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3 sm:items-start">
+                <div><span class="text-slate-400">Status</span><div class="mt-1">${renderProjectStatusPill(selectedProject.status, selectedProject.id)}</div></div>
+                <div><span class="text-slate-400">${i18n.t('clientTeams.columns.priority')}</span><div class="mt-1">${priorityControl}</div></div>
+                <div><span class="text-slate-400">${i18n.t('clientTeams.columns.budget')}</span><div class="mt-1 font-semibold text-slate-100">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
+              </div>
             </div>
           </div>
 
@@ -1110,7 +1121,6 @@ function clientsView() {
               <div>
                 <h3 class="text-lg font-semibold">${i18n.t('projectDetail.challengeOverview.title')}</h3>
                 <p class="text-xs text-slate-400">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
-                <p class="mt-2 text-xs text-slate-300">Status: ${renderProjectStatusPill(selectedProject.status, selectedProject.id)}</p>
               </div>
               ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center gap-2 rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'><span class="iconify text-base" data-icon="mdi:puzzle-plus" aria-hidden="true"></span><span>${i18n.t('challenge.add')}</span></button>`}
             </div>
@@ -2083,6 +2093,27 @@ function filteredPeople() {
         state.peopleOverviewModal.personId = null;
         navigateFromState();
         render();
+      };
+
+      window.updateProjectClientPriority = async function updateProjectClientPriority(clientId, priorityId) {
+        if (isViewerMode()) return;
+        const client = state.clients.find((entry) => String(entry.id) === String(clientId));
+        if (!client) {
+          showMessage('Client not found.', 'error');
+          return;
+        }
+
+        const payload = {
+          name: client.name,
+          location: client.location,
+          sinceMonth: client.since_month,
+          priorityId: Number(priorityId)
+        };
+
+        await handleMutation(
+          () => api(`/api/clients/${clientId}`, { method: 'PUT', body: JSON.stringify(payload) }),
+          'Priority updated.'
+        );
       };
 
       window.editPerson = function editPerson(person) {
