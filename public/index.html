@@ -588,7 +588,7 @@
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
           <div class="mb-3">
             <h3 class="text-lg font-semibold">${i18n.t('home.peopleOverview')}</h3>
-            <p class="text-xs text-slate-400">Organization-wide assignment, role and workload insights.</p>
+            <p class="text-xs text-slate-400">${i18n.t('peopleOverview.subtitle')}</p>
           </div>
           <div class="mb-3 flex items-center gap-2">
             <input
@@ -743,7 +743,7 @@ function clientsView() {
             .map((project) => {
               const ownerPills = project.ownerEntries.length
                 ? project.ownerEntries.map((person) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${person.name}${leaverRunIcon(person.isLeaver)}</span>`).join('')
-                : `<span class="text-slate-400">No client ownership assigned</span>`;
+                : `<span class="text-slate-400">${i18n.t('clientTeams.noOwnerAssigned')}</span>`;
               const leaderPills = project.leaderEntries.length
                 ? project.leaderEntries
                     .map((person) => {
@@ -753,7 +753,7 @@ function clientsView() {
                       return `<span class="mb-1 mr-1 inline-flex rounded border px-2 py-1 text-xs ${leaderClass}">${person.name}${leaverRunIcon(person.isLeaver)}</span>`;
                     })
                     .join('')
-                : `<span class="text-slate-400">No client leadership assigned</span>`;
+                : `<span class="text-slate-400">${i18n.t('clientTeams.noLeaderAssigned')}</span>`;
 
               return `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openProjectDetail(${project.id})">
                 <td class="p-2 text-slate-300">${renderProjectStatusPill(project.status, project.id)}</td>
@@ -771,8 +771,8 @@ function clientsView() {
 
           return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3">
-              <h3 class="text-lg font-semibold">Client Teams</h3>
-              <p class="text-xs text-slate-400">Select a client-team to see and update their challenges</p>
+              <h3 class="text-lg font-semibold">${i18n.t('clientTeams.title')}</h3>
+              <p class="text-xs text-slate-400">${i18n.t('clientTeams.subtitle')}</p>
             </div>
             <div class="mb-3 flex items-center gap-2">
               <input
@@ -780,7 +780,7 @@ function clientsView() {
                 id="client-teams-search-input"
                 value="${state.clientTeamsSearch || ''}"
                 oninput="setClientTeamsSearch(this.value)"
-                placeholder="Search client teams..."
+                placeholder="${i18n.t('clientTeams.searchPlaceholder')}"
                 class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm"
               />
               <button
@@ -881,8 +881,8 @@ function clientsView() {
         }
 
         const projectPeopleOverview = `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <h3 class="mb-3 text-lg font-semibold">Project Team Overview</h3>
-          <p class="mb-3 text-xs text-slate-400">Click a name to change workload in full percentage points for all their assignments in this project.</p>
+          <h3 class="mb-3 text-lg font-semibold">${i18n.t('projectDetail.teamOverview.title')}</h3>
+          <p class="mb-3 text-xs text-slate-400">${i18n.t('projectDetail.teamOverview.subtitle')}</p>
           <div class="space-y-3">
             ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50', 'border-blue-400/70 bg-blue-600 text-blue-50')}
             ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50', 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200', (personId) => ownerIds.has(personId))}
@@ -960,18 +960,18 @@ function clientsView() {
                   .join('')
               : viewerMode ? `<span class="text-slate-400">—</span>` : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
             const actionItems = viewerMode ? [] : [
-              `<button class="w-full rounded border border-slate-600 px-2 py-1 text-left text-xs hover:bg-slate-800" onclick='openChallengeModal(${JSON.stringify(challenge)})'>Edit</button>`,
-              `<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteChallenge(${challenge.id})'>Delete</button>`
+              `<button class="w-full rounded border border-slate-600 px-2 py-1 text-left text-xs hover:bg-slate-800" onclick='openChallengeModal(${JSON.stringify(challenge)})'>${i18n.t('common.edit')}</button>`,
+              `<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteChallenge(${challenge.id})'>${i18n.t('common.delete')}</button>`
             ];
 
             if (assignments.length >= 1) {
-              actionItems.push(`<button class="w-full rounded border border-emerald-500/50 px-2 py-1 text-left text-xs text-emerald-300 hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Add additional assignee</button>`);
+              actionItems.push(`<button class="w-full rounded border border-emerald-500/50 px-2 py-1 text-left text-xs text-emerald-300 hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('projectDetail.actions.addAssignee')}</button>`);
             }
 
             if (assignments.length === 1) {
-              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteAssignment(${assignments[0].id})'>Unassign ${assignments[0].first_name}</button>`);
+              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteAssignment(${assignments[0].id})'>${i18n.t('projectDetail.actions.unassignNamed', { name: assignments[0].first_name })}</button>`);
             } else if (assignments.length > 1) {
-              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='openUnassignModal(${challenge.id})'>Unassign</button>`);
+              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='openUnassignModal(${challenge.id})'>${i18n.t('projectDetail.actions.unassign')}</button>`);
             }
 
             const actionsMenu = viewerMode ? '' : `<details class="relative inline-block">
@@ -990,7 +990,7 @@ function clientsView() {
 
         return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="flex flex-wrap items-center gap-2 text-sm text-slate-300">
-              <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>Client Teams</button>
+              <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>${i18n.t('clientTeams.title')}</button>
               <span>/</span>
               <span class="font-semibold text-slate-100">${selectedProject.name} (${selectedProject.client_name})</span>
             </div>
@@ -999,8 +999,8 @@ function clientsView() {
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3 flex items-start justify-between gap-3">
               <div>
-                <h3 class="text-lg font-semibold">Challenge Overview</h3>
-                <p class="text-xs text-slate-400">What challenges need to be tackled to build a successful customer relationship?</p>
+                <h3 class="text-lg font-semibold">${i18n.t('projectDetail.challengeOverview.title')}</h3>
+                <p class="text-xs text-slate-400">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
                 <p class="mt-2 text-xs text-slate-300">Status: ${renderProjectStatusPill(selectedProject.status, selectedProject.id)}</p>
               </div>
               ${viewerMode ? '' : `<button class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'>${i18n.t('challenge.add')}</button>`}
@@ -1881,7 +1881,7 @@ function filteredPeople() {
         }
 
         const currentQuantity = Math.round(currentAssignments.reduce((sum, assignment) => sum + Number(assignment.quantity || 0), 0));
-        const input = window.prompt('Set workload (0-100 full percentage points):', String(currentQuantity));
+        const input = window.prompt(i18n.t('projectDetail.workloadPrompt'), String(currentQuantity));
         if (input === null) return;
 
         const quantity = Number(input);
