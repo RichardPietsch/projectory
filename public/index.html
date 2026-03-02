@@ -1570,7 +1570,6 @@ function filteredPeople() {
         if (target) {
           target.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[82]');
           onboardingDemo.highlightedElement = target;
-          target.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
 
         document.getElementById('onboarding-step-indicator').textContent = i18n.t('onboarding.demo.stepIndicator', {
@@ -1594,15 +1593,38 @@ function filteredPeople() {
         }
 
         const rect = target.getBoundingClientRect();
-        const popoverWidth = 420;
+        const popoverWidth = Math.min(420, window.innerWidth - 24);
+        const popoverHeight = Math.max(220, Math.min(popover.offsetHeight || 260, window.innerHeight - 24));
         const gap = 12;
-        const left = Math.min(Math.max(12, rect.left), window.innerWidth - popoverWidth - 12);
-        const top = rect.bottom + gap + 240 < window.innerHeight
-          ? rect.bottom + gap
-          : Math.max(12, rect.top - gap - 240);
 
-        popover.style.left = `${left}px`;
-        popover.style.top = `${top}px`;
+        const clampLeft = (value) => Math.max(12, Math.min(value, window.innerWidth - popoverWidth - 12));
+        const clampTop = (value) => Math.max(12, Math.min(value, window.innerHeight - popoverHeight - 12));
+
+        const candidates = [
+          { left: rect.right + gap, top: rect.top + (rect.height - popoverHeight) / 2 },
+          { left: rect.left - popoverWidth - gap, top: rect.top + (rect.height - popoverHeight) / 2 },
+          { left: rect.left + (rect.width - popoverWidth) / 2, top: rect.bottom + gap },
+          { left: rect.left + (rect.width - popoverWidth) / 2, top: rect.top - popoverHeight - gap }
+        ].map((candidate) => ({
+          left: clampLeft(candidate.left),
+          top: clampTop(candidate.top)
+        }));
+
+        const overlapsTarget = (candidate) => {
+          const popLeft = candidate.left;
+          const popRight = candidate.left + popoverWidth;
+          const popTop = candidate.top;
+          const popBottom = candidate.top + popoverHeight;
+          return !(popRight <= rect.left || popLeft >= rect.right || popBottom <= rect.top || popTop >= rect.bottom);
+        };
+
+        const chosen = candidates.find((candidate) => !overlapsTarget(candidate)) || {
+          left: clampLeft(rect.left),
+          top: clampTop(rect.bottom + gap)
+        };
+
+        popover.style.left = `${chosen.left}px`;
+        popover.style.top = `${chosen.top}px`;
       }
 
       function startOnboardingDemo() {
