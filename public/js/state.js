@@ -69,6 +69,7 @@
       importScope: 'app',
       importPreviewData: null,
       configuration: { trades: [], levels: [] },
+      configurationDraft: { trades: [], levels: [] },
       peopleOverviewSort: 'name_asc',
       peopleOverviewSearch: '',
       peopleOverviewModal: { open: false, personId: null }

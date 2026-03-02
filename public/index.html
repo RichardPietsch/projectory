@@ -578,18 +578,67 @@
             state.configuration = { trades: [], levels: [] };
           }
         }
+        state.configurationDraft = {
+          trades: (state.configuration.trades || []).map((row) => ({ ...row })),
+          levels: (state.configuration.levels || []).map((row) => ({ ...row }))
+        };
 
       }
 
+      function normalizeConfigurationDraftNames(items) {
+        const unique = [];
+        const seen = new Set();
+        for (const item of items || []) {
+          const name = String(item?.name || '').trim();
+          if (!name) continue;
+          const key = name.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          unique.push(name);
+        }
+        return unique;
+      }
+
+      function addConfigurationItem(kind) {
+        const input = document.getElementById(`configuration-${kind}-new`);
+        const value = String(input?.value || '').trim();
+        if (!value) return;
+
+        const list = [...(state.configurationDraft[kind] || [])];
+        if (list.some((item) => String(item.name || '').toLowerCase() === value.toLowerCase())) {
+          showMessage(`${value} already exists.`, 'error');
+          return;
+        }
+
+        list.push({ id: `draft-${Date.now()}`, name: value, usage_count: 0, isNew: true });
+        state.configurationDraft[kind] = list;
+        if (input) input.value = '';
+        render();
+      }
+
+      function removeConfigurationItem(kind, name) {
+        const list = [...(state.configurationDraft[kind] || [])];
+        const entry = list.find((item) => String(item.name || '').toLowerCase() === String(name || '').toLowerCase());
+        if (!entry) return;
+        if (Number(entry.usage_count || 0) > 0) {
+          showMessage(`${entry.name} is in use and cannot be removed.`, 'error');
+          return;
+        }
+        state.configurationDraft[kind] = list.filter((item) => String(item.name || '').toLowerCase() !== String(name || '').toLowerCase());
+        render();
+      }
+
+      function resetConfigurationDraft() {
+        state.configurationDraft = {
+          trades: (state.configuration.trades || []).map((row) => ({ ...row })),
+          levels: (state.configuration.levels || []).map((row) => ({ ...row }))
+        };
+        render();
+      }
+
       async function saveConfiguration() {
-        const trades = String(document.getElementById('configuration-trades')?.value || '')
-          .split('\n')
-          .map((item) => item.trim())
-          .filter(Boolean);
-        const levels = String(document.getElementById('configuration-levels')?.value || '')
-          .split('\n')
-          .map((item) => item.trim())
-          .filter(Boolean);
+        const trades = normalizeConfigurationDraftNames(state.configurationDraft.trades);
+        const levels = normalizeConfigurationDraftNames(state.configurationDraft.levels);
 
         await handleMutation(
           () => api('/api/configuration', { method: 'PUT', body: JSON.stringify({ trades, levels }) }),
@@ -808,10 +857,27 @@ function clientsView() {
       }
 
       function configurationView() {
-        const trades = (state.configuration.trades || []).map((row) => row.name).join('\n');
-        const levels = (state.configuration.levels || []).map((row) => row.name).join('\n');
-        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">${i18n.t('admin.configuration.subtitle')}</p></div><div class="grid gap-4 md:grid-cols-2"><label class="text-sm"><span class="text-slate-300">${i18n.t('configuration.trades')}</span><textarea id="configuration-trades" class="mt-1 h-56 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('admin.configuration.placeholder')}">${trades}</textarea></label><label class="text-sm"><span class="text-slate-300">${i18n.t('configuration.levels')}</span><textarea id="configuration-levels" class="mt-1 h-56 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('admin.configuration.placeholder')}">${levels}</textarea></label></div><div class="flex justify-end"><button class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" onclick="saveConfiguration()">${i18n.t('admin.configuration.save')}</button></div></div>`;
+        function renderCard(kind, label) {
+          const items = state.configurationDraft[kind] || [];
+          const rows = items
+            .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+            .map((item) => {
+              const usage = Number(item.usage_count || 0);
+              const usageClass = usage > 0 ? 'text-amber-300 border-amber-500/50' : 'text-emerald-300 border-emerald-500/40';
+              const removeDisabled = usage > 0 ? 'disabled title="In use"' : '';
+              return `<tr class="border-t border-slate-800"><td class="p-2 font-medium text-slate-100">${item.name}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" ${removeDisabled} onclick="removeConfigurationItem('${kind}', '${String(item.name).replace(/'/g, "\\'")}')">${i18n.t('common.delete')}</button></td></tr>`;
+            })
+            .join('');
+
+          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="addConfigurationItem('${kind}')">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="3">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
+        }
+
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">${i18n.t('admin.configuration.subtitle')}</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'))}</div><div class="flex justify-end gap-2"><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="resetConfigurationDraft()">${i18n.t('admin.configuration.reset')}</button><button class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" onclick="saveConfiguration()">${i18n.t('admin.configuration.save')}</button></div></div>`;
       }
+
+      window.addConfigurationItem = addConfigurationItem;
+      window.removeConfigurationItem = removeConfigurationItem;
+      window.resetConfigurationDraft = resetConfigurationDraft;
 
       function ownershipView() {
         const projects = state.projectsPayload.projects;

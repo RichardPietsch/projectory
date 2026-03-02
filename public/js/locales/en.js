@@ -160,6 +160,13 @@
     'admin.configuration.placeholder': 'One value per line',
     'admin.configuration.save': 'Save configuration',
     'admin.configuration.saved': 'Configuration saved.',
+    'admin.configuration.add': 'Add',
+    'admin.configuration.reset': 'Reset',
+    'admin.configuration.value': 'Value',
+    'admin.configuration.usage': 'Usage',
+    'admin.configuration.items': 'items',
+    'admin.configuration.empty': 'No values yet.',
+    'admin.configuration.addPlaceholder': 'Enter a new value',
     'common.saveStatus': 'Save Status',
 
     'projectStatus.green': 'Formed Team',
