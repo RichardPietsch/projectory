@@ -5,9 +5,11 @@ const { registerModuleRoutes } = require('./modules');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
 const { PERMISSIONS } = require('./auth/permissions');
 
+// Single Express app serving API + static frontend.
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Shared Postgres connection pool used across modules/routes.
 const pool = new Pool({
   host: process.env.DB_HOST || 'db',
   port: Number(process.env.DB_PORT || 5432),
@@ -52,6 +54,7 @@ function parseWorkingHours(value) {
   return parsed;
 }
 
+// Normalize common Postgres errors into stable API responses.
 function handleDbError(res, error) {
   if (error.code === '23503') {
     return res.status(409).json({ error: 'Cannot delete record because dependencies exist.' });
@@ -100,6 +103,7 @@ async function getPersonProjectTotalQuantity(personId, projectId, client = pool)
   return Number(result.rows[0]?.total_quantity || 0);
 }
 
+// Keep assignment quantity split consistent per person+project (sum = target).
 async function distributeProjectQuantityAcrossAssignments(personId, projectId, totalQuantity, client = pool) {
   const assignments = await client.query(
     `SELECT id
@@ -346,6 +350,7 @@ app.get('/api/meta', async (_req, res) => {
   }
 });
 
+// Register modular domains first; legacy routes remain below as incremental refactor targets.
 registerModuleRoutes(app, {
   pool,
   badRequest,
@@ -357,6 +362,7 @@ registerModuleRoutes(app, {
   requireMonth
 });
 
+// Legacy project/challenge/assignment endpoints (permission-gated).
 app.get('/api/projects', requirePermission(PERMISSIONS.PROJECTS_READ), async (_req, res) => {
   try {
     const projects = await pool.query(
@@ -707,6 +713,7 @@ app.delete('/api/assignments/:id', requirePermission(PERMISSIONS.ASSIGNMENTS_WRI
 });
 
 
+// Data portability endpoints (export/import) use stricter permissions.
 app.get('/api/export', requirePermission(PERMISSIONS.EXPORT_RUN), async (req, res) => {
   try {
     const [clients, projects, people, challenges, assignments] = await Promise.all([

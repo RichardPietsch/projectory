@@ -1,5 +1,6 @@
 const { getPermissionsForRole, hasPermission } = require('./permissions');
 
+// Header names used to simulate auth in local/dev requests.
 const AUTH_HEADERS = {
   USER_ID: 'x-projectory-user-id',
   USER_EMAIL: 'x-projectory-user-email',
@@ -7,6 +8,7 @@ const AUTH_HEADERS = {
   USER_ROLE: 'x-projectory-user-role'
 };
 
+// Derive a lightweight auth context on every request.
 function attachAuthContext(req, _res, next) {
   const defaultRole = String(process.env.AUTH_DEFAULT_ROLE || 'admin').trim().toLowerCase();
   const role = String(req.header(AUTH_HEADERS.USER_ROLE) || defaultRole).trim().toLowerCase();
@@ -22,6 +24,7 @@ function attachAuthContext(req, _res, next) {
   next();
 }
 
+// Route guard factory: blocks requests without the required permission.
 function requirePermission(permission) {
   return function permissionGuard(req, res, next) {
     if (!req.auth) {

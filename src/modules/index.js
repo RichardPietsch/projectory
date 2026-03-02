@@ -2,6 +2,7 @@ const { registerPeopleRoutes } = require('./people/routes');
 const { registerClientsRoutes } = require('./clients/routes');
 const { registerOnboardingRoutes } = require('./onboarding/routes');
 
+// Central place to wire domain modules into the Express app.
 function registerModuleRoutes(app, deps) {
   registerPeopleRoutes(app, {
     pool: deps.pool,

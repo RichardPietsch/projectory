@@ -2,6 +2,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { Pool } = require('pg');
 
+// SQL migration files are applied in lexical order from this folder.
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'db', 'migrations');
 const SCHEMA_MIGRATIONS_TABLE = 'schema_migrations';
 
@@ -15,6 +16,7 @@ function createPool() {
   });
 }
 
+// Persist migration history so each version is applied exactly once.
 async function ensureMigrationsTable(pool) {
   await pool.query(
     `CREATE TABLE IF NOT EXISTS ${SCHEMA_MIGRATIONS_TABLE} (
@@ -37,6 +39,7 @@ async function getAppliedVersions(pool) {
   return new Set(result.rows.map((row) => row.version));
 }
 
+// Apply one migration inside a transaction for all-or-nothing safety.
 async function applyMigration(pool, version) {
   const migrationPath = path.join(MIGRATIONS_DIR, version);
   const sql = await fs.readFile(migrationPath, 'utf8');
@@ -55,6 +58,7 @@ async function applyMigration(pool, version) {
   }
 }
 
+// CLI modes: default applies pending migrations, --status only reports state.
 async function run() {
   const mode = process.argv[2] === '--status' ? 'status' : 'apply';
   const pool = createPool();
