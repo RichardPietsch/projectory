@@ -425,7 +425,7 @@
         function workloadWarningClass(workload) {
           if (workload === 0) return 'text-slate-100';
           if (workload < 100) return 'text-amber-300';
-          if (workload === 100) return 'text-emerald-300';
+          if (workload === 100) return 'text-green-300';
           return 'text-rose-300';
         }
 
@@ -578,13 +578,13 @@ function clientsView() {
             .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
             .map((item) => {
               const usage = Number(item.usage_count || 0);
-              const usageClass = usage > 0 ? 'text-amber-300 border-amber-500/50' : 'text-emerald-300 border-emerald-500/40';
+              const usageClass = 'text-[#7cecff] border-[#00d8ff]/50';
               const removeDisabled = usage > 0 ? 'disabled title="In use"' : '';
               return `<tr class="border-t border-slate-800"><td class="p-2 font-medium text-slate-100">${item.name}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" ${removeDisabled} onclick="removeConfigurationItem('${kind}', ${item.id ? Number(item.id) : `'${String(item.name).replace(/'/g, "\\'")}'`})">${i18n.t('common.delete')}</button></td></tr>`;
             })
             .join('');
 
-          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="addConfigurationItem('${kind}')">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="3">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
+          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="addConfigurationItem('${kind}')">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="w-[70%] p-2">${i18n.t('admin.configuration.value')}</th><th class="w-[15%] p-2">${i18n.t('admin.configuration.usage')}</th><th class="w-[15%] p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="3">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
         }
 
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">${i18n.t('admin.configuration.subtitle')}</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'))}</div></div>`;
