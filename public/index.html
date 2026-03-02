@@ -924,10 +924,10 @@ function clientsView() {
               <thead>
                 <tr class="text-slate-400">
                   <th class="w-[7%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="w-[13%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[16%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="w-[8%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="w-[13%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <th class="w-[18%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   <th class="w-[30%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                 </tr>
@@ -1128,17 +1128,15 @@ function clientsView() {
           : `<button class="inline-flex h-9 items-center" onclick="openProjectPriorityModal(${selectedProject.client_id}, ${selectedProject.priority_id})">${renderPriorityPill(selectedProject.priority_name)}</button>`;
 
         return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div class="flex flex-wrap items-start gap-3 text-sm text-slate-300 lg:flex-nowrap lg:items-end">
-              <div class="flex min-w-0 flex-wrap items-center gap-2">
+            <div class="grid grid-cols-1 gap-3 text-sm text-slate-300 lg:grid-cols-5 lg:items-end">
+              <div class="flex min-w-0 flex-wrap items-center gap-2 lg:col-span-2">
                 <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>${i18n.t('clientTeams.title')}</button>
                 <span>/</span>
                 <span class="font-semibold text-slate-100">${selectedProject.name} (${selectedProject.client_name})</span>
               </div>
-              <div class="grid w-full grid-cols-1 gap-3 text-xs sm:grid-cols-3 lg:ml-auto lg:min-w-[30rem]">
-                <div class="flex min-w-0 flex-col"><span class="mb-1 text-slate-400">Status</span><div class="flex h-9 items-center">${statusControl}</div></div>
-                <div class="flex min-w-0 flex-col"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.priority')}</span><div class="flex h-9 items-center">${priorityControl}</div></div>
-                <div class="flex min-w-0 flex-col"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.budget')}</span><div class="flex h-9 items-center px-1 text-xs font-semibold text-slate-100">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
-              </div>
+              <div class="flex min-w-0 flex-col text-xs"><span class="mb-1 text-slate-400">Status</span><div class="flex h-9 items-center">${statusControl}</div></div>
+              <div class="flex min-w-0 flex-col text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.priority')}</span><div class="flex h-9 items-center">${priorityControl}</div></div>
+              <div class="flex min-w-0 flex-col text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.budget')}</span><div class="flex h-9 items-center px-1 text-xs font-semibold text-slate-100">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
             </div>
           </div>
 
