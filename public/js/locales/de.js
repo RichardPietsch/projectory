@@ -125,8 +125,8 @@
     'clientTeams.columns.client': 'Kunde',
     'clientTeams.columns.budget': 'Budget',
     'clientTeams.columns.priority': 'Priorität',
-    'clientTeams.columns.owner': 'Owner',
-    'clientTeams.columns.leaders': 'Leads',
+    'clientTeams.columns.owner': 'Client Owner(s)',
+    'clientTeams.columns.leaders': 'Client Leaders(s)',
 
     'clientTeams.title': 'Kundenteams',
     'clientTeams.subtitle': 'Wähle ein Kundenteam aus, um dessen Challenges anzusehen und zu aktualisieren',
