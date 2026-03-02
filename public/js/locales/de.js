@@ -163,7 +163,6 @@
     'admin.configuration.save': 'Konfiguration speichern',
     'admin.configuration.saved': 'Konfiguration gespeichert.',
     'admin.configuration.add': 'Hinzufügen',
-    'admin.configuration.reset': 'Zurücksetzen',
     'admin.configuration.value': 'Wert',
     'admin.configuration.usage': 'Nutzung',
     'admin.configuration.items': 'Einträge',
