@@ -27,6 +27,18 @@
     'home.clientTeams': 'Kundenteams',
     'home.peopleOverview': 'Personenübersicht',
 
+    'onboarding.demo.start': 'Tour-Demo starten',
+    'onboarding.demo.previous': 'Zurück',
+    'onboarding.demo.next': 'Weiter',
+    'onboarding.demo.finish': 'Fertig',
+    'onboarding.demo.stepIndicator': 'Schritt {{current}} / {{total}}',
+    'onboarding.demo.step1.title': 'Willkommen bei Projectory',
+    'onboarding.demo.step1.description': 'Diese Schaltfläche bringt dich immer zurück zur Kundenteam-Übersicht.',
+    'onboarding.demo.step2.title': 'Tab „Kundenteams“',
+    'onboarding.demo.step2.description': 'Dieser Tab fokussiert Kundenteams, ihre Challenges und Zuweisungen.',
+    'onboarding.demo.step3.title': 'Tab „Personenübersicht“',
+    'onboarding.demo.step3.description': 'Dieser Tab zeigt eine projektübergreifende Sicht auf Zuweisungen, Rollen und Auslastung.',
+
     'modal.export.title': 'Daten exportieren',
     'modal.import.title': 'Daten importieren',
     'modal.format': 'Format',

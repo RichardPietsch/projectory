@@ -27,6 +27,18 @@
     'home.clientTeams': 'Client Teams',
     'home.peopleOverview': 'People Overview',
 
+    'onboarding.demo.start': 'Start tour demo',
+    'onboarding.demo.previous': 'Previous',
+    'onboarding.demo.next': 'Next',
+    'onboarding.demo.finish': 'Finish',
+    'onboarding.demo.stepIndicator': 'Step {{current}} / {{total}}',
+    'onboarding.demo.step1.title': 'Welcome to Projectory',
+    'onboarding.demo.step1.description': 'This button always brings you back to the client team overview.',
+    'onboarding.demo.step2.title': 'Client Teams tab',
+    'onboarding.demo.step2.description': 'This tab focuses on client teams, their challenges, and assignments.',
+    'onboarding.demo.step3.title': 'People Overview tab',
+    'onboarding.demo.step3.description': 'This tab gives a cross-project view of assignments, roles, and workload.',
+
     'modal.export.title': 'Export data',
     'modal.import.title': 'Import data',
     'modal.format': 'Format',

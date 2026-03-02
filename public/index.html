@@ -35,6 +35,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
+        <button id="onboarding-demo-start" class="rounded-lg border border-indigo-500/50 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200 hover:bg-indigo-500/20" data-i18n="onboarding.demo.start">Start tour demo</button>
         <label class="sr-only" for="locale-select" data-i18n="header.language">Language</label>
         <select id="locale-select" class="rounded-lg border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-slate-200">
           <option value="en" data-i18n="locale.en">English</option>
@@ -263,6 +264,20 @@
       </div>
     </div>
 
+    <div id="onboarding-overlay" class="fixed inset-0 z-[80] hidden bg-slate-950/60"></div>
+    <div id="onboarding-popover" class="fixed z-[81] hidden w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-indigo-400/50 bg-slate-900 p-4 shadow-2xl">
+      <div class="mb-2 text-xs uppercase tracking-wide text-indigo-300" id="onboarding-step-indicator">Step 1 / 3</div>
+      <h3 id="onboarding-title" class="text-base font-semibold text-slate-100">Welcome</h3>
+      <p id="onboarding-description" class="mt-2 text-sm text-slate-300"></p>
+      <div class="mt-4 flex items-center justify-between gap-2">
+        <button id="onboarding-prev" class="rounded border border-slate-600 px-3 py-1.5 text-xs hover:bg-slate-800" data-i18n="onboarding.demo.previous">Previous</button>
+        <div class="flex gap-2">
+          <button id="onboarding-close" class="rounded border border-slate-600 px-3 py-1.5 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="onboarding-next" class="rounded bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-indigo-50 hover:bg-indigo-500" data-i18n="onboarding.demo.next">Next</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const state = window.ProjectoryState.createInitialState();
       const i18n = window.ProjectoryI18n;
@@ -275,6 +290,31 @@
 
       const CHALLENGE_TITLE_PREFILL = 'Placeholder Challenge';
       const CHALLENGE_DESCRIPTION_PREFILL = 'Please edit this to reflect an actual challenge!';
+
+
+      const onboardingDemo = {
+        open: false,
+        stepIndex: 0,
+        listenersBound: false,
+        highlightedElement: null,
+        steps: [
+          {
+            target: '#app-logo-button',
+            titleKey: 'onboarding.demo.step1.title',
+            descriptionKey: 'onboarding.demo.step1.description'
+          },
+          {
+            target: '#onboarding-tab-client-teams',
+            titleKey: 'onboarding.demo.step2.title',
+            descriptionKey: 'onboarding.demo.step2.description'
+          },
+          {
+            target: '#onboarding-tab-people-overview',
+            titleKey: 'onboarding.demo.step3.title',
+            descriptionKey: 'onboarding.demo.step3.description'
+          }
+        ]
+      };
 
       function showMessage(message, type = 'ok', options = {}) {
         const { actionLabel, onAction } = options;
@@ -1407,6 +1447,111 @@ function filteredPeople() {
         showMessage('Import completed.');
       }
 
+
+      function clearOnboardingHighlight() {
+        if (!onboardingDemo.highlightedElement) return;
+        onboardingDemo.highlightedElement.classList.remove('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[82]');
+        onboardingDemo.highlightedElement = null;
+      }
+
+      function closeOnboardingDemo() {
+        onboardingDemo.open = false;
+        document.getElementById('onboarding-overlay')?.classList.add('hidden');
+        document.getElementById('onboarding-popover')?.classList.add('hidden');
+        clearOnboardingHighlight();
+      }
+
+      function renderOnboardingDemo() {
+        const overlay = document.getElementById('onboarding-overlay');
+        const popover = document.getElementById('onboarding-popover');
+        const prevButton = document.getElementById('onboarding-prev');
+        const nextButton = document.getElementById('onboarding-next');
+        const closeButton = document.getElementById('onboarding-close');
+        if (!overlay || !popover || !prevButton || !nextButton || !closeButton) return;
+
+        if (!onboardingDemo.open) {
+          overlay.classList.add('hidden');
+          popover.classList.add('hidden');
+          clearOnboardingHighlight();
+          return;
+        }
+
+        const step = onboardingDemo.steps[onboardingDemo.stepIndex];
+        const target = document.querySelector(step.target);
+        if (!target) {
+          closeOnboardingDemo();
+          return;
+        }
+
+        overlay.classList.remove('hidden');
+        popover.classList.remove('hidden');
+
+        clearOnboardingHighlight();
+        target.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[82]');
+        onboardingDemo.highlightedElement = target;
+        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+        document.getElementById('onboarding-step-indicator').textContent = i18n.t('onboarding.demo.stepIndicator', {
+          current: onboardingDemo.stepIndex + 1,
+          total: onboardingDemo.steps.length
+        });
+        document.getElementById('onboarding-title').textContent = i18n.t(step.titleKey);
+        document.getElementById('onboarding-description').textContent = i18n.t(step.descriptionKey);
+
+        prevButton.disabled = onboardingDemo.stepIndex === 0;
+        prevButton.classList.toggle('opacity-50', onboardingDemo.stepIndex === 0);
+
+        const isLastStep = onboardingDemo.stepIndex === onboardingDemo.steps.length - 1;
+        nextButton.textContent = isLastStep ? i18n.t('onboarding.demo.finish') : i18n.t('onboarding.demo.next');
+
+        const rect = target.getBoundingClientRect();
+        const popoverWidth = 320;
+        const gap = 12;
+        const left = Math.min(Math.max(12, rect.left), window.innerWidth - popoverWidth - 12);
+        const top = rect.bottom + gap + 180 < window.innerHeight
+          ? rect.bottom + gap
+          : Math.max(12, rect.top - gap - 180);
+
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+      }
+
+      function startOnboardingDemo() {
+        if (state.showAdmin) {
+          state.showAdmin = false;
+          navigateFromState();
+          render();
+        }
+        onboardingDemo.open = true;
+        onboardingDemo.stepIndex = 0;
+        renderOnboardingDemo();
+      }
+
+      function bindOnboardingDemoActions() {
+        if (onboardingDemo.listenersBound) return;
+        onboardingDemo.listenersBound = true;
+
+        document.getElementById('onboarding-demo-start')?.addEventListener('click', startOnboardingDemo);
+        document.getElementById('onboarding-overlay')?.addEventListener('click', closeOnboardingDemo);
+        document.getElementById('onboarding-close')?.addEventListener('click', closeOnboardingDemo);
+        document.getElementById('onboarding-prev')?.addEventListener('click', () => {
+          onboardingDemo.stepIndex = Math.max(0, onboardingDemo.stepIndex - 1);
+          renderOnboardingDemo();
+        });
+        document.getElementById('onboarding-next')?.addEventListener('click', () => {
+          if (onboardingDemo.stepIndex >= onboardingDemo.steps.length - 1) {
+            closeOnboardingDemo();
+            return;
+          }
+          onboardingDemo.stepIndex += 1;
+          renderOnboardingDemo();
+        });
+
+        window.addEventListener('resize', () => {
+          if (onboardingDemo.open) renderOnboardingDemo();
+        });
+      }
+
       function bindFooterActions() {
         if (state.listenersBound.footer) return;
         state.listenersBound.footer = true;
@@ -2233,7 +2378,7 @@ function filteredPeople() {
         if (state.showAdmin) {
           document.getElementById('view').innerHTML = adminStandaloneView();
         } else {
-        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>${i18n.t('home.clientTeams')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>${i18n.t('home.peopleOverview')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.filter(personIsVisibleInNonAdmin).length}</span></button></nav></div>`;
+        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-client-teams" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>${i18n.t('home.clientTeams')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-people-overview" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>${i18n.t('home.peopleOverview')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.filter(personIsVisibleInNonAdmin).length}</span></button></nav></div>`;
         const homeContent = state.homeTab === 'people-overview' ? peopleOverviewView() : ownershipView();
         document.getElementById('view').innerHTML = homeTabs + homeContent;
 
@@ -2250,6 +2395,7 @@ function filteredPeople() {
         renderProjectStatusModal();
         renderPeopleOverviewModal();
         i18n.applyToDom(document);
+        renderOnboardingDemo();
       }
 
       async function init() {
@@ -2258,8 +2404,10 @@ function filteredPeople() {
           const localeSelect = document.getElementById('locale-select');
           if (localeSelect) localeSelect.value = i18n.getLocale();
           i18n.applyToDom(document);
+        renderOnboardingDemo();
 
           bindHeaderActions();
+          bindOnboardingDemoActions();
           bindFooterActions();
           bindChallengeModalActions();
           bindAssignModalActions();
