@@ -941,7 +941,7 @@ function clientsView() {
               <td class="p-2">${challenge.title}</td>
               <td class="p-2">${challenge.description}</td>
               <td class="p-2">${assignees}</td>
-              <td class="p-2">${actionsMenu}</td>
+              <td class="p-2 text-right"><div class="flex justify-end">${actionsMenu}</div></td>
             </tr>`;
           })
           .join('');
@@ -976,7 +976,7 @@ function clientsView() {
               </div>
               ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center gap-2 rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'><span class="iconify text-base" data-icon="mdi:puzzle-plus" aria-hidden="true"></span><span>${i18n.t('challenge.add')}</span></button>`}
             </div>
-            <table class="w-full table-fixed text-left text-sm"><thead><tr class="text-slate-400"><th class="w-[18%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[50%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[18%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[14%] p-2">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
+            <table class="w-full table-fixed text-left text-sm"><thead><tr class="text-slate-400"><th class="w-[19%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[50%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[20%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[11%] p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
           </div>
 
           ${projectPeopleOverview}`;
