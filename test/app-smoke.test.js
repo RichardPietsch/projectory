@@ -14,6 +14,11 @@ const VIEWER_HEADERS = {
   'x-projectory-user-role': 'viewer'
 };
 
+const ADMIN_HEADERS = {
+  'content-type': 'application/json',
+  'x-projectory-user-role': 'admin'
+};
+
 test('app module exports app and startServer', () => {
   assert.equal(typeof app, 'function');
   assert.equal(typeof startServer, 'function');
@@ -312,5 +317,76 @@ test('GET /api/export allows viewer role', async () => {
   } finally {
     server.close();
     pool.query = originalQuery;
+  }
+});
+
+
+test('POST /api/admin/users forbids viewer role', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users`, {
+      method: 'POST',
+      headers: VIEWER_HEADERS,
+      body: JSON.stringify({ email: 'new.user@example.com', displayName: 'New User', role: 'viewer' })
+    });
+
+    assert.equal(response.status, 403);
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /api/admin/users creates user and assigns role for admin', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM roles')) {
+      return { rowCount: 1, rows: [{ id: 3, name: 'viewer' }] };
+    }
+    if (sql.includes('INSERT INTO users')) {
+      return { rows: [{ id: 501 }] };
+    }
+    if (sql.includes('INSERT INTO user_roles')) {
+      return { rows: [], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ email: 'new.user@example.com', displayName: 'New User', role: 'viewer' })
+    });
+
+    assert.equal(response.status, 201);
+    const body = await response.json();
+    assert.deepEqual(body, { id: 501 });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('PUT /api/admin/smtp-settings validates required fields when enabled', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/smtp-settings`, {
+      method: 'PUT',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ enabled: true, host: '', fromEmail: '' })
+    });
+
+    assert.equal(response.status, 400);
+    const body = await response.json();
+    assert.equal(body.error, 'host, port and fromEmail are required when SMTP is enabled.');
+  } finally {
+    server.close();
   }
 });

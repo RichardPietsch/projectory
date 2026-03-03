@@ -66,6 +66,57 @@ function clearSessionCookie() {
   return `${AUTH_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureAttribute}`;
 }
 
+function sanitizeRoleInput(roleName) {
+  return String(roleName || '').trim().toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
+
+function redactSmtpSettings(row) {
+  return {
+    host: row?.host || '',
+    port: row?.port || '',
+    username: row?.username || '',
+    fromEmail: row?.from_email || '',
+    secure: Boolean(row?.secure),
+    enabled: Boolean(row?.enabled),
+    passwordSet: Boolean(row?.password)
+  };
+}
+
+async function getRoleIdByName(roleName) {
+  const normalized = sanitizeRoleInput(roleName);
+  const result = await pool.query(
+    `SELECT id, name
+     FROM roles
+     WHERE LOWER(name) = $1
+     LIMIT 1`,
+    [normalized]
+  );
+
+  return result.rowCount ? result.rows[0] : null;
+}
+
+async function createUserInvite(userId, invitedByUserId, expiresHours = 72) {
+  const token = createOpaqueToken(32);
+  const tokenHash = hashOpaqueToken(token);
+  await pool.query(
+    `INSERT INTO user_invites (user_id, token_hash, expires_at, invited_by_user_id)
+     VALUES ($1, $2, NOW() + ($3::text || ' hours')::interval, $4)`,
+    [userId, tokenHash, String(expiresHours), invitedByUserId || null]
+  );
+
+  const appBaseUrl = String(process.env.APP_BASE_URL || '').trim();
+  const inviteLink = appBaseUrl ? `${appBaseUrl.replace(/\/$/, '')}/invite?token=${encodeURIComponent(token)}` : null;
+
+  return {
+    token,
+    inviteLink
+  };
+}
+
 
 async function loadSessionAuthContext(req) {
   const cookies = parseCookieHeader(req.headers.cookie);
@@ -620,12 +671,221 @@ app.post('/api/auth/reset-password', async (req, res) => {
     await client.query('COMMIT');
     return res.json({ ok: true });
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (client) await client.query('ROLLBACK');
     return handleDbError(res, error);
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
+
+
+app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT u.id,
+              u.email,
+              u.display_name,
+              u.is_active,
+              u.person_id,
+              p.first_name,
+              p.last_name,
+              p.email AS person_email,
+              COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), ARRAY[]::text[]) AS roles
+       FROM users u
+       LEFT JOIN people p ON p.id = u.person_id
+       LEFT JOIN user_roles ur ON ur.user_id = u.id
+       LEFT JOIN roles r ON r.id = ur.role_id
+       GROUP BY u.id, u.email, u.display_name, u.is_active, u.person_id, p.first_name, p.last_name, p.email
+       ORDER BY u.created_at DESC, u.id DESC`
+    );
+
+    return res.json(result.rows.map((row) => ({
+      id: row.id,
+      email: row.email,
+      displayName: row.display_name,
+      isActive: row.is_active,
+      personId: row.person_id,
+      personName: row.person_id ? `${row.first_name || ''} ${row.last_name || ''}`.trim() : null,
+      personEmail: row.person_email || null,
+      roles: row.roles || []
+    })));
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.post('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  const { email, displayName, role, personId, isActive } = req.body || {};
+
+  if (!isValidEmail(email)) {
+    return badRequest(res, 'Valid email is required.');
+  }
+
+  if (!displayName || !String(displayName).trim()) {
+    return badRequest(res, 'displayName is required.');
+  }
+
+  try {
+    const selectedRole = await getRoleIdByName(role || 'viewer');
+    if (!selectedRole) {
+      return badRequest(res, 'role must reference an existing role.');
+    }
+    const insert = await pool.query(
+      `INSERT INTO users (email, display_name, person_id, is_active)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+      [String(email).trim().toLowerCase(), String(displayName).trim(), personId || null, isActive !== false]
+    );
+
+    await pool.query(
+      `INSERT INTO user_roles (user_id, role_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [insert.rows[0].id, selectedRole.id]
+    );
+
+    return res.status(201).json({ id: insert.rows[0].id });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.put('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  const { displayName, role, personId, isActive } = req.body || {};
+  if (!displayName || !String(displayName).trim()) {
+    return badRequest(res, 'displayName is required.');
+  }
+
+  let client = null;
+  try {
+    const selectedRole = await getRoleIdByName(role || 'viewer');
+    if (!selectedRole) {
+      return badRequest(res, 'role must reference an existing role.');
+    }
+
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const updated = await client.query(
+      `UPDATE users
+       SET display_name = $1,
+           person_id = $2,
+           is_active = $3
+       WHERE id = $4`,
+      [String(displayName).trim(), personId || null, isActive !== false, req.params.id]
+    );
+
+    if (updated.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    await client.query(`DELETE FROM user_roles WHERE user_id = $1`, [req.params.id]);
+    await client.query(
+      `INSERT INTO user_roles (user_id, role_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [req.params.id, selectedRole.id]
+    );
+
+    await client.query('COMMIT');
+    return res.json({ ok: true });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    return handleDbError(res, error);
+  } finally {
+    if (client) client.release();
+  }
+});
+
+app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  const expiresHours = Number(req.body?.expiresHours || 72);
+  if (!Number.isFinite(expiresHours) || expiresHours < 1 || expiresHours > 168) {
+    return badRequest(res, 'expiresHours must be between 1 and 168.');
+  }
+
+  try {
+    const userResult = await pool.query(
+      `SELECT id, email, is_active
+       FROM users
+       WHERE id = $1
+       LIMIT 1`,
+      [req.params.id]
+    );
+
+    if (userResult.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (!userResult.rows[0].is_active) {
+      return res.status(409).json({ error: 'Cannot invite an inactive user.' });
+    }
+
+    const invite = await createUserInvite(userResult.rows[0].id, req.auth.userId, expiresHours);
+
+    // SMTP delivery will be wired in a follow-up iteration; this endpoint already persists invite state.
+    return res.json({
+      ok: true,
+      deliveryStatus: 'queued',
+      inviteLink: process.env.AUTH_RETURN_DEBUG_TOKENS === 'true' ? invite.inviteLink : undefined,
+      inviteToken: process.env.AUTH_RETURN_DEBUG_TOKENS === 'true' ? invite.token : undefined
+    });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.get('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT host, port, username, password, from_email, secure, enabled
+       FROM smtp_settings
+       WHERE id = 1`
+    );
+
+    return res.json(redactSmtpSettings(result.rows[0] || {}));
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.put('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  const { host, port, username, password, fromEmail, secure, enabled } = req.body || {};
+
+  if (enabled && (!host || !port || !fromEmail)) {
+    return badRequest(res, 'host, port and fromEmail are required when SMTP is enabled.');
+  }
+
+  if (fromEmail && !isValidEmail(fromEmail)) {
+    return badRequest(res, 'fromEmail must be a valid email address.');
+  }
+
+  try {
+    await pool.query(
+      `UPDATE smtp_settings
+       SET host = $1,
+           port = $2,
+           username = $3,
+           password = COALESCE($4, password),
+           from_email = $5,
+           secure = $6,
+           enabled = $7,
+           updated_at = NOW()
+       WHERE id = 1`,
+      [host || null, port || null, username || null, password || null, fromEmail || null, secure !== false, Boolean(enabled)]
+    );
+
+    const refreshed = await pool.query(
+      `SELECT host, port, username, password, from_email, secure, enabled
+       FROM smtp_settings
+       WHERE id = 1`
+    );
+
+    return res.json(redactSmtpSettings(refreshed.rows[0] || {}));
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
 
 app.get('/api/meta', async (_req, res) => {
   try {
