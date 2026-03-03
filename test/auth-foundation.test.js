@@ -79,3 +79,61 @@ test('GET /api/auth/me marks header teammate context as scoped teammate', async 
     server.close();
   }
 });
+
+test('GET /api/auth/me exposes normalized authMode value', async () => {
+  const previousAuthMode = process.env.AUTH_MODE;
+  process.env.AUTH_MODE = '   SESSION   ';
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/me`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.authMode, 'session');
+  } finally {
+    server.close();
+    if (previousAuthMode === undefined) {
+      delete process.env.AUTH_MODE;
+    } else {
+      process.env.AUTH_MODE = previousAuthMode;
+    }
+  }
+});
+
+test('GET /api/auth/me ignores header simulation when AUTH_MODE=session without valid session cookie', async () => {
+  const previousAuthMode = process.env.AUTH_MODE;
+  process.env.AUTH_MODE = 'session';
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/me`, {
+      headers: {
+        'x-projectory-user-role': 'admin',
+        'x-projectory-user-id': 'u-999',
+        'x-projectory-user-email': 'admin@example.com',
+        'x-projectory-user-name': 'Admin Header User'
+      }
+    });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.authMode, 'session');
+    assert.equal(body.authSource, 'anonymous');
+    assert.equal(body.role, 'viewer');
+    assert.equal(body.userId, null);
+    assert.equal(body.email, null);
+    assert.equal(body.displayName, null);
+    assert.equal(body.isScopedTeammate, false);
+    assert.equal(body.permissions.includes('admin:access'), false);
+  } finally {
+    server.close();
+    if (previousAuthMode === undefined) {
+      delete process.env.AUTH_MODE;
+    } else {
+      process.env.AUTH_MODE = previousAuthMode;
+    }
+  }
+});
