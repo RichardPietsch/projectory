@@ -506,3 +506,51 @@ test('PUT /api/projects/:projectId/people/:personId/quantity forbids teammate ed
     server.close();
   }
 });
+
+
+test('GET /api/people returns empty list for teammate without project scope', async () => {
+  const originalQuery = pool.query;
+  pool.query = async () => ({ rows: [], rowCount: 0 });
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/people`, {
+      headers: TEAMMATE_HEADERS
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body, []);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('PUT /api/challenges/:id forbids teammate for challenge outside scope', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM challenges')) {
+      return { rows: [{ project_id: 42 }], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/challenges/7`, {
+      method: 'PUT',
+      headers: TEAMMATE_HEADERS,
+      body: JSON.stringify({ title: 'T', description: 'D' })
+    });
+
+    assert.equal(response.status, 403);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});

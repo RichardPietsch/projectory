@@ -1077,6 +1077,7 @@ app.get('/api/projects', requirePermission(PERMISSIONS.PROJECTS_READ), async (re
     );
 
     if (isScopedTeammate(req.auth)) {
+      // Apply API-side row filtering so teammates never receive out-of-scope entities.
       const scopedIds = new Set((req.auth.scopedProjectIds || []).map((id) => Number(id)));
       const filteredProjects = projects.rows.filter((project) => scopedIds.has(Number(project.id)));
       const filteredChallenges = challenges.rows.filter((challenge) => scopedIds.has(Number(challenge.project_id)));

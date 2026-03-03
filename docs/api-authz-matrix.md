@@ -18,7 +18,7 @@ Supported roles:
 |---|---|---:|---|
 | `/api/auth/me` | GET | none | debug/introspection |
 | `/api/meta` | GET | none | catalog data |
-| `/api/people` | GET | none | currently open |
+| `/api/people` | GET | none | currently open; teammate response scoped to assigned projects |
 | `/api/people` | POST | `people:write` | enforced |
 | `/api/people/:id` | PUT | `people:write` | enforced |
 | `/api/people/:id` | DELETE | `people:write` | enforced |
@@ -31,15 +31,15 @@ Supported roles:
 | `/api/onboarding/profiles/:id` | PUT | `people:write` | enforced |
 | `/api/onboarding/profiles/:id` | DELETE | `people:write` | enforced |
 | `/api/onboarding/profiles/:id/steps` | PUT | `people:write` | enforced |
-| `/api/projects` | GET | `projects:read` | enforced (legacy route in app.js) |
+| `/api/projects` | GET | `projects:read` | enforced (legacy route in app.js); teammate scoped to assigned projects |
 | `/api/projects` | POST | `projects:write` | enforced (legacy route in app.js) |
 | `/api/projects/:id` | PUT | `projects:write` | enforced (legacy route in app.js) |
 | `/api/projects/:id` | DELETE | `projects:write` | enforced (legacy route in app.js) |
-| `/api/challenges/:id` | PUT | `projects:write` | enforced (legacy route in app.js) |
-| `/api/challenges/:id` | DELETE | `projects:write` | enforced (legacy route in app.js) |
-| `/api/assignments` | POST | `assignments:write` | enforced (legacy route in app.js) |
-| `/api/assignments/:id` | PUT | `assignments:write` | enforced (legacy route in app.js) |
-| `/api/assignments/:id` | DELETE | `assignments:write` | enforced (legacy route in app.js) |
+| `/api/challenges/:id` | PUT | `projects:write` | enforced (legacy route in app.js); teammate requires project scope |
+| `/api/challenges/:id` | DELETE | `projects:write` | enforced (legacy route in app.js); teammate requires project scope |
+| `/api/assignments` | POST | `assignments:write` | enforced (legacy route in app.js); teammate requires project scope |
+| `/api/assignments/:id` | PUT | `assignments:write` | enforced (legacy route in app.js); teammate requires project scope |
+| `/api/assignments/:id` | DELETE | `assignments:write` | enforced (legacy route in app.js); teammate requires project scope |
 | `/api/import/preview` | POST | `import:run` | enforced |
 | `/api/import` | POST | `import:run` | enforced |
 | `/api/export` | GET | `export:run` | enforced |
