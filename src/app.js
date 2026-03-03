@@ -3,7 +3,9 @@ const path = require('path');
 const { Pool } = require('pg');
 const { registerModuleRoutes } = require('./modules');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
-const { PERMISSIONS } = require('./auth/permissions');
+const { PERMISSIONS, getPermissionsForRole } = require('./auth/permissions');
+const { validatePasswordStrength, hashPassword, verifyPassword } = require('./auth/passwords');
+const { createOpaqueToken, hashOpaqueToken } = require('./auth/tokens');
 
 // Single Express app serving API + static frontend.
 const app = express();
@@ -33,6 +35,119 @@ const PEOPLE_STATUS_VALUES = ['active', 'paused', 'leaver'];
 app.use(express.json());
 app.use(attachAuthContext);
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+const AUTH_SESSION_COOKIE = 'projectory_session';
+const AUTH_SESSION_TTL_HOURS = Number(process.env.AUTH_SESSION_TTL_HOURS || 12);
+const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES || 30);
+
+function parseCookieHeader(rawCookieHeader) {
+  const cookieMap = new Map();
+  const value = String(rawCookieHeader || '').trim();
+  if (!value) return cookieMap;
+
+  for (const part of value.split(';')) {
+    const [rawKey, ...rawValueParts] = part.split('=');
+    const key = String(rawKey || '').trim();
+    if (!key) continue;
+    cookieMap.set(key, decodeURIComponent(rawValueParts.join('=').trim()));
+  }
+
+  return cookieMap;
+}
+
+function serializeSessionCookie(sessionId, expiresAt) {
+  const maxAgeSeconds = Math.max(1, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+  const secureAttribute = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  return `${AUTH_SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secureAttribute}`;
+}
+
+function clearSessionCookie() {
+  const secureAttribute = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  return `${AUTH_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureAttribute}`;
+}
+
+
+async function loadSessionAuthContext(req) {
+  const cookies = parseCookieHeader(req.headers.cookie);
+  const sessionId = cookies.get(AUTH_SESSION_COOKIE);
+  if (!sessionId) return null;
+
+  const result = await pool.query(
+    `SELECT s.id AS session_id,
+            s.expires_at,
+            s.revoked_at,
+            u.id AS user_id,
+            u.email,
+            u.display_name,
+            u.person_id,
+            COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), ARRAY[]::text[]) AS roles,
+            COALESCE(ARRAY_AGG(DISTINCT p.name) FILTER (WHERE p.name IS NOT NULL), ARRAY[]::text[]) AS db_permissions
+     FROM auth_sessions s
+     JOIN users u ON u.id = s.user_id
+     LEFT JOIN user_roles ur ON ur.user_id = u.id
+     LEFT JOIN roles r ON r.id = ur.role_id
+     LEFT JOIN role_permissions rp ON rp.role_id = r.id
+     LEFT JOIN permissions p ON p.id = rp.permission_id
+     WHERE s.id = $1
+     GROUP BY s.id, s.expires_at, s.revoked_at, u.id, u.email, u.display_name, u.person_id`,
+    [sessionId]
+  );
+
+  if (result.rowCount === 0) return null;
+  const row = result.rows[0];
+  if (row.revoked_at) return null;
+  const expiry = new Date(row.expires_at);
+  if (expiry.getTime() <= Date.now()) return null;
+
+  const roles = (row.roles || []).map((role) => String(role || '').toLowerCase()).filter(Boolean);
+  const role = roles[0] || 'viewer';
+  const mergedPermissions = new Set([...(row.db_permissions || []), ...getPermissionsForRole(role)]);
+
+  return {
+    sessionId: row.session_id,
+    userId: String(row.user_id),
+    email: row.email,
+    displayName: row.display_name,
+    personId: row.person_id ? Number(row.person_id) : null,
+    role,
+    roles,
+    permissions: [...mergedPermissions]
+  };
+}
+
+// Session auth overlay: for requests with a valid session cookie we override header simulation context.
+app.use(async (req, _res, next) => {
+  try {
+    const sessionAuth = await loadSessionAuthContext(req);
+    if (sessionAuth) {
+      req.auth = {
+        ...req.auth,
+        ...sessionAuth,
+        authSource: 'session'
+      };
+
+      await pool.query(
+        `UPDATE auth_sessions
+         SET last_seen_at = NOW()
+         WHERE id = $1`,
+        [sessionAuth.sessionId]
+      );
+    } else {
+      req.auth = {
+        ...req.auth,
+        authSource: 'header'
+      };
+    }
+  } catch (_error) {
+    // Keep app available even when auth storage is unavailable; header simulation remains fallback.
+    req.auth = {
+      ...req.auth,
+      authSource: 'header'
+    };
+  }
+
+  next();
+});
 
 function badRequest(res, message) {
   return res.status(400).json({ error: message });
@@ -327,9 +442,189 @@ app.get('/api/auth/me', (req, res) => {
     userId: req.auth.userId,
     email: req.auth.email,
     displayName: req.auth.displayName,
+    personId: req.auth.personId || null,
     role: req.auth.role,
-    permissions: req.auth.permissions
+    roles: req.auth.roles || [req.auth.role],
+    permissions: req.auth.permissions,
+    authSource: req.auth.authSource || 'header'
   });
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    return badRequest(res, 'email and password are required.');
+  }
+
+  try {
+    const userResult = await pool.query(
+      `SELECT id, email, display_name, person_id, password_hash, is_active, failed_login_count, locked_until
+       FROM users
+       WHERE LOWER(email) = LOWER($1)
+       LIMIT 1`,
+      [String(email).trim()]
+    );
+
+    if (userResult.rowCount === 0) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    const user = userResult.rows[0];
+    if (!user.is_active) {
+      return res.status(403).json({ error: 'Account is inactive.' });
+    }
+
+    if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
+      return res.status(423).json({ error: 'Account temporarily locked. Please try again later.' });
+    }
+
+    const isValid = user.password_hash ? await verifyPassword(password, user.password_hash) : false;
+    if (!isValid) {
+      await pool.query(
+        `UPDATE users
+         SET failed_login_count = failed_login_count + 1,
+             locked_until = CASE WHEN failed_login_count + 1 >= 5 THEN NOW() + INTERVAL '15 minutes' ELSE locked_until END
+         WHERE id = $1`,
+        [user.id]
+      );
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    const sessionId = createOpaqueToken(48);
+    const expiresAt = new Date(Date.now() + (AUTH_SESSION_TTL_HOURS * 60 * 60 * 1000));
+
+    await pool.query(
+      `INSERT INTO auth_sessions (id, user_id, expires_at, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [sessionId, user.id, expiresAt.toISOString(), req.ip || null, req.header('user-agent') || null]
+    );
+
+    await pool.query(
+      `UPDATE users
+       SET failed_login_count = 0,
+           locked_until = NULL,
+           last_login_at = NOW()
+       WHERE id = $1`,
+      [user.id]
+    );
+
+    res.setHeader('Set-Cookie', serializeSessionCookie(sessionId, expiresAt));
+    return res.json({ ok: true });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.post('/api/auth/logout', async (req, res) => {
+  try {
+    const sessionId = parseCookieHeader(req.headers.cookie).get(AUTH_SESSION_COOKIE);
+    if (sessionId) {
+      await pool.query(
+        `UPDATE auth_sessions
+         SET revoked_at = NOW()
+         WHERE id = $1`,
+        [sessionId]
+      );
+    }
+    res.setHeader('Set-Cookie', clearSessionCookie());
+    return res.json({ ok: true });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const email = String(req.body?.email || '').trim();
+  if (!email) {
+    return badRequest(res, 'email is required.');
+  }
+
+  try {
+    const userResult = await pool.query(
+      `SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND is_active = TRUE LIMIT 1`,
+      [email]
+    );
+
+    if (userResult.rowCount > 0) {
+      const token = createOpaqueToken(32);
+      const tokenHash = hashOpaqueToken(token);
+      await pool.query(
+        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, requested_ip)
+         VALUES ($1, $2, NOW() + ($3::text || ' minutes')::interval, $4)`,
+        [userResult.rows[0].id, tokenHash, String(PASSWORD_RESET_TTL_MINUTES), req.ip || null]
+      );
+
+      if (process.env.AUTH_RETURN_DEBUG_TOKENS === 'true') {
+        return res.json({ ok: true, debugToken: token });
+      }
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  const token = String(req.body?.token || '').trim();
+  const password = String(req.body?.password || '');
+
+  if (!token || !password) {
+    return badRequest(res, 'token and password are required.');
+  }
+
+  const validationError = validatePasswordStrength(password);
+  if (validationError) {
+    return badRequest(res, validationError);
+  }
+
+  const tokenHash = hashOpaqueToken(token);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const tokenResult = await client.query(
+      `SELECT id, user_id
+       FROM password_reset_tokens
+       WHERE token_hash = $1
+         AND used_at IS NULL
+         AND expires_at > NOW()
+       LIMIT 1`,
+      [tokenHash]
+    );
+
+    if (tokenResult.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Invalid or expired reset token.' });
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    await client.query(
+      `UPDATE users
+       SET password_hash = $1,
+           failed_login_count = 0,
+           locked_until = NULL
+       WHERE id = $2`,
+      [passwordHash, tokenResult.rows[0].user_id]
+    );
+
+    await client.query(
+      `UPDATE password_reset_tokens
+       SET used_at = NOW()
+       WHERE id = $1`,
+      [tokenResult.rows[0].id]
+    );
+
+    await client.query('COMMIT');
+    return res.json({ ok: true });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    return handleDbError(res, error);
+  } finally {
+    client.release();
+  }
 });
 
 app.get('/api/meta', async (_req, res) => {
