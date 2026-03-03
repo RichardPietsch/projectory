@@ -956,15 +956,15 @@ function clientsView() {
           : `<button class="inline-flex h-9 items-center" onclick="openProjectPriorityModal(${selectedProject.client_id}, ${selectedProject.priority_id})">${renderPriorityPill(selectedProject.priority_name)}</button>`;
 
         return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div class="grid grid-cols-1 gap-3 text-sm text-slate-300 lg:grid-cols-5 lg:items-end">
-              <div class="flex min-w-0 flex-wrap items-center gap-2 lg:col-span-2">
+            <div class="grid grid-cols-1 gap-3 text-sm text-slate-300 lg:grid-cols-6 lg:items-center">
+              <div class="flex min-w-0 flex-wrap items-center gap-2 lg:col-span-3">
                 <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>${i18n.t('clientTeams.title')}</button>
                 <span>/</span>
                 <span class="font-semibold text-slate-100">${selectedProject.name} (${selectedProject.client_name})</span>
               </div>
-              <div class="flex min-w-0 flex-col text-xs"><span class="mb-1 text-slate-400">Status</span><div class="flex h-9 items-center">${statusControl}</div></div>
-              <div class="flex min-w-0 flex-col text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.priority')}</span><div class="flex h-9 items-center">${priorityControl}</div></div>
-              <div class="flex min-w-0 flex-col text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.budget')}</span><div class="flex h-9 items-center px-1 text-xs font-semibold text-slate-100">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">Status</span><div class="flex h-9 items-center">${statusControl}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.priority')}</span><div class="flex h-9 items-center">${priorityControl}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.budget')}</span><div class="flex h-9 items-center px-1 text-xs font-semibold text-slate-100">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
             </div>
           </div>
 
