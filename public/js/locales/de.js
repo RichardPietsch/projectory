@@ -24,6 +24,7 @@
     'admin.tabs.clients': 'Kundenansicht',
     'admin.tabs.projects': 'Projektansicht',
     'admin.tabs.configuration': 'Konfiguration',
+    'admin.tabs.access': 'Zugriff & Audit',
 
     'home.clientTeams': 'Kundenteams',
     'home.peopleOverview': 'Personenübersicht',

@@ -70,6 +70,9 @@
       importPreviewData: null,
       configuration: { trades: [], levels: [] },
       configurationDraft: { trades: [], levels: [] },
+      adminUsers: [],
+      smtpSettings: { host: '', port: '', username: '', fromEmail: '', secure: true, enabled: false, passwordSet: false },
+      auditEntries: [],
       peopleOverviewSort: 'name_asc',
       peopleOverviewSearch: '',
       peopleOverviewModal: { open: false, personId: null }

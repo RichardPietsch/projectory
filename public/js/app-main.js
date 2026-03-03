@@ -5,7 +5,8 @@
         { id: 'people', labelKey: 'admin.tabs.people' },
         { id: 'clients', labelKey: 'admin.tabs.clients' },
         { id: 'projects', labelKey: 'admin.tabs.projects' },
-        { id: 'configuration', labelKey: 'admin.tabs.configuration' }
+        { id: 'configuration', labelKey: 'admin.tabs.configuration' },
+        { id: 'access', labelKey: 'admin.tabs.access' }
       ];
 
       const CHALLENGE_TITLE_PREFILL = 'Placeholder Challenge';
@@ -250,6 +251,28 @@
         return currentRole() === 'admin';
       }
 
+      async function loadAdminAccessData() {
+        // Step 6: preload admin access-management data for a single cohesive tab.
+        try {
+          state.adminUsers = await api('/api/admin/users');
+        } catch (_error) {
+          state.adminUsers = [];
+        }
+
+        try {
+          state.smtpSettings = await api('/api/admin/smtp-settings');
+        } catch (_error) {
+          state.smtpSettings = { host: '', port: '', username: '', fromEmail: '', secure: true, enabled: false, passwordSet: false };
+        }
+
+        try {
+          const audit = await api('/api/admin/audit?limit=100');
+          state.auditEntries = Array.isArray(audit?.entries) ? audit.entries : [];
+        } catch (_error) {
+          state.auditEntries = [];
+        }
+      }
+
       async function loadData() {
         state.auth = await api('/api/auth/me');
         state.meta = await api('/api/meta');
@@ -262,6 +285,7 @@
           } catch (_error) {
             state.configuration = { trades: [], levels: [] };
           }
+          await loadAdminAccessData();
         }
         state.configurationDraft = {
           trades: (state.configuration.trades || []).map((row) => ({ ...row })),
@@ -592,6 +616,90 @@ function clientsView() {
 
       window.addConfigurationItem = addConfigurationItem;
       window.removeConfigurationItem = removeConfigurationItem;
+
+      function accessManagementView() {
+        const userRows = (state.adminUsers || []).map((user) => `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td></tr>`).join('');
+        const auditRows = (state.auditEntries || []).slice(0, 20).map((entry) => `<tr class="border-t border-slate-800"><td class="p-2 text-xs text-slate-300">${entry.created_at || ''}</td><td class="p-2 text-xs">${entry.action || ''}</td><td class="p-2 text-xs text-slate-300">${entry.actor_role || '—'}</td><td class="p-2 text-xs text-slate-300">${entry.entity_type || '—'} ${entry.entity_id || ''}</td></tr>`).join('');
+        const smtp = state.smtpSettings || {};
+
+        return `<div class="space-y-4">
+          <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 class="mb-3 text-lg font-semibold">Access Management</h3>
+            <div class="mb-3 grid gap-2 md:grid-cols-5">
+              <input id="access-user-name" class="rounded bg-slate-950 p-2 text-sm" placeholder="Display name" />
+              <input id="access-user-email" class="rounded bg-slate-950 p-2 text-sm" placeholder="E-mail" />
+              <input id="access-user-role" class="rounded bg-slate-950 p-2 text-sm" placeholder="Role (admin/planner/viewer/teammate)" value="viewer" />
+              <input id="access-user-person-id" class="rounded bg-slate-950 p-2 text-sm" placeholder="Person ID (optional)" />
+              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="createAdminUserFromAccessTab()">Create User</button>
+            </div>
+            <div class="overflow-x-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Email</th><th class="p-2">Role(s)</th><th class="p-2">Linked Person</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-slate-400" colspan="4">No users yet.</td></tr>`}</tbody></table></div>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 class="mb-3 text-lg font-semibold">SMTP Settings</h3>
+            <div class="grid gap-2 md:grid-cols-3">
+              <input id="smtp-host" class="rounded bg-slate-950 p-2 text-sm" placeholder="Host" value="${smtp.host || ''}" />
+              <input id="smtp-port" class="rounded bg-slate-950 p-2 text-sm" placeholder="Port" value="${smtp.port || ''}" />
+              <input id="smtp-user" class="rounded bg-slate-950 p-2 text-sm" placeholder="Username" value="${smtp.username || ''}" />
+              <input id="smtp-from" class="rounded bg-slate-950 p-2 text-sm md:col-span-2" placeholder="From email" value="${smtp.fromEmail || ''}" />
+              <input id="smtp-password" type="password" class="rounded bg-slate-950 p-2 text-sm" placeholder="${smtp.passwordSet ? 'Password set (enter to rotate)' : 'Password'}" />
+              <label class="inline-flex items-center gap-2 text-sm"><input id="smtp-enabled" type="checkbox" ${smtp.enabled ? 'checked' : ''} /> Enabled</label>
+              <label class="inline-flex items-center gap-2 text-sm"><input id="smtp-secure" type="checkbox" ${smtp.secure !== false ? 'checked' : ''} /> Secure</label>
+              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="saveSmtpSettingsFromAccessTab()">Save SMTP</button>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div class="mb-3 flex items-center justify-between"><h3 class="text-lg font-semibold">Audit Log</h3><button class="rounded border border-slate-600 px-3 py-1 text-sm hover:bg-slate-800" onclick="refreshAuditFromAccessTab()">Refresh</button></div>
+            <div class="max-h-80 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Timestamp</th><th class="p-2">Action</th><th class="p-2">Role</th><th class="p-2">Entity</th></tr></thead><tbody>${auditRows || `<tr><td class="p-3 text-slate-400" colspan="4">No audit entries yet.</td></tr>`}</tbody></table></div>
+          </div>
+        </div>`;
+      }
+
+      window.createAdminUserFromAccessTab = async function createAdminUserFromAccessTab() {
+        try {
+          const displayName = String(document.getElementById('access-user-name')?.value || '').trim();
+          const email = String(document.getElementById('access-user-email')?.value || '').trim();
+          const role = String(document.getElementById('access-user-role')?.value || 'viewer').trim().toLowerCase();
+          const personRaw = String(document.getElementById('access-user-person-id')?.value || '').trim();
+          const personId = personRaw ? Number(personRaw) : null;
+          await api('/api/admin/users', { method: 'POST', body: JSON.stringify({ displayName, email, role, personId }) });
+          await loadAdminAccessData();
+          render();
+          showMessage('User created.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+      window.saveSmtpSettingsFromAccessTab = async function saveSmtpSettingsFromAccessTab() {
+        try {
+          const payload = {
+            host: String(document.getElementById('smtp-host')?.value || '').trim(),
+            port: Number(document.getElementById('smtp-port')?.value || 0),
+            username: String(document.getElementById('smtp-user')?.value || '').trim(),
+            fromEmail: String(document.getElementById('smtp-from')?.value || '').trim(),
+            password: String(document.getElementById('smtp-password')?.value || '').trim() || null,
+            enabled: Boolean(document.getElementById('smtp-enabled')?.checked),
+            secure: Boolean(document.getElementById('smtp-secure')?.checked)
+          };
+          state.smtpSettings = await api('/api/admin/smtp-settings', { method: 'PUT', body: JSON.stringify(payload) });
+          render();
+          showMessage('SMTP settings saved.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+      window.refreshAuditFromAccessTab = async function refreshAuditFromAccessTab() {
+        try {
+          const audit = await api('/api/admin/audit?limit=100');
+          state.auditEntries = Array.isArray(audit?.entries) ? audit.entries : [];
+          render();
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
 
       function ownershipView() {
         const projects = state.projectsPayload.projects;
@@ -2427,7 +2535,7 @@ function filteredPeople() {
 
       function adminStandaloneView() {
         const tabs = adminTabs.map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-[#00d8ff] bg-[#00d8ff]/15 text-[#7cecff]' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setAdminTab('${tab.id}')">${i18n.t(tab.labelKey)}</button>`).join('');
-        const body = state.adminTab === 'people' ? peopleView() : state.adminTab === 'clients' ? clientsView() : state.adminTab === 'projects' ? administrationProjectsView() : configurationView();
+        const body = state.adminTab === 'people' ? peopleView() : state.adminTab === 'clients' ? clientsView() : state.adminTab === 'projects' ? administrationProjectsView() : state.adminTab === 'access' ? accessManagementView() : configurationView();
         return `<div class="space-y-4"><div class="flex items-center justify-between"><h2 class="text-2xl font-bold">${i18n.t('admin.title')}</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="closeAdminStandalone()">${i18n.t('common.backToApp')}</button></div><div class="flex gap-2">${tabs}</div>${body}<footer class="mt-6 border-t border-slate-800 pt-4 text-sm text-slate-300"><div class="flex flex-wrap items-center gap-3"><button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.export')}</button><button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.import')}</button></div></footer></div>`;
       }
 
