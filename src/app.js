@@ -41,6 +41,30 @@ const AUTH_SESSION_TTL_HOURS = Number(process.env.AUTH_SESSION_TTL_HOURS || 12);
 const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES || 30);
 const AUDIT_LOG_RETENTION_MONTHS = Number(process.env.AUDIT_LOG_RETENTION_MONTHS || 6);
 
+const AUTH_MODES = new Set(['hybrid', 'session', 'header']);
+
+function getAuthMode() {
+  const mode = String(process.env.AUTH_MODE || 'hybrid').trim().toLowerCase();
+  return AUTH_MODES.has(mode) ? mode : 'hybrid';
+}
+
+function buildSessionOnlyFallbackAuth(previousAuth = {}) {
+  // Rollout safety: in strict session mode we never trust header role simulation.
+  return {
+    ...previousAuth,
+    userId: null,
+    email: null,
+    displayName: null,
+    personId: null,
+    role: 'viewer',
+    roles: ['viewer'],
+    permissions: getPermissionsForRole('viewer'),
+    authSource: 'anonymous',
+    scopedProjectIds: [],
+    isScopedTeammate: false
+  };
+}
+
 
 function parseActorUserId(auth) {
   const candidate = Number.parseInt(auth?.userId, 10);
@@ -81,7 +105,8 @@ async function recordAuditEvent({ req, res }) {
   const metadata = {
     authSource: req.auth?.authSource || 'header',
     isScopedTeammate: Boolean(req.auth?.isScopedTeammate),
-    scopedProjectIds: req.auth?.scopedProjectIds || []
+    scopedProjectIds: req.auth?.scopedProjectIds || [],
+    authMode: getAuthMode()
   };
 
   await pool.query(
@@ -333,6 +358,8 @@ app.use(async (req, _res, next) => {
          WHERE id = $1`,
         [sessionAuth.sessionId]
       );
+    } else if (getAuthMode() === 'session') {
+      req.auth = buildSessionOnlyFallbackAuth(req.auth);
     } else {
       req.auth = {
         ...req.auth,
@@ -342,13 +369,15 @@ app.use(async (req, _res, next) => {
       };
     }
   } catch (_error) {
-    // Keep app available even when auth storage is unavailable; header simulation remains fallback.
-    req.auth = {
-      ...req.auth,
-      authSource: 'header',
-      scopedProjectIds: [],
-      isScopedTeammate: isScopedTeammate(req.auth)
-    };
+    // Keep app available even when auth storage is unavailable.
+    req.auth = getAuthMode() === 'session'
+      ? buildSessionOnlyFallbackAuth(req.auth)
+      : {
+          ...req.auth,
+          authSource: 'header',
+          scopedProjectIds: [],
+          isScopedTeammate: isScopedTeammate(req.auth)
+        };
   }
 
   next();
@@ -664,7 +693,8 @@ app.get('/api/auth/me', (req, res) => {
     permissions: req.auth.permissions,
     authSource: req.auth.authSource || 'header',
     scopedProjectIds: req.auth.scopedProjectIds || [],
-    isScopedTeammate: Boolean(req.auth.isScopedTeammate)
+    isScopedTeammate: Boolean(req.auth.isScopedTeammate),
+    authMode: getAuthMode()
   });
 });
 
