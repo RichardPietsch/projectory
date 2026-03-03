@@ -10,6 +10,7 @@ Supported roles:
 - `admin`
 - `planner`
 - `viewer`
+- `teammate` (project-scoped)
 
 ## Matrix
 

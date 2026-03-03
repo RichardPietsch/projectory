@@ -11,6 +11,10 @@ test('permissions map resolves expected role capabilities', () => {
 
   const admin = getPermissionsForRole('admin');
   assert.equal(hasPermission(admin, PERMISSIONS.ADMIN_ACCESS), true);
+
+  const teammate = getPermissionsForRole('teammate');
+  assert.equal(hasPermission(teammate, PERMISSIONS.PROJECTS_WRITE), true);
+  assert.equal(hasPermission(teammate, PERMISSIONS.ADMIN_ACCESS), false);
 });
 
 test('GET /api/auth/me exposes derived auth context defaults', async () => {

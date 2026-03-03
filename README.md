@@ -103,6 +103,7 @@ This separation allows operational data migration without forcing catalog change
 - `admin`: full access including admin configuration and import
 - `planner`: planning/editing access with restricted admin capabilities
 - `viewer`: read-only access for transparency
+- `teammate`: scoped collaborator access on assigned projects (challenge/assignment maintenance)
 
 Headers for local role simulation:
 - `x-projectory-user-id`

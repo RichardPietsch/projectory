@@ -390,3 +390,49 @@ test('PUT /api/admin/smtp-settings validates required fields when enabled', asyn
     server.close();
   }
 });
+
+
+test('GET /api/admin/users/:id/project-access returns project scope list for admin', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM user_project_access')) {
+      return { rows: [{ project_id: 11 }, { project_id: 19 }], rowCount: 2 };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users/5/project-access`, {
+      headers: ADMIN_HEADERS
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body, { userId: 5, projectIds: [11, 19] });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('PUT /api/admin/users/:id/project-access validates payload shape', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users/5/project-access`, {
+      method: 'PUT',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ projectIds: 'invalid' })
+    });
+
+    assert.equal(response.status, 400);
+    const body = await response.json();
+    assert.equal(body.error, 'projectIds must be an array.');
+  } finally {
+    server.close();
+  }
+});

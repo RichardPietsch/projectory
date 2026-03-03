@@ -117,6 +117,41 @@ async function createUserInvite(userId, invitedByUserId, expiresHours = 72) {
   };
 }
 
+// Teammates are project-scoped; this helper keeps scope checks explicit.
+function isScopedTeammate(auth) {
+  return String(auth?.role || '').toLowerCase() === 'teammate';
+}
+
+async function replaceUserProjectScope(userId, projectIds) {
+  const normalized = [...new Set((projectIds || [])
+    .map((id) => Number.parseInt(id, 10))
+    .filter((id) => Number.isInteger(id) && id > 0))];
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM user_project_access WHERE user_id = $1', [userId]);
+
+    for (const projectId of normalized) {
+      await client.query(
+        `INSERT INTO user_project_access (user_id, project_id)
+         VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [userId, projectId]
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return normalized;
+}
+
 
 async function loadSessionAuthContext(req) {
   const cookies = parseCookieHeader(req.headers.cookie);
@@ -132,13 +167,15 @@ async function loadSessionAuthContext(req) {
             u.display_name,
             u.person_id,
             COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), ARRAY[]::text[]) AS roles,
-            COALESCE(ARRAY_AGG(DISTINCT p.name) FILTER (WHERE p.name IS NOT NULL), ARRAY[]::text[]) AS db_permissions
+            COALESCE(ARRAY_AGG(DISTINCT p.name) FILTER (WHERE p.name IS NOT NULL), ARRAY[]::text[]) AS db_permissions,
+            COALESCE(ARRAY_AGG(DISTINCT upa.project_id) FILTER (WHERE upa.project_id IS NOT NULL), ARRAY[]::int[]) AS scoped_project_ids
      FROM auth_sessions s
      JOIN users u ON u.id = s.user_id
      LEFT JOIN user_roles ur ON ur.user_id = u.id
      LEFT JOIN roles r ON r.id = ur.role_id
      LEFT JOIN role_permissions rp ON rp.role_id = r.id
      LEFT JOIN permissions p ON p.id = rp.permission_id
+     LEFT JOIN user_project_access upa ON upa.user_id = u.id
      WHERE s.id = $1
      GROUP BY s.id, s.expires_at, s.revoked_at, u.id, u.email, u.display_name, u.person_id`,
     [sessionId]
@@ -162,7 +199,9 @@ async function loadSessionAuthContext(req) {
     personId: row.person_id ? Number(row.person_id) : null,
     role,
     roles,
-    permissions: [...mergedPermissions]
+    permissions: [...mergedPermissions],
+    scopedProjectIds: (row.scoped_project_ids || []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0),
+    isScopedTeammate: role === 'teammate'
   };
 }
 
@@ -497,7 +536,9 @@ app.get('/api/auth/me', (req, res) => {
     role: req.auth.role,
     roles: req.auth.roles || [req.auth.role],
     permissions: req.auth.permissions,
-    authSource: req.auth.authSource || 'header'
+    authSource: req.auth.authSource || 'header',
+    scopedProjectIds: req.auth.scopedProjectIds || [],
+    isScopedTeammate: Boolean(req.auth.isScopedTeammate)
   });
 });
 
@@ -829,6 +870,50 @@ app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCE
       inviteLink: process.env.AUTH_RETURN_DEBUG_TOKENS === 'true' ? invite.inviteLink : undefined,
       inviteToken: process.env.AUTH_RETURN_DEBUG_TOKENS === 'true' ? invite.token : undefined
     });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+
+app.get('/api/admin/users/:id/project-access', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT project_id
+       FROM user_project_access
+       WHERE user_id = $1
+       ORDER BY project_id`,
+      [req.params.id]
+    );
+
+    return res.json({
+      userId: Number(req.params.id),
+      projectIds: result.rows.map((row) => Number(row.project_id))
+    });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.put('/api/admin/users/:id/project-access', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  const projectIds = Array.isArray(req.body?.projectIds) ? req.body.projectIds : null;
+  if (!projectIds) {
+    return badRequest(res, 'projectIds must be an array.');
+  }
+
+  try {
+    const userResult = await pool.query(
+      `SELECT id FROM users WHERE id = $1 LIMIT 1`,
+      [req.params.id]
+    );
+
+    if (userResult.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    // Persist full replacement to keep admin UX predictable.
+    const normalized = await replaceUserProjectScope(req.params.id, projectIds);
+    return res.json({ ok: true, projectIds: normalized });
   } catch (error) {
     return handleDbError(res, error);
   }
