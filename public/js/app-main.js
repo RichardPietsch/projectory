@@ -646,6 +646,8 @@ function clientsView() {
               <label class="inline-flex items-center gap-2 text-sm"><input id="smtp-enabled" type="checkbox" ${smtp.enabled ? 'checked' : ''} /> Enabled</label>
               <label class="inline-flex items-center gap-2 text-sm"><input id="smtp-secure" type="checkbox" ${smtp.secure !== false ? 'checked' : ''} /> Secure</label>
               <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="saveSmtpSettingsFromAccessTab()">Save SMTP</button>
+              <input id="smtp-test-to" class="rounded bg-slate-950 p-2 text-sm md:col-span-2" placeholder="Test recipient e-mail" value="${smtp.fromEmail || ''}" />
+              <button class="rounded border border-emerald-500/50 px-3 py-2 text-sm text-emerald-300 hover:bg-slate-800" onclick="sendSmtpTestMailFromAccessTab()">Send Test Mail</button>
             </div>
           </div>
 
@@ -686,6 +688,24 @@ function clientsView() {
           state.smtpSettings = await api('/api/admin/smtp-settings', { method: 'PUT', body: JSON.stringify(payload) });
           render();
           showMessage('SMTP settings saved.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+      window.sendSmtpTestMailFromAccessTab = async function sendSmtpTestMailFromAccessTab() {
+        try {
+          const toEmail = String(document.getElementById('smtp-test-to')?.value || '').trim();
+          if (!toEmail) {
+            showMessage('Please provide a recipient e-mail for the test.', 'error');
+            return;
+          }
+
+          await api('/api/admin/smtp-settings/test-email', {
+            method: 'POST',
+            body: JSON.stringify({ toEmail })
+          });
+          showMessage(`Test e-mail sent to ${toEmail}.`);
         } catch (error) {
           showMessage(error.message, 'error');
         }

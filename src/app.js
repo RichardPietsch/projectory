@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const net = require('node:net');
+const tls = require('node:tls');
 const { Pool } = require('pg');
 const { registerModuleRoutes } = require('./modules');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
@@ -183,6 +185,134 @@ function redactSmtpSettings(row) {
     enabled: Boolean(row?.enabled),
     passwordSet: Boolean(row?.password)
   };
+}
+
+function buildTestEmailMessage({ fromEmail, toEmail }) {
+  const timestamp = new Date().toISOString();
+  return [
+    `From: ${fromEmail}`,
+    `To: ${toEmail}`,
+    'Subject: Projectory SMTP test email',
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=utf-8',
+    '',
+    `This is a test email sent by Projectory at ${timestamp}.`,
+    '',
+    'If you received this message, SMTP configuration is working.'
+  ].join('\r\n');
+}
+
+function readSmtpResponse(socket, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    let buffer = '';
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('SMTP server response timed out.'));
+    }, timeoutMs);
+
+    function cleanup() {
+      clearTimeout(timer);
+      socket.off('data', onData);
+      socket.off('error', onError);
+      socket.off('end', onEnd);
+    }
+
+    function onError(error) {
+      cleanup();
+      reject(error);
+    }
+
+    function onEnd() {
+      cleanup();
+      reject(new Error('SMTP connection closed unexpectedly.'));
+    }
+
+    function onData(chunk) {
+      buffer += chunk.toString('utf8');
+      const lines = buffer.split('\r\n').filter(Boolean);
+      const lastLine = lines[lines.length - 1] || '';
+      if (/^\d{3} /.test(lastLine)) {
+        cleanup();
+        const code = Number.parseInt(lastLine.slice(0, 3), 10);
+        resolve({ code, message: buffer.trim() });
+      }
+    }
+
+    socket.on('data', onData);
+    socket.on('error', onError);
+    socket.on('end', onEnd);
+  });
+}
+
+async function writeSmtpCommand(socket, command, expectedCodes) {
+  socket.write(`${command}\r\n`);
+  const response = await readSmtpResponse(socket);
+  if (!expectedCodes.includes(response.code)) {
+    throw new Error(`SMTP command failed (${command.split(' ')[0]}): ${response.message}`);
+  }
+  return response;
+}
+
+async function sendSmtpTestEmail(config, toEmail) {
+  const host = String(config.host || '').trim();
+  const port = Number(config.port || 0);
+  const secure = config.secure !== false;
+  const fromEmail = String(config.from_email || '').trim();
+
+  if (!host || !port) {
+    throw new Error('SMTP host and port are required.');
+  }
+
+  if (!isValidEmail(fromEmail) || !isValidEmail(toEmail)) {
+    throw new Error('fromEmail and toEmail must be valid email addresses.');
+  }
+
+  const connection = secure
+    ? tls.connect({ host, port, servername: host })
+    : net.connect({ host, port });
+
+  await new Promise((resolve, reject) => {
+    const onError = (error) => {
+      connection.off('connect', onConnect);
+      reject(error);
+    };
+    const onConnect = () => {
+      connection.off('error', onError);
+      resolve();
+    };
+    connection.once('error', onError);
+    connection.once('connect', onConnect);
+  });
+
+  try {
+    const greeting = await readSmtpResponse(connection);
+    if (greeting.code !== 220) {
+      throw new Error(`SMTP greeting failed: ${greeting.message}`);
+    }
+
+    await writeSmtpCommand(connection, 'EHLO projectory.local', [250]);
+
+    if (config.username && config.password) {
+      await writeSmtpCommand(connection, 'AUTH LOGIN', [334]);
+      await writeSmtpCommand(connection, Buffer.from(String(config.username)).toString('base64'), [334]);
+      await writeSmtpCommand(connection, Buffer.from(String(config.password)).toString('base64'), [235]);
+    }
+
+    await writeSmtpCommand(connection, `MAIL FROM:<${fromEmail}>`, [250]);
+    await writeSmtpCommand(connection, `RCPT TO:<${String(toEmail).trim()}>`, [250, 251]);
+    await writeSmtpCommand(connection, 'DATA', [354]);
+
+    const message = buildTestEmailMessage({ fromEmail, toEmail: String(toEmail).trim() });
+    connection.write(`${message}\r\n.\r\n`);
+    const dataResponse = await readSmtpResponse(connection);
+    if (dataResponse.code !== 250) {
+      throw new Error(`SMTP DATA failed: ${dataResponse.message}`);
+    }
+
+    await writeSmtpCommand(connection, 'QUIT', [221]);
+  } finally {
+    connection.end();
+  }
 }
 
 async function getRoleIdByName(roleName) {
@@ -1128,6 +1258,41 @@ app.put('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS),
 });
 
 
+
+app.post('/api/admin/smtp-settings/test-email', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  const toEmail = String(req.body?.toEmail || '').trim();
+  const dryRun = Boolean(req.body?.dryRun);
+
+  if (!isValidEmail(toEmail)) {
+    return badRequest(res, 'toEmail must be a valid email address.');
+  }
+
+  try {
+    const current = await pool.query(
+      `SELECT host, port, username, password, from_email, secure, enabled
+       FROM smtp_settings
+       ORDER BY id DESC
+       LIMIT 1`
+    );
+
+    const smtp = current.rows[0] || null;
+    if (!smtp || !smtp.enabled) {
+      return badRequest(res, 'SMTP must be enabled before sending test email.');
+    }
+
+    if (!smtp.host || !smtp.port || !smtp.from_email) {
+      return badRequest(res, 'SMTP host, port and fromEmail are required.');
+    }
+
+    if (!dryRun) {
+      await sendSmtpTestEmail(smtp, toEmail);
+    }
+
+    return res.json({ ok: true, toEmail, dryRun });
+  } catch (error) {
+    return res.status(502).json({ error: `SMTP test failed: ${error.message}` });
+  }
+});
 
 app.get('/api/admin/audit', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const limit = Math.max(1, Math.min(Number.parseInt(req.query.limit || '100', 10) || 100, 500));

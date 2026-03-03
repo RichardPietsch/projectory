@@ -446,6 +446,45 @@ test('PUT /api/admin/smtp-settings validates required fields when enabled', asyn
 });
 
 
+test('POST /api/admin/smtp-settings/test-email validates and supports dry-run send', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM smtp_settings')) {
+      return {
+        rowCount: 1,
+        rows: [{
+          host: 'smtp.example.com',
+          port: 465,
+          username: 'mailer',
+          password: 'secret',
+          from_email: 'noreply@example.com',
+          secure: true,
+          enabled: true
+        }]
+      };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/smtp-settings/test-email`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ toEmail: 'qa@example.com', dryRun: true })
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body, { ok: true, toEmail: 'qa@example.com', dryRun: true });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
 test('GET /api/admin/users/:id/project-access returns project scope list for admin', async () => {
   const originalQuery = pool.query;
   pool.query = async (sql) => {
