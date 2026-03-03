@@ -12,6 +12,7 @@ services:
       DB_USER: hello
       DB_PASSWORD: hello
       AUTH_DEFAULT_ROLE: viewer
+    command: sh -c "npm run migrate && npm start"
     depends_on:
       db:
         condition: service_healthy

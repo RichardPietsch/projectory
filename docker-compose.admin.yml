@@ -11,6 +11,7 @@ services:
       DB_NAME: helloapp
       DB_USER: hello
       DB_PASSWORD: hello
+    command: sh -c "npm run migrate && npm start"
     depends_on:
       db:
         condition: service_healthy
