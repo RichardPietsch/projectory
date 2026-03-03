@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - work
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: helloapp
+          POSTGRES_USER: hello
+          POSTGRES_PASSWORD: hello
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hello -d helloapp"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: helloapp
+      DB_USER: hello
+      DB_PASSWORD: hello
+      AUTH_DEFAULT_ROLE: admin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run DB migrations
+        run: npm run migrate
+
+      - name: Syntax checks
+        run: npm run check:syntax
+
+      - name: Run tests
+        run: npm test
