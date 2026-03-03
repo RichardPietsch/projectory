@@ -251,6 +251,40 @@
         return currentRole() === 'admin';
       }
 
+      function needsLoginScreen() {
+        return Boolean(state.authRequired);
+      }
+
+      function loginScreenView() {
+        return `<div class="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
+          <div class="grid gap-8 md:grid-cols-2 md:items-center">
+            <div>
+              <h2 class="text-3xl font-bold">Welcome to Projectory</h2>
+              <p class="mt-2 text-slate-300">Sign in to continue with your personal account.</p>
+              <ul class="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-400">
+                <li>Access your role-based permissions securely</li>
+                <li>Use persistent session authentication</li>
+                <li>Track admin actions in the audit log</li>
+              </ul>
+            </div>
+            <form id="login-form" class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+              <h3 class="mb-3 text-lg font-semibold">Login</h3>
+              <label class="mb-2 block text-sm text-slate-300">E-mail
+                <input id="login-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="you@example.com" required />
+              </label>
+              <label class="mb-3 block text-sm text-slate-300">Password
+                <input id="login-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="••••••••" required />
+              </label>
+              <div class="flex gap-2">
+                <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950">Sign in</button>
+                <button type="button" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="continueWithCurrentAccess()">Continue without login</button>
+              </div>
+              <p class="mt-3 text-xs text-slate-500">Tip: "Continue without login" keeps local header-simulation mode for development only.</p>
+            </form>
+          </div>
+        </div>`;
+      }
+
       async function loadAdminAccessData() {
         // Step 6: preload admin access-management data for a single cohesive tab.
         try {
@@ -273,8 +307,23 @@
         }
       }
 
-      async function loadData() {
+      async function loadData(options = {}) {
+        const forceAppData = Boolean(options.forceAppData);
         state.auth = await api('/api/auth/me');
+        state.authRequired = state.auth?.authSource !== 'session';
+
+        if (state.authRequired && !forceAppData) {
+          state.meta = { priorities: [], trades: [], levels: [] };
+          state.people = [];
+          state.clients = [];
+          state.projectsPayload = { projects: [], challenges: [], assignments: [] };
+          state.configuration = { trades: [], levels: [] };
+          state.configurationDraft = { trades: [], levels: [] };
+          state.adminUsers = [];
+          state.auditEntries = [];
+          return;
+        }
+
         state.meta = await api('/api/meta');
         state.people = await api('/api/people');
         state.clients = await api('/api/clients');
@@ -1818,6 +1867,22 @@ function filteredPeople() {
           i18n.setLocale(event.target.value);
           render();
         });
+
+        document.getElementById('auth-logout')?.addEventListener('click', async () => {
+          try {
+            await api('/api/auth/logout', { method: 'POST' });
+            await loadData();
+            state.authRequired = true;
+            state.showAdmin = false;
+            state.homeTab = 'client-teams';
+            state.selectedProjectId = '';
+            navigateFromState();
+            render();
+            showMessage('Logged out.');
+          } catch (error) {
+            showMessage(error.message, 'error');
+          }
+        });
       }
 
       function bindChallengeModalActions() {
@@ -2561,14 +2626,49 @@ function filteredPeople() {
 
       window.setAdminTab = function setAdminTab(tabId) { if (!canAccessAdmin()) return; state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
       window.closeAdminStandalone = function closeAdminStandalone() { state.showAdmin = false; navigateFromState(); render(); };
+      window.continueWithCurrentAccess = async function continueWithCurrentAccess() {
+        try {
+          await loadData({ forceAppData: true });
+          state.authRequired = false;
+          render();
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+      window.loginFromSplash = async function loginFromSplash(event) {
+        event?.preventDefault();
+        try {
+          const email = String(document.getElementById('login-email')?.value || '').trim();
+          const password = String(document.getElementById('login-password')?.value || '');
+          await api('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+          });
+          await loadData({ forceAppData: true });
+          state.authRequired = false;
+          showMessage('Login successful.');
+          render();
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
 
       function render() {
         if (!canAccessAdmin()) state.showAdmin = false;
 
         const adminToggle = document.getElementById('admin-toggle');
-        if (adminToggle) adminToggle.style.display = canAccessAdmin() ? '' : 'none';
+        if (adminToggle) adminToggle.style.display = !needsLoginScreen() && canAccessAdmin() ? '' : 'none';
+        const onboardingToggle = document.getElementById('onboarding-demo-start');
+        if (onboardingToggle) onboardingToggle.style.display = needsLoginScreen() ? 'none' : '';
+        const logoutButton = document.getElementById('auth-logout');
+        if (logoutButton) logoutButton.classList.toggle('hidden', needsLoginScreen() || state.auth?.authSource !== 'session');
 
-        if (state.showAdmin) {
+        if (needsLoginScreen()) {
+          state.showAdmin = false;
+          document.getElementById('view').innerHTML = loginScreenView();
+          document.getElementById('login-form')?.addEventListener('submit', window.loginFromSplash);
+        } else if (state.showAdmin) {
           document.getElementById('view').innerHTML = adminStandaloneView();
         } else {
         const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-client-teams" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>${i18n.t('home.clientTeams')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-people-overview" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>${i18n.t('home.peopleOverview')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.filter(personIsVisibleInNonAdmin).length}</span></button></nav></div>`;
@@ -2612,7 +2712,7 @@ function filteredPeople() {
           bindPeopleOverviewModalActions();
           bindAdminEntityModalActions();
 
-          if (!applyAppRoute(window.location.pathname)) {
+          if (!needsLoginScreen() && !applyAppRoute(window.location.pathname)) {
             state.homeTab = 'client-teams';
             state.selectedProjectId = '';
             state.peopleOverviewModal.open = false;
@@ -2623,7 +2723,7 @@ function filteredPeople() {
           }
 
           window.addEventListener('popstate', () => {
-            applyAppRoute(window.location.pathname);
+            if (!needsLoginScreen()) applyAppRoute(window.location.pathname);
             render();
           });
 
