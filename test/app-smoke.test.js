@@ -554,3 +554,35 @@ test('PUT /api/challenges/:id forbids teammate for challenge outside scope', asy
     pool.query = originalQuery;
   }
 });
+
+
+test('GET /api/admin/audit returns audit entries for admin', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM audit_log')) {
+      return {
+        rows: [{ id: 1, action: 'POST /api/projects', actor_role: 'admin', created_at: new Date().toISOString() }],
+        rowCount: 1
+      };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/audit?limit=10`, {
+      headers: ADMIN_HEADERS
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(Array.isArray(body.entries), true);
+    assert.equal(body.entries.length, 1);
+    assert.equal(body.entries[0].action, 'POST /api/projects');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});

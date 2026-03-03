@@ -39,6 +39,80 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 const AUTH_SESSION_COOKIE = 'projectory_session';
 const AUTH_SESSION_TTL_HOURS = Number(process.env.AUTH_SESSION_TTL_HOURS || 12);
 const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES || 30);
+const AUDIT_LOG_RETENTION_MONTHS = Number(process.env.AUDIT_LOG_RETENTION_MONTHS || 6);
+
+
+function parseActorUserId(auth) {
+  const candidate = Number.parseInt(auth?.userId, 10);
+  return Number.isInteger(candidate) && candidate > 0 ? candidate : null;
+}
+
+function inferEntityContext(requestPath) {
+  const segments = String(requestPath || '').split('/').filter(Boolean);
+  // Expected format starts with /api/...; keep this heuristic intentionally lightweight.
+  if (segments.length < 2 || segments[0] !== 'api') {
+    return { entityType: null, entityId: null };
+  }
+
+  const entityType = segments[1] || null;
+  const idCandidate = segments[2];
+  const entityId = idCandidate && /^\d+$/.test(idCandidate) ? idCandidate : null;
+  return { entityType, entityId };
+}
+
+function buildAuditAction(method, requestPath) {
+  return `${String(method || 'GET').toUpperCase()} ${String(requestPath || '')}`;
+}
+
+async function recordAuditEvent({ req, res }) {
+  if (String(process.env.AUDIT_LOG_ENABLED || 'true').toLowerCase() === 'false') {
+    return;
+  }
+
+  if (!String(req.path || '').startsWith('/api/')) {
+    return;
+  }
+
+  if (['GET', 'HEAD', 'OPTIONS'].includes(String(req.method || '').toUpperCase())) {
+    return;
+  }
+
+  const { entityType, entityId } = inferEntityContext(req.path);
+  const metadata = {
+    authSource: req.auth?.authSource || 'header',
+    isScopedTeammate: Boolean(req.auth?.isScopedTeammate),
+    scopedProjectIds: req.auth?.scopedProjectIds || []
+  };
+
+  await pool.query(
+    `INSERT INTO audit_log (actor_user_id, actor_role, action, entity_type, entity_id, status_code, request_path, ip_address, user_agent, metadata_json)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)`,
+    [
+      parseActorUserId(req.auth),
+      req.auth?.role || null,
+      buildAuditAction(req.method, req.path),
+      entityType,
+      entityId,
+      Number(res.statusCode || 0),
+      req.path,
+      req.ip || null,
+      req.header('user-agent') || null,
+      JSON.stringify(metadata)
+    ]
+  );
+}
+
+async function cleanupAuditLogRetention() {
+  const months = Number.isFinite(AUDIT_LOG_RETENTION_MONTHS) && AUDIT_LOG_RETENTION_MONTHS > 0
+    ? AUDIT_LOG_RETENTION_MONTHS
+    : 6;
+
+  await pool.query(
+    `DELETE FROM audit_log
+     WHERE created_at < NOW() - ($1::text || ' months')::interval`,
+    [String(months)]
+  );
+}
 
 function parseCookieHeader(rawCookieHeader) {
   const cookieMap = new Map();
@@ -276,6 +350,17 @@ app.use(async (req, _res, next) => {
       isScopedTeammate: isScopedTeammate(req.auth)
     };
   }
+
+  next();
+});
+
+// Audit middleware: records mutating API actions for admin traceability.
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    recordAuditEvent({ req, res }).catch(() => {
+      // Best-effort logging; never fail a user request because audit storage is unavailable.
+    });
+  });
 
   next();
 });
@@ -1012,6 +1097,31 @@ app.put('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS),
   }
 });
 
+
+
+app.get('/api/admin/audit', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  const limit = Math.max(1, Math.min(Number.parseInt(req.query.limit || '100', 10) || 100, 500));
+  const actorUserId = req.query.actorUserId ? Number.parseInt(req.query.actorUserId, 10) : null;
+  const entityType = String(req.query.entityType || '').trim();
+  const action = String(req.query.action || '').trim();
+
+  try {
+    const result = await pool.query(
+      `SELECT id, actor_user_id, actor_role, action, entity_type, entity_id, status_code, request_path, ip_address, user_agent, metadata_json, created_at
+       FROM audit_log
+       WHERE ($1::int IS NULL OR actor_user_id = $1)
+         AND ($2::text = '' OR entity_type = $2)
+         AND ($3::text = '' OR action ILIKE ('%' || $3 || '%'))
+       ORDER BY created_at DESC
+       LIMIT $4`,
+      [Number.isInteger(actorUserId) ? actorUserId : null, entityType, action, limit]
+    );
+
+    return res.json({ entries: result.rows });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
 
 app.get('/api/meta', async (_req, res) => {
   try {
@@ -2307,6 +2417,7 @@ async function startServer() {
     await ensurePeopleWorkingHoursColumn();
     await ensurePriorityCatalog();
     await ensurePeopleCatalog();
+    await cleanupAuditLogRetention();
   } catch (error) {
     console.warn('Catalog initialization skipped at startup.', error.message);
   }

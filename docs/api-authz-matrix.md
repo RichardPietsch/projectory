@@ -43,6 +43,7 @@ Supported roles:
 | `/api/import/preview` | POST | `import:run` | enforced |
 | `/api/import` | POST | `import:run` | enforced |
 | `/api/export` | GET | `export:run` | enforced |
+| `/api/admin/audit` | GET | `admin:access` | enforced; admin audit trail query |
 | `/health` | GET | none | healthcheck |
 
 ## Recommended immediate follow-up

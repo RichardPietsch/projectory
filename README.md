@@ -113,6 +113,8 @@ Headers for local role simulation:
 
 Default role is controlled by `AUTH_DEFAULT_ROLE` (defaults to `admin`).
 
+Audit log retention can be tuned with `AUDIT_LOG_RETENTION_MONTHS` (defaults to `6`).
+
 ---
 
 ## Migrations
