@@ -3,8 +3,18 @@ const peopleService = require('./service');
 function registerPeopleRoutes(app, deps) {
   const { pool, badRequest, handleDbError, parseOptionalBoolean, parseWorkingHours, requirePermission, PERMISSIONS } = deps;
 
-  app.get('/api/people', async (_req, res) => {
+  app.get('/api/people', async (req, res) => {
     try {
+      if (req.auth?.isScopedTeammate) {
+        // Teammates only see people from projects within their assigned scope.
+        const scopedIds = Array.isArray(req.auth.scopedProjectIds) ? req.auth.scopedProjectIds : [];
+        if (scopedIds.length === 0) {
+          return res.json([]);
+        }
+        const people = await peopleService.getPeopleByProjectIds(pool, scopedIds);
+        return res.json(people);
+      }
+
       const people = await peopleService.getPeople(pool);
       return res.json(people);
     } catch (error) {

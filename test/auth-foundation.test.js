@@ -57,3 +57,25 @@ test('GET /api/auth/me supports role override headers', async () => {
     server.close();
   }
 });
+
+
+test('GET /api/auth/me marks header teammate context as scoped teammate', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/me`, {
+      headers: {
+        'x-projectory-user-role': 'teammate',
+        'x-projectory-user-id': 'u-777'
+      }
+    });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.role, 'teammate');
+    assert.equal(body.isScopedTeammate, true);
+    assert.deepEqual(body.scopedProjectIds, []);
+  } finally {
+    server.close();
+  }
+});

@@ -122,6 +122,43 @@ function isScopedTeammate(auth) {
   return String(auth?.role || '').toLowerCase() === 'teammate';
 }
 
+function canAccessProjectById(auth, projectId) {
+  if (!isScopedTeammate(auth)) return true;
+  const normalizedProjectId = Number.parseInt(projectId, 10);
+  if (!Number.isInteger(normalizedProjectId) || normalizedProjectId <= 0) return false;
+  return (auth.scopedProjectIds || []).includes(normalizedProjectId);
+}
+
+async function getChallengeProjectId(challengeId) {
+  const result = await pool.query(
+    `SELECT project_id
+     FROM challenges
+     WHERE id = $1
+     LIMIT 1`,
+    [challengeId]
+  );
+
+  if (result.rowCount === 0) return null;
+  return Number(result.rows[0].project_id);
+}
+
+async function getAssignmentProjectContext(assignmentId) {
+  const result = await pool.query(
+    `SELECT id, project_id, person_id
+     FROM assignments
+     WHERE id = $1
+     LIMIT 1`,
+    [assignmentId]
+  );
+
+  if (result.rowCount === 0) return null;
+  return {
+    assignmentId: Number(result.rows[0].id),
+    projectId: Number(result.rows[0].project_id),
+    personId: Number(result.rows[0].person_id)
+  };
+}
+
 async function replaceUserProjectScope(userId, projectIds) {
   const normalized = [...new Set((projectIds || [])
     .map((id) => Number.parseInt(id, 10))
@@ -225,14 +262,18 @@ app.use(async (req, _res, next) => {
     } else {
       req.auth = {
         ...req.auth,
-        authSource: 'header'
+        authSource: 'header',
+        scopedProjectIds: [],
+        isScopedTeammate: isScopedTeammate(req.auth)
       };
     }
   } catch (_error) {
     // Keep app available even when auth storage is unavailable; header simulation remains fallback.
     req.auth = {
       ...req.auth,
-      authSource: 'header'
+      authSource: 'header',
+      scopedProjectIds: [],
+      isScopedTeammate: isScopedTeammate(req.auth)
     };
   }
 
@@ -1003,7 +1044,7 @@ registerModuleRoutes(app, {
 });
 
 // Legacy project/challenge/assignment endpoints (permission-gated).
-app.get('/api/projects', requirePermission(PERMISSIONS.PROJECTS_READ), async (_req, res) => {
+app.get('/api/projects', requirePermission(PERMISSIONS.PROJECTS_READ), async (req, res) => {
   try {
     const projects = await pool.query(
       `SELECT p.id, p.name, p.status, p.start_month, p.end_month, p.budget_cents,
@@ -1035,6 +1076,19 @@ app.get('/api/projects', requirePermission(PERMISSIONS.PROJECTS_READ), async (_r
        ORDER BY a.created_at DESC`
     );
 
+    if (isScopedTeammate(req.auth)) {
+      const scopedIds = new Set((req.auth.scopedProjectIds || []).map((id) => Number(id)));
+      const filteredProjects = projects.rows.filter((project) => scopedIds.has(Number(project.id)));
+      const filteredChallenges = challenges.rows.filter((challenge) => scopedIds.has(Number(challenge.project_id)));
+      const filteredAssignments = assignments.rows.filter((assignment) => scopedIds.has(Number(assignment.project_id)));
+
+      return res.json({
+        projects: filteredProjects,
+        challenges: filteredChallenges,
+        assignments: filteredAssignments
+      });
+    }
+
     res.json({
       projects: projects.rows,
       challenges: challenges.rows,
@@ -1046,6 +1100,11 @@ app.get('/api/projects', requirePermission(PERMISSIONS.PROJECTS_READ), async (_r
 });
 
 app.post('/api/projects', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  if (isScopedTeammate(req.auth)) {
+    // Teammates can maintain project teams, but cannot create/update/delete projects themselves.
+    return res.status(403).json({ error: 'Forbidden.' });
+  }
+
   const { clientId, name, status, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
 
   if (!clientId || !name || !startMonth || (budgetEuros === undefined && budgetCents === undefined)) {
@@ -1084,6 +1143,11 @@ app.post('/api/projects', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (
 });
 
 app.put('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  if (isScopedTeammate(req.auth)) {
+    // Teammates can maintain project teams, but cannot create/update/delete projects themselves.
+    return res.status(403).json({ error: 'Forbidden.' });
+  }
+
   const { clientId, name, status, startMonth, endMonth, budgetEuros, budgetCents } = req.body;
 
   if (!clientId || !name || !startMonth || (budgetEuros === undefined && budgetCents === undefined)) {
@@ -1126,6 +1190,11 @@ app.put('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), asyn
 });
 
 app.delete('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  if (isScopedTeammate(req.auth)) {
+    // Teammates can maintain project teams, but cannot create/update/delete projects themselves.
+    return res.status(403).json({ error: 'Forbidden.' });
+  }
+
   try {
     const result = await pool.query('DELETE FROM projects WHERE id = $1', [req.params.id]);
     if (result.rowCount === 0) {
@@ -1138,6 +1207,10 @@ app.delete('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), a
 });
 
 app.post('/api/projects/:projectId/challenges', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  if (!canAccessProjectById(req.auth, req.params.projectId)) {
+    return res.status(403).json({ error: 'Forbidden.' });
+  }
+
   const { title, description } = req.body;
   if (!title || !description) {
     return badRequest(res, 'title and description are required.');
@@ -1164,6 +1237,15 @@ app.put('/api/challenges/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), as
   }
 
   try {
+    const challengeProjectId = await getChallengeProjectId(req.params.id);
+    if (!challengeProjectId) {
+      return res.status(404).json({ error: 'Challenge not found.' });
+    }
+
+    if (!canAccessProjectById(req.auth, challengeProjectId)) {
+      return res.status(403).json({ error: 'Forbidden.' });
+    }
+
     const result = await pool.query(
       `UPDATE challenges
        SET title = $1, description = $2
@@ -1183,6 +1265,15 @@ app.put('/api/challenges/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), as
 
 app.delete('/api/challenges/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
   try {
+    const challengeProjectId = await getChallengeProjectId(req.params.id);
+    if (!challengeProjectId) {
+      return res.status(404).json({ error: 'Challenge not found.' });
+    }
+
+    if (!canAccessProjectById(req.auth, challengeProjectId)) {
+      return res.status(403).json({ error: 'Forbidden.' });
+    }
+
     const result = await pool.query('DELETE FROM challenges WHERE id = $1', [req.params.id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Challenge not found.' });
@@ -1202,6 +1293,10 @@ app.post('/api/assignments', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), a
 
   if (isOwner && isLeader) {
     return badRequest(res, 'Assignment cannot be both owner and leader.');
+  }
+
+  if (!canAccessProjectById(req.auth, projectId)) {
+    return res.status(403).json({ error: 'Forbidden.' });
   }
 
   const client = await pool.connect();
@@ -1268,6 +1363,15 @@ app.put('/api/assignments/:id', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE)
   }
 
   try {
+    const assignmentContext = await getAssignmentProjectContext(req.params.id);
+    if (!assignmentContext) {
+      return res.status(404).json({ error: 'Assignment not found.' });
+    }
+
+    if (!canAccessProjectById(req.auth, assignmentContext.projectId)) {
+      return res.status(403).json({ error: 'Forbidden.' });
+    }
+
     const result = await pool.query(
       `UPDATE assignments
        SET is_owner = $1, is_leader = $2
@@ -1291,6 +1395,15 @@ app.put('/api/projects/:projectId/people/:personId/quantity', requirePermission(
 
   if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100) {
     return badRequest(res, 'quantity must be an integer between 0 and 100.');
+  }
+
+  if (!canAccessProjectById(req.auth, req.params.projectId)) {
+    return res.status(403).json({ error: 'Forbidden.' });
+  }
+
+  if (isScopedTeammate(req.auth) && Number(req.auth.personId) !== Number(req.params.personId)) {
+    // Teammates can only edit workload quantities for themselves.
+    return res.status(403).json({ error: 'Forbidden.' });
   }
 
   const client = await pool.connect();
@@ -1337,6 +1450,11 @@ app.delete('/api/assignments/:id', requirePermission(PERMISSIONS.ASSIGNMENTS_WRI
 
     const personId = assignment.rows[0].person_id;
     const projectId = assignment.rows[0].project_id;
+
+    if (!canAccessProjectById(req.auth, projectId)) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Forbidden.' });
+    }
     const projectTotalBeforeDelete = await getPersonProjectTotalQuantity(personId, projectId, client);
 
     await client.query('DELETE FROM assignments WHERE id = $1', [req.params.id]);

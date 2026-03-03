@@ -30,6 +30,11 @@ async function getPeople(pool) {
   return result.rows;
 }
 
+async function getPeopleByProjectIds(pool, projectIds) {
+  const result = await peopleRepo.listPeopleByProjectIds(pool, projectIds);
+  return result.rows;
+}
+
 async function createPerson(pool, body, parseOptionalBoolean, parseWorkingHours) {
   const parsed = buildPersonInput(body, parseOptionalBoolean, parseWorkingHours);
   if (parsed.error) {
@@ -63,6 +68,7 @@ async function removePerson(pool, id) {
 
 module.exports = {
   getPeople,
+  getPeopleByProjectIds,
   createPerson,
   updatePerson,
   removePerson

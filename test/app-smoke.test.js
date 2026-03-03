@@ -19,6 +19,11 @@ const ADMIN_HEADERS = {
   'x-projectory-user-role': 'admin'
 };
 
+const TEAMMATE_HEADERS = {
+  'content-type': 'application/json',
+  'x-projectory-user-role': 'teammate'
+};
+
 test('app module exports app and startServer', () => {
   assert.equal(typeof app, 'function');
   assert.equal(typeof startServer, 'function');
@@ -432,6 +437,71 @@ test('PUT /api/admin/users/:id/project-access validates payload shape', async ()
     assert.equal(response.status, 400);
     const body = await response.json();
     assert.equal(body.error, 'projectIds must be an array.');
+  } finally {
+    server.close();
+  }
+});
+
+
+test('GET /api/projects returns empty scoped payload for teammate without assigned projects', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM projects p')) return { rows: [{ id: 1, name: 'P' }] };
+    if (sql.includes('FROM challenges ch')) return { rows: [{ id: 2, project_id: 1 }] };
+    if (sql.includes('FROM assignments a')) return { rows: [{ id: 3, project_id: 1 }] };
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/projects`, {
+      headers: TEAMMATE_HEADERS
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body, { projects: [], challenges: [], assignments: [] });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('POST /api/projects forbids teammate role', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/projects`, {
+      method: 'POST',
+      headers: TEAMMATE_HEADERS,
+      body: JSON.stringify({ clientId: 1, name: 'New', startMonth: '2026-01', budgetEuros: 1000 })
+    });
+
+    assert.equal(response.status, 403);
+  } finally {
+    server.close();
+  }
+});
+
+test('PUT /api/projects/:projectId/people/:personId/quantity forbids teammate editing other person workload', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/projects/1/people/99/quantity`, {
+      method: 'PUT',
+      headers: {
+        ...TEAMMATE_HEADERS,
+        'x-projectory-user-id': '5',
+        'x-projectory-user-name': 'Scoped Teammate'
+      },
+      body: JSON.stringify({ quantity: 50 })
+    });
+
+    assert.equal(response.status, 403);
   } finally {
     server.close();
   }
