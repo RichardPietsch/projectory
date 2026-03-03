@@ -326,6 +326,55 @@ test('GET /api/export allows viewer role', async () => {
 });
 
 
+
+
+test('GET /api/admin/users returns users for admin without requiring people.email column', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM users u')) {
+      return {
+        rowCount: 1,
+        rows: [{
+          id: 9,
+          email: 'admin@example.com',
+          display_name: 'Admin User',
+          is_active: true,
+          person_id: 12,
+          first_name: 'Ada',
+          last_name: 'Lovelace',
+          person_email: null,
+          roles: ['admin']
+        }]
+      };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users`, {
+      headers: ADMIN_HEADERS
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body, [{
+      id: 9,
+      email: 'admin@example.com',
+      displayName: 'Admin User',
+      isActive: true,
+      personId: 12,
+      personName: 'Ada Lovelace',
+      personEmail: null,
+      roles: ['admin']
+    }]);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
 test('POST /api/admin/users forbids viewer role', async () => {
   const server = app.listen(0);
   const port = server.address().port;

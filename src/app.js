@@ -886,13 +886,13 @@ app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (
               u.person_id,
               p.first_name,
               p.last_name,
-              p.email AS person_email,
+              NULL::text AS person_email,
               COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), ARRAY[]::text[]) AS roles
        FROM users u
        LEFT JOIN people p ON p.id = u.person_id
        LEFT JOIN user_roles ur ON ur.user_id = u.id
        LEFT JOIN roles r ON r.id = ur.role_id
-       GROUP BY u.id, u.email, u.display_name, u.is_active, u.person_id, p.first_name, p.last_name, p.email
+       GROUP BY u.id, u.email, u.display_name, u.is_active, u.person_id, p.first_name, p.last_name
        ORDER BY u.created_at DESC, u.id DESC`
     );
 
