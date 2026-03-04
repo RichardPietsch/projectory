@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const net = require('node:net');
 
 const { app, pool, startServer } = require('../src/app');
 const { buildPersonPayload, buildClientPayload, buildOnboardingProfilePayload } = require('../test-utils/builders');
@@ -445,6 +446,91 @@ test('PUT /api/admin/smtp-settings validates required fields when enabled', asyn
   }
 });
 
+
+
+test('POST /api/admin/smtp-settings/test-email sends mail with AUTH PLAIN when advertised by SMTP server', async () => {
+  const smtpServer = net.createServer((socket) => {
+    let dataMode = false;
+    let dataBuffer = '';
+
+    socket.write('220 localhost ESMTP\r\n');
+
+    socket.on('data', (chunk) => {
+      const text = chunk.toString('utf8');
+      if (dataMode) {
+        dataBuffer += text;
+        if (dataBuffer.includes('\r\n.\r\n')) {
+          dataMode = false;
+          dataBuffer = '';
+          socket.write('250 Message accepted\r\n');
+        }
+        return;
+      }
+
+      const commands = text.split('\r\n').filter(Boolean);
+      for (const command of commands) {
+        if (command.startsWith('EHLO')) {
+          socket.write('250-localhost\r\n250-AUTH PLAIN\r\n250 SIZE 35882577\r\n');
+        } else if (command.startsWith('AUTH PLAIN ')) {
+          socket.write('235 2.7.0 Authentication successful\r\n');
+        } else if (command.startsWith('MAIL FROM:')) {
+          socket.write('250 2.1.0 OK\r\n');
+        } else if (command.startsWith('RCPT TO:')) {
+          socket.write('250 2.1.5 OK\r\n');
+        } else if (command === 'DATA') {
+          dataMode = true;
+          socket.write('354 End data with <CR><LF>.<CR><LF>\r\n');
+        } else if (command === 'QUIT') {
+          socket.write('221 2.0.0 Bye\r\n');
+          socket.end();
+        } else {
+          socket.write('502 5.5.2 Command not recognized\r\n');
+        }
+      }
+    });
+  });
+
+  await new Promise((resolve) => smtpServer.listen(0, '127.0.0.1', resolve));
+  const smtpPort = smtpServer.address().port;
+
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM smtp_settings')) {
+      return {
+        rowCount: 1,
+        rows: [{
+          host: '127.0.0.1',
+          port: smtpPort,
+          username: 'mailer',
+          password: 'secret',
+          from_email: 'noreply@example.com',
+          secure: false,
+          enabled: true
+        }]
+      };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/smtp-settings/test-email`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ toEmail: 'qa@example.com' })
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body, { ok: true, toEmail: 'qa@example.com', dryRun: false });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    smtpServer.close();
+  }
+});
 
 test('POST /api/admin/smtp-settings/test-email validates and supports dry-run send', async () => {
   const originalQuery = pool.query;

@@ -244,6 +244,14 @@ function readSmtpResponse(socket, timeoutMs = 12000) {
   });
 }
 
+function parseSmtpCapabilities(message) {
+  return String(message || '')
+    .split('\r\n')
+    .map((line) => line.trim())
+    .filter((line) => /^250[\s-]/.test(line))
+    .map((line) => line.slice(4).trim().toUpperCase());
+}
+
 async function writeSmtpCommand(socket, command, expectedCodes) {
   socket.write(`${command}\r\n`);
   const response = await readSmtpResponse(socket);
@@ -251,6 +259,28 @@ async function writeSmtpCommand(socket, command, expectedCodes) {
     throw new Error(`SMTP command failed (${command.split(' ')[0]}): ${response.message}`);
   }
   return response;
+}
+
+async function authenticateSmtp(socket, capabilities, username, password) {
+  const authLine = capabilities.find((line) => line.startsWith('AUTH '));
+  const methods = authLine
+    ? authLine.replace(/^AUTH\s+/i, '').split(/\s+/).map((method) => method.trim().toUpperCase()).filter(Boolean)
+    : [];
+
+  if (methods.includes('PLAIN')) {
+    const plainToken = Buffer.from(`\u0000${username}\u0000${password}`).toString('base64');
+    await writeSmtpCommand(socket, `AUTH PLAIN ${plainToken}`, [235]);
+    return;
+  }
+
+  if (methods.includes('LOGIN') || methods.length === 0) {
+    await writeSmtpCommand(socket, 'AUTH LOGIN', [334]);
+    await writeSmtpCommand(socket, Buffer.from(String(username)).toString('base64'), [334]);
+    await writeSmtpCommand(socket, Buffer.from(String(password)).toString('base64'), [235]);
+    return;
+  }
+
+  throw new Error(`SMTP AUTH mechanism not supported by server (advertised: ${methods.join(', ')}).`);
 }
 
 async function sendSmtpTestEmail(config, toEmail) {
@@ -267,7 +297,7 @@ async function sendSmtpTestEmail(config, toEmail) {
     throw new Error('fromEmail and toEmail must be valid email addresses.');
   }
 
-  const connection = secure
+  let connection = secure
     ? tls.connect({ host, port, servername: host })
     : net.connect({ host, port });
 
@@ -290,12 +320,22 @@ async function sendSmtpTestEmail(config, toEmail) {
       throw new Error(`SMTP greeting failed: ${greeting.message}`);
     }
 
-    await writeSmtpCommand(connection, 'EHLO projectory.local', [250]);
+    let ehlo = await writeSmtpCommand(connection, 'EHLO projectory.local', [250]);
+    let capabilities = parseSmtpCapabilities(ehlo.message);
+
+    if (!secure && capabilities.includes('STARTTLS')) {
+      await writeSmtpCommand(connection, 'STARTTLS', [220]);
+      connection = tls.connect({ socket: connection, servername: host });
+      await new Promise((resolve, reject) => {
+        connection.once('secureConnect', resolve);
+        connection.once('error', reject);
+      });
+      ehlo = await writeSmtpCommand(connection, 'EHLO projectory.local', [250]);
+      capabilities = parseSmtpCapabilities(ehlo.message);
+    }
 
     if (config.username && config.password) {
-      await writeSmtpCommand(connection, 'AUTH LOGIN', [334]);
-      await writeSmtpCommand(connection, Buffer.from(String(config.username)).toString('base64'), [334]);
-      await writeSmtpCommand(connection, Buffer.from(String(config.password)).toString('base64'), [235]);
+      await authenticateSmtp(connection, capabilities, String(config.username), String(config.password));
     }
 
     await writeSmtpCommand(connection, `MAIL FROM:<${fromEmail}>`, [250]);
