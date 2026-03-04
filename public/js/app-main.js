@@ -686,16 +686,28 @@ function clientsView() {
 
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <h3 class="mb-3 text-lg font-semibold">SMTP Settings</h3>
-            <div class="grid gap-2 md:grid-cols-3">
-              <input id="smtp-host" class="rounded bg-slate-950 p-2 text-sm" placeholder="Host" value="${smtp.host || ''}" />
-              <input id="smtp-port" class="rounded bg-slate-950 p-2 text-sm" placeholder="Port" value="${smtp.port || ''}" />
-              <input id="smtp-user" class="rounded bg-slate-950 p-2 text-sm" placeholder="Username" value="${smtp.username || ''}" />
-              <input id="smtp-from" class="rounded bg-slate-950 p-2 text-sm md:col-span-2" placeholder="From email" value="${smtp.fromEmail || ''}" />
-              <input id="smtp-password" type="password" class="rounded bg-slate-950 p-2 text-sm" placeholder="${smtp.passwordSet ? 'Password set (enter to rotate)' : 'Password'}" />
-              <label class="inline-flex items-center gap-2 text-sm"><input id="smtp-enabled" type="checkbox" ${smtp.enabled ? 'checked' : ''} /> Enabled</label>
-              <label class="inline-flex items-center gap-2 text-sm"><input id="smtp-secure" type="checkbox" ${smtp.secure !== false ? 'checked' : ''} /> Secure</label>
+            <div class="grid gap-3 md:grid-cols-3">
+              <label class="text-xs text-slate-400">SMTP Host
+                <input id="smtp-host" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="smtp.example.com" value="${smtp.host || ''}" />
+              </label>
+              <label class="text-xs text-slate-400">SMTP Port
+                <input id="smtp-port" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="465" value="${smtp.port || ''}" />
+              </label>
+              <label class="text-xs text-slate-400">SMTP Username
+                <input id="smtp-user" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="mailer-user" value="${smtp.username || ''}" />
+              </label>
+              <label class="text-xs text-slate-400 md:col-span-2">From E-mail
+                <input id="smtp-from" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="noreply@example.com" value="${smtp.fromEmail || ''}" />
+              </label>
+              <label class="text-xs text-slate-400">SMTP Password
+                <input id="smtp-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${smtp.passwordSet ? 'Password set (enter to rotate)' : 'Password'}" />
+              </label>
+              <label class="inline-flex items-center gap-2 self-end text-sm"><input id="smtp-enabled" type="checkbox" ${smtp.enabled ? 'checked' : ''} /> Enabled</label>
+              <label class="inline-flex items-center gap-2 self-end text-sm"><input id="smtp-secure" type="checkbox" ${smtp.secure !== false ? 'checked' : ''} /> Secure (TLS)</label>
               <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="saveSmtpSettingsFromAccessTab()">Save SMTP</button>
-              <input id="smtp-test-to" class="rounded bg-slate-950 p-2 text-sm md:col-span-2" placeholder="Test recipient e-mail" value="${smtp.fromEmail || ''}" />
+              <label class="text-xs text-slate-400 md:col-span-2">Test recipient E-mail
+                <input id="smtp-test-to" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="qa@example.com" value="${smtp.fromEmail || ''}" />
+              </label>
               <button class="rounded border border-emerald-500/50 px-3 py-2 text-sm text-emerald-300 hover:bg-slate-800" onclick="sendSmtpTestMailFromAccessTab()">Send Test Mail</button>
             </div>
           </div>
