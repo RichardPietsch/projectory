@@ -670,16 +670,41 @@ function clientsView() {
         const userRows = (state.adminUsers || []).map((user) => `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td></tr>`).join('');
         const auditRows = (state.auditEntries || []).slice(0, 20).map((entry) => `<tr class="border-t border-slate-800"><td class="p-2 text-xs text-slate-300">${entry.created_at || ''}</td><td class="p-2 text-xs">${entry.action || ''}</td><td class="p-2 text-xs text-slate-300">${entry.actor_role || '—'}</td><td class="p-2 text-xs text-slate-300">${entry.entity_type || '—'} ${entry.entity_id || ''}</td></tr>`).join('');
         const smtp = state.smtpSettings || {};
+        const personOptions = (state.people || [])
+          .map((person) => ({
+            id: Number(person.id),
+            name: `${String(person.first_name || '').trim()} ${String(person.last_name || '').trim()}`.trim()
+          }))
+          .filter((person) => Number.isInteger(person.id) && person.id > 0 && person.name)
+          .sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id);
+        const personOptionsHtml = personOptions
+          .map((person) => `<option value="${person.name.replace(/"/g, '&quot;')}" label="ID: ${person.id}"></option>`)
+          .join('');
 
         return `<div class="space-y-4">
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <h3 class="mb-3 text-lg font-semibold">${i18n.t('admin.access.title')}</h3>
-            <div class="mb-3 grid gap-2 md:grid-cols-5">
-              <input id="access-user-name" class="rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.displayName')}" />
-              <input id="access-user-email" class="rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.email')}" />
-              <input id="access-user-role" class="rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.role')}" value="viewer" />
-              <input id="access-user-person-id" class="rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.personId')}" />
-              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="createAdminUserFromAccessTab()">${i18n.t('admin.access.actions.createUser')}</button>
+            <div class="mb-3 grid gap-3 md:grid-cols-5">
+              <label class="text-xs text-slate-400">${i18n.t('admin.access.fields.displayName')}
+                <input id="access-user-name" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.displayName')}" />
+              </label>
+              <label class="text-xs text-slate-400">${i18n.t('admin.access.fields.email')}
+                <input id="access-user-email" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.email')}" />
+              </label>
+              <label class="text-xs text-slate-400">${i18n.t('admin.access.fields.role')}
+                <select id="access-user-role" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm">
+                  <option value="viewer">${i18n.t('admin.access.roles.viewer')}</option>
+                  <option value="planner">${i18n.t('admin.access.roles.planner')}</option>
+                  <option value="teammate">${i18n.t('admin.access.roles.teammate')}</option>
+                  <option value="admin">${i18n.t('admin.access.roles.admin')}</option>
+                </select>
+              </label>
+              <label class="text-xs text-slate-400 md:col-span-2">${i18n.t('admin.access.fields.person')}
+                <input id="access-user-person" list="access-user-person-options" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.personPlaceholder')}" />
+                <datalist id="access-user-person-options">${personOptionsHtml}</datalist>
+                <span class="mt-1 block text-[11px] text-slate-500">${i18n.t('admin.access.fields.personHelp')}</span>
+              </label>
+              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800 md:col-start-5" onclick="createAdminUserFromAccessTab()">${i18n.t('admin.access.actions.createUser')}</button>
             </div>
             <div class="overflow-x-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.access.table.name')}</th><th class="p-2">${i18n.t('admin.access.table.email')}</th><th class="p-2">${i18n.t('admin.access.table.roles')}</th><th class="p-2">${i18n.t('admin.access.table.person')}</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-slate-400" colspan="4">${i18n.t('admin.access.table.empty')}</td></tr>`}</tbody></table></div>
           </div>
@@ -724,8 +749,27 @@ function clientsView() {
           const displayName = String(document.getElementById('access-user-name')?.value || '').trim();
           const email = String(document.getElementById('access-user-email')?.value || '').trim();
           const role = String(document.getElementById('access-user-role')?.value || 'viewer').trim().toLowerCase();
-          const personRaw = String(document.getElementById('access-user-person-id')?.value || '').trim();
-          const personId = personRaw ? Number(personRaw) : null;
+          const personRaw = String(document.getElementById('access-user-person')?.value || '').trim();
+
+          let personId = null;
+          if (personRaw) {
+            if (/^\d+$/.test(personRaw)) {
+              personId = Number(personRaw);
+            } else {
+              const normalized = personRaw.toLowerCase();
+              const matches = (state.people || []).filter((person) => {
+                const name = `${String(person.first_name || '').trim()} ${String(person.last_name || '').trim()}`.trim().toLowerCase();
+                return name === normalized;
+              });
+              if (matches.length === 1) {
+                personId = Number(matches[0].id);
+              } else {
+                showMessage(i18n.t('admin.access.messages.personNotFound'), 'error');
+                return;
+              }
+            }
+          }
+
           await api('/api/admin/users', { method: 'POST', body: JSON.stringify({ displayName, email, role, personId }) });
           await loadAdminAccessData();
           render();
