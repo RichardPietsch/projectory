@@ -295,8 +295,14 @@
 
         try {
           state.smtpSettings = await api('/api/admin/smtp-settings');
+          if (!state.smtpTestRecipient) {
+            state.smtpTestRecipient = String(state.smtpSettings?.fromEmail || '').trim();
+          }
         } catch (_error) {
           state.smtpSettings = { host: '', port: '', username: '', fromEmail: '', secure: true, enabled: false, passwordSet: false };
+          if (!state.smtpTestRecipient) {
+            state.smtpTestRecipient = '';
+          }
         }
 
         try {
@@ -731,7 +737,7 @@ function clientsView() {
               <label class="inline-flex items-center gap-2 self-end text-sm"><input id="smtp-secure" type="checkbox" ${smtp.secure !== false ? 'checked' : ''} /> ${i18n.t('admin.smtp.fields.secure')}</label>
               <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="saveSmtpSettingsFromAccessTab()">${i18n.t('admin.smtp.actions.save')}</button>
               <label class="text-xs text-slate-400 md:col-span-2">${i18n.t('admin.smtp.fields.testRecipient')}
-                <input id="smtp-test-to" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.testRecipient')}" value="${smtp.fromEmail || ''}" />
+                <input id="smtp-test-to" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.testRecipient')}" value="${state.smtpTestRecipient || smtp.fromEmail || ''}" />
               </label>
               <button class="rounded border border-emerald-500/50 px-3 py-2 text-sm text-emerald-300 hover:bg-slate-800" onclick="sendSmtpTestMailFromAccessTab()">${i18n.t('admin.smtp.actions.sendTest')}</button>
             </div>
@@ -781,6 +787,8 @@ function clientsView() {
 
       window.saveSmtpSettingsFromAccessTab = async function saveSmtpSettingsFromAccessTab() {
         try {
+          state.smtpTestRecipient = String(document.getElementById('smtp-test-to')?.value || '').trim();
+
           const payload = {
             host: String(document.getElementById('smtp-host')?.value || '').trim(),
             port: Number(document.getElementById('smtp-port')?.value || 0),
@@ -801,6 +809,7 @@ function clientsView() {
       window.sendSmtpTestMailFromAccessTab = async function sendSmtpTestMailFromAccessTab() {
         try {
           const toEmail = String(document.getElementById('smtp-test-to')?.value || '').trim();
+          state.smtpTestRecipient = toEmail;
           if (!toEmail) {
             showMessage(i18n.t('admin.smtp.messages.testRecipientRequired'), 'error');
             return;

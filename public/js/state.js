@@ -72,6 +72,7 @@
       configurationDraft: { trades: [], levels: [] },
       adminUsers: [],
       smtpSettings: { host: '', port: '', username: '', fromEmail: '', secure: true, enabled: false, passwordSet: false },
+      smtpTestRecipient: '',
       auditEntries: [],
       peopleOverviewSort: 'name_asc',
       peopleOverviewSearch: '',
