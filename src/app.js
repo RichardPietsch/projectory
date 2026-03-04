@@ -1114,6 +1114,43 @@ app.post('/api/auth/reset-password', async (req, res) => {
 });
 
 
+app.post('/api/auth/invite-preview', async (req, res) => {
+  const token = String(req.body?.token || '').trim();
+  if (!token) {
+    return badRequest(res, 'token is required.');
+  }
+
+  try {
+    const tokenHash = hashOpaqueToken(token);
+    const result = await pool.query(
+      `SELECT u.id AS user_id, u.email, u.display_name, ui.expires_at
+       FROM user_invites ui
+       JOIN users u ON u.id = ui.user_id
+       WHERE ui.token_hash = $1
+         AND ui.accepted_at IS NULL
+         AND ui.expires_at > NOW()
+       LIMIT 1`,
+      [tokenHash]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(400).json({ error: 'Invalid or expired invite token.' });
+    }
+
+    const invite = result.rows[0];
+    return res.json({
+      ok: true,
+      user: {
+        email: invite.email,
+        displayName: invite.display_name,
+        expiresAt: invite.expires_at
+      }
+    });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
 app.post('/api/auth/accept-invite', async (req, res) => {
   const token = String(req.body?.token || '').trim();
   const password = String(req.body?.password || '');
@@ -1165,8 +1202,10 @@ app.post('/api/auth/accept-invite', async (req, res) => {
       [inviteResult.rows[0].id]
     );
 
+    const userInfo = await client.query(`SELECT email, display_name FROM users WHERE id = $1 LIMIT 1`, [inviteResult.rows[0].user_id]);
+
     await client.query('COMMIT');
-    return res.json({ ok: true });
+    return res.json({ ok: true, email: userInfo.rows[0]?.email || null, displayName: userInfo.rows[0]?.display_name || null });
   } catch (error) {
     if (client) await client.query('ROLLBACK');
     return handleDbError(res, error);

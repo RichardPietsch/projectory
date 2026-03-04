@@ -76,7 +76,8 @@
       auditEntries: [],
       peopleOverviewSort: 'name_asc',
       peopleOverviewSearch: '',
-      peopleOverviewModal: { open: false, personId: null }
+      peopleOverviewModal: { open: false, personId: null },
+      inviteFlow: { active: false, token: '', loading: false, submitting: false, profile: null, error: '' }
     };
   }
 

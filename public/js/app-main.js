@@ -285,6 +285,82 @@
         </div>`;
       }
 
+
+      function inviteFlowView() {
+        const profile = state.inviteFlow.profile || {};
+        const title = profile.displayName ? `Welcome, ${profile.displayName}` : 'Welcome to Projectory';
+        const subtitle = profile.email ? `Set your password to activate ${profile.email}.` : 'Set your password to activate your account.';
+        const busyLabel = state.inviteFlow.submitting ? 'Setting password…' : 'Set password and continue';
+        const errorHtml = state.inviteFlow.error ? `<p class="mt-3 text-sm text-rose-300">${state.inviteFlow.error}</p>` : '';
+
+        return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
+          <h2 class="text-3xl font-bold">${title}</h2>
+          <p class="mt-2 text-slate-300">${subtitle}</p>
+          <p class="mt-1 text-xs text-slate-500">Invite token: ${state.inviteFlow.token ? 'loaded' : 'missing'}</p>
+          <form id="invite-activate-form" class="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <label class="mb-3 block text-sm text-slate-300">New password
+              <input id="invite-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
+            </label>
+            <label class="mb-3 block text-sm text-slate-300">Confirm password
+              <input id="invite-password-confirm" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
+            </label>
+            <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${state.inviteFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
+          </form>
+          ${errorHtml}
+        </div>`;
+      }
+
+      async function loadInviteFlow(token) {
+        state.inviteFlow.loading = true;
+        state.inviteFlow.error = '';
+        try {
+          const payload = await api('/api/auth/invite-preview', {
+            method: 'POST',
+            body: JSON.stringify({ token })
+          });
+          state.inviteFlow.profile = payload?.user || null;
+        } catch (error) {
+          state.inviteFlow.error = error.message || 'Invite could not be loaded.';
+          state.inviteFlow.profile = null;
+        } finally {
+          state.inviteFlow.loading = false;
+        }
+      }
+
+      window.submitInviteActivation = async function submitInviteActivation(event) {
+        event?.preventDefault();
+        const password = String(document.getElementById('invite-password')?.value || '');
+        const confirm = String(document.getElementById('invite-password-confirm')?.value || '');
+        if (!password || password !== confirm) {
+          state.inviteFlow.error = 'Passwords do not match.';
+          render();
+          return;
+        }
+
+        state.inviteFlow.submitting = true;
+        state.inviteFlow.error = '';
+        render();
+        try {
+          const result = await api('/api/auth/accept-invite', {
+            method: 'POST',
+            body: JSON.stringify({ token: state.inviteFlow.token, password })
+          });
+
+          state.inviteFlow.active = false;
+          state.inviteFlow.token = '';
+          state.inviteFlow.profile = null;
+          state.inviteFlow.submitting = false;
+          state.authRequired = true;
+          showMessage(`Password set for ${result?.email || 'your account'}. Please log in.`);
+          window.history.replaceState({}, '', '/teams');
+          render();
+        } catch (error) {
+          state.inviteFlow.submitting = false;
+          state.inviteFlow.error = error.message || 'Invite activation failed.';
+          render();
+        }
+      };
+
       async function loadAdminAccessData() {
         // Step 6: preload admin access-management data for a single cohesive tab.
         try {
@@ -2716,6 +2792,10 @@ function filteredPeople() {
           return { mode: 'app', homeTab: 'people-overview', projectId: '', personId: parts[1] };
         }
 
+        if (parts.length === 1 && parts[0] === 'invite') {
+          return { mode: 'invite' };
+        }
+
         if (parts.length === 1 && parts[0] === 'admin') {
           return { mode: 'admin', adminTab: state.adminTab || 'people' };
         }
@@ -2730,6 +2810,11 @@ function filteredPeople() {
       function applyAppRoute(pathname) {
         const route = parseAppRoute(pathname);
         if (!route) return false;
+
+        if (route.mode === 'invite') {
+          state.showAdmin = false;
+          return true;
+        }
 
         if (route.mode === 'admin') {
           if (!canAccessAdmin()) {
@@ -2769,6 +2854,10 @@ function filteredPeople() {
       }
 
       function pathFromState() {
+        if (state.inviteFlow?.active) {
+          return `/invite?token=${encodeURIComponent(state.inviteFlow.token || '')}`;
+        }
+
         if (state.showAdmin) {
           return state.adminTab === 'people' ? '/admin' : `/admin/${state.adminTab}`;
         }
@@ -2850,7 +2939,11 @@ function filteredPeople() {
         const logoutButton = document.getElementById('auth-logout');
         if (logoutButton) logoutButton.classList.toggle('hidden', needsLoginScreen() || state.auth?.authSource !== 'session');
 
-        if (needsLoginScreen()) {
+        if (state.inviteFlow?.active) {
+          state.showAdmin = false;
+          document.getElementById('view').innerHTML = inviteFlowView();
+          document.getElementById('invite-activate-form')?.addEventListener('submit', window.submitInviteActivation);
+        } else if (needsLoginScreen()) {
           state.showAdmin = false;
           document.getElementById('view').innerHTML = loginScreenView();
           document.getElementById('login-form')?.addEventListener('submit', window.loginFromSplash);
@@ -2899,7 +2992,13 @@ function filteredPeople() {
           bindAdminEntityModalActions();
           bindAdminUserModalActions();
 
-          if (!needsLoginScreen() && !applyAppRoute(window.location.pathname)) {
+          const params = new URLSearchParams(window.location.search || '');
+          const inviteToken = String(params.get('token') || '').trim();
+          if (window.location.pathname === '/invite') {
+            state.inviteFlow.active = true;
+            state.inviteFlow.token = inviteToken;
+            await loadInviteFlow(inviteToken);
+          } else if (!needsLoginScreen() && !applyAppRoute(window.location.pathname)) {
             state.homeTab = 'client-teams';
             state.selectedProjectId = '';
             state.peopleOverviewModal.open = false;
@@ -2910,6 +3009,14 @@ function filteredPeople() {
           }
 
           window.addEventListener('popstate', () => {
+            if (window.location.pathname === '/invite') {
+              const params = new URLSearchParams(window.location.search || '');
+              state.inviteFlow.active = true;
+              state.inviteFlow.token = String(params.get('token') || '').trim();
+              loadInviteFlow(state.inviteFlow.token).then(() => render());
+              return;
+            }
+            state.inviteFlow.active = false;
             if (!needsLoginScreen()) applyAppRoute(window.location.pathname);
             render();
           });

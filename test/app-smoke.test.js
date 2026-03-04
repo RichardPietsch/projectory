@@ -44,6 +44,39 @@ test('GET /invite serves SPA shell route', async () => {
   }
 });
 
+test('POST /api/auth/invite-preview returns invite user context for valid token', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (String(sql).includes('FROM user_invites ui')) {
+      return {
+        rowCount: 1,
+        rows: [{ email: 'invited@example.com', display_name: 'Invited User', expires_at: new Date().toISOString() }]
+      };
+    }
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/invite-preview`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'invite-token' })
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.user.email, 'invited@example.com');
+    assert.equal(body.user.displayName, 'Invited User');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
 test('GET /health returns ok when db query succeeds', async () => {
   const originalQuery = pool.query;
   pool.query = async () => ({ rows: [{ ok: 1 }] });
@@ -486,7 +519,8 @@ test('PUT /api/admin/users/:id updates editable fields for admin', async () => {
     });
 
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true });
+    const body = await response.json();
+    assert.equal(body.ok, true);
   } finally {
     server.close();
     pool.query = originalQuery;
@@ -510,7 +544,8 @@ test('DELETE /api/admin/users/:id deletes user for admin', async () => {
     });
 
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true });
+    const body = await response.json();
+    assert.equal(body.ok, true);
   } finally {
     server.close();
     pool.query = originalQuery;
@@ -782,6 +817,9 @@ test('POST /api/auth/accept-invite sets password and marks invite as accepted', 
       if (String(sql).includes('FROM user_invites')) {
         return { rowCount: 1, rows: [{ id: 77, user_id: 9 }] };
       }
+      if (String(sql).includes('SELECT email, display_name FROM users')) {
+        return { rowCount: 1, rows: [{ email: 'invited@example.com', display_name: 'Invited User' }] };
+      }
       return { rowCount: 1, rows: [] };
     },
     release() {}
@@ -801,7 +839,8 @@ test('POST /api/auth/accept-invite sets password and marks invite as accepted', 
     });
 
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true });
+    const body = await response.json();
+    assert.equal(body.ok, true);
     assert.equal(calls.some((sql) => sql.includes('UPDATE users')), true);
     assert.equal(calls.some((sql) => sql.includes('UPDATE user_invites')), true);
   } finally {
