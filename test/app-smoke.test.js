@@ -341,10 +341,15 @@ test('GET /api/admin/users returns users for admin without requiring people.emai
           display_name: 'Admin User',
           is_active: true,
           person_id: 12,
+          password_hash: null,
+          last_login_at: null,
           first_name: 'Ada',
           last_name: 'Lovelace',
           person_email: null,
-          roles: ['admin']
+          roles: ['admin'],
+          latest_invited_at: null,
+          latest_invite_expires_at: null,
+          latest_invite_accepted_at: null
         }]
       };
     }
@@ -369,7 +374,13 @@ test('GET /api/admin/users returns users for admin without requiring people.emai
       personId: 12,
       personName: 'Ada Lovelace',
       personEmail: null,
-      roles: ['admin']
+      roles: ['admin'],
+      status: 'provisioned',
+      hasPassword: false,
+      lastLoginAt: null,
+      latestInvitedAt: null,
+      latestInviteExpiresAt: null,
+      latestInviteAcceptedAt: null
     }]);
   } finally {
     server.close();
@@ -421,6 +432,102 @@ test('POST /api/admin/users creates user and assigns role for admin', async () =
     assert.equal(response.status, 201);
     const body = await response.json();
     assert.deepEqual(body, { id: 501 });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+
+test('PUT /api/admin/users/:id updates editable fields for admin', async () => {
+  const originalQuery = pool.query;
+  const originalConnect = pool.connect;
+
+  pool.query = async (sql) => {
+    if (sql.includes('FROM roles')) return { rowCount: 1, rows: [{ id: 2, name: 'planner' }] };
+    return { rowCount: 0, rows: [] };
+  };
+
+  const fakeClient = {
+    async query(sql) {
+      if (String(sql).includes('UPDATE users')) return { rowCount: 1, rows: [] };
+      if (String(sql).includes('DELETE FROM user_roles')) return { rowCount: 1, rows: [] };
+      if (String(sql).includes('INSERT INTO user_roles')) return { rowCount: 1, rows: [] };
+      return { rowCount: 1, rows: [] };
+    },
+    release() {}
+  };
+
+  pool.connect = async () => fakeClient;
+
+  const server = app.listen(0);
+  const port = server.address().port;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users/12`, {
+      method: 'PUT',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ email: 'updated@example.com', displayName: 'Updated Name', role: 'planner' })
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    pool.connect = originalConnect;
+  }
+});
+
+test('DELETE /api/admin/users/:id deletes user for admin', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('DELETE FROM users')) return { rowCount: 1, rows: [] };
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users/8`, {
+      method: 'DELETE',
+      headers: ADMIN_HEADERS
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('POST /api/admin/users/:id/invite requires smtp config before sending', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM users')) {
+      return { rowCount: 1, rows: [{ id: 5, email: 'invitee@example.com', is_active: true }] };
+    }
+    if (sql.includes('INSERT INTO user_invites')) {
+      return { rowCount: 1, rows: [{ id: 1, created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 3600_000).toISOString() }] };
+    }
+    if (sql.includes('FROM smtp_settings')) {
+      return { rowCount: 1, rows: [{ enabled: false }] };
+    }
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users/5/invite`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ expiresHours: 24 })
+    });
+
+    assert.equal(response.status, 409);
+    const body = await response.json();
+    assert.equal(body.error, 'SMTP is not configured. Configure SMTP settings before sending invites.');
   } finally {
     server.close();
     pool.query = originalQuery;
@@ -620,6 +727,47 @@ test('PUT /api/admin/users/:id/project-access validates payload shape', async ()
   }
 });
 
+
+
+test('POST /api/auth/accept-invite sets password and marks invite as accepted', async () => {
+  const originalConnect = pool.connect;
+  const originalQuery = pool.query;
+  const calls = [];
+
+  const fakeClient = {
+    async query(sql, params) {
+      calls.push(String(sql));
+      if (String(sql).includes('FROM user_invites')) {
+        return { rowCount: 1, rows: [{ id: 77, user_id: 9 }] };
+      }
+      return { rowCount: 1, rows: [] };
+    },
+    release() {}
+  };
+
+  pool.connect = async () => fakeClient;
+  pool.query = async () => ({ rowCount: 0, rows: [] });
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/accept-invite`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'invite-token', password: 'long-enough-password' })
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true });
+    assert.equal(calls.some((sql) => sql.includes('UPDATE users')), true);
+    assert.equal(calls.some((sql) => sql.includes('UPDATE user_invites')), true);
+  } finally {
+    server.close();
+    pool.connect = originalConnect;
+    pool.query = originalQuery;
+  }
+});
 
 test('GET /api/projects returns empty scoped payload for teammate without assigned projects', async () => {
   const originalQuery = pool.query;

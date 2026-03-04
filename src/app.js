@@ -310,7 +310,7 @@ async function authenticateSmtp(socket, capabilities, username, password) {
 }
 
 
-async function sendSmtpTestEmail(config, toEmail) {
+async function sendSmtpEmail(config, { toEmail, subject, textBody }) {
   const host = String(config.host || '').trim();
   const port = Number(config.port || 0);
   const secure = config.secure !== false;
@@ -369,7 +369,16 @@ async function sendSmtpTestEmail(config, toEmail) {
     await writeSmtpCommand(connection, `RCPT TO:<${String(toEmail).trim()}>`, [250, 251]);
     await writeSmtpCommand(connection, 'DATA', [354]);
 
-    const message = buildTestEmailMessage({ fromEmail, toEmail: String(toEmail).trim() });
+    const message = [
+      `From: ${fromEmail}`,
+      `To: ${String(toEmail).trim()}`,
+      `Subject: ${String(subject || 'Projectory notification')}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      String(textBody || '')
+    ].join('\r\n');
+
     connection.write(`${message}\r\n.\r\n`);
     const dataResponse = await readSmtpResponse(connection);
     if (dataResponse.code !== 250) {
@@ -381,6 +390,20 @@ async function sendSmtpTestEmail(config, toEmail) {
     connection.end();
   }
 }
+
+async function sendSmtpTestEmail(config, toEmail) {
+  const timestamp = new Date().toISOString();
+  return sendSmtpEmail(config, {
+    toEmail,
+    subject: 'Projectory SMTP test email',
+    textBody: [
+      `This is a test email sent by Projectory at ${timestamp}.`,
+      '',
+      'If you received this message, SMTP configuration is working.'
+    ].join('\n')
+  });
+}
+
 
 async function getRoleIdByName(roleName) {
   const normalized = sanitizeRoleInput(roleName);
@@ -398,9 +421,10 @@ async function getRoleIdByName(roleName) {
 async function createUserInvite(userId, invitedByUserId, expiresHours = 72) {
   const token = createOpaqueToken(32);
   const tokenHash = hashOpaqueToken(token);
-  await pool.query(
+  const inserted = await pool.query(
     `INSERT INTO user_invites (user_id, token_hash, expires_at, invited_by_user_id)
-     VALUES ($1, $2, NOW() + ($3::text || ' hours')::interval, $4)`,
+     VALUES ($1, $2, NOW() + ($3::text || ' hours')::interval, $4)
+     RETURNING id, expires_at, created_at`,
     [userId, tokenHash, String(expiresHours), invitedByUserId || null]
   );
 
@@ -408,9 +432,26 @@ async function createUserInvite(userId, invitedByUserId, expiresHours = 72) {
   const inviteLink = appBaseUrl ? `${appBaseUrl.replace(/\/$/, '')}/invite?token=${encodeURIComponent(token)}` : null;
 
   return {
+    id: inserted.rows[0]?.id || null,
     token,
-    inviteLink
+    inviteLink,
+    expiresAt: inserted.rows[0]?.expires_at || null,
+    createdAt: inserted.rows[0]?.created_at || null
   };
+}
+
+function buildInviteEmailBody({ inviteLink, recipientName, expiresHours }) {
+  const greetingName = String(recipientName || '').trim() || 'there';
+  return [
+    `Hi ${greetingName},`,
+    '',
+    'You have been invited to Projectory.',
+    `Use this link to activate your account and set your password: ${inviteLink}`,
+    '',
+    `This invite expires in ${expiresHours} hour(s).`,
+    '',
+    'If you were not expecting this invite, you can ignore this email.'
+  ].join('\n');
 }
 
 // Teammates are project-scoped; this helper keeps scope checks explicit.
@@ -1073,6 +1114,68 @@ app.post('/api/auth/reset-password', async (req, res) => {
 });
 
 
+app.post('/api/auth/accept-invite', async (req, res) => {
+  const token = String(req.body?.token || '').trim();
+  const password = String(req.body?.password || '');
+
+  if (!token || !password) {
+    return badRequest(res, 'token and password are required.');
+  }
+
+  const validationError = validatePasswordStrength(password);
+  if (validationError) {
+    return badRequest(res, validationError);
+  }
+
+  const tokenHash = hashOpaqueToken(token);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const inviteResult = await client.query(
+      `SELECT id, user_id
+       FROM user_invites
+       WHERE token_hash = $1
+         AND accepted_at IS NULL
+         AND expires_at > NOW()
+       LIMIT 1`,
+      [tokenHash]
+    );
+
+    if (inviteResult.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Invalid or expired invite token.' });
+    }
+
+    const passwordHash = await hashPassword(password);
+    await client.query(
+      `UPDATE users
+       SET password_hash = $1,
+           is_active = TRUE,
+           failed_login_count = 0,
+           locked_until = NULL
+       WHERE id = $2`,
+      [passwordHash, inviteResult.rows[0].user_id]
+    );
+
+    await client.query(
+      `UPDATE user_invites
+       SET accepted_at = NOW()
+       WHERE id = $1`,
+      [inviteResult.rows[0].id]
+    );
+
+    await client.query('COMMIT');
+    return res.json({ ok: true });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    return handleDbError(res, error);
+  } finally {
+    if (client) client.release();
+  }
+});
+
+
 app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
   try {
     const result = await pool.query(
@@ -1081,28 +1184,65 @@ app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (
               u.display_name,
               u.is_active,
               u.person_id,
+              u.password_hash,
+              u.last_login_at,
               p.first_name,
               p.last_name,
               NULL::text AS person_email,
-              COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), ARRAY[]::text[]) AS roles
+              COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), ARRAY[]::text[]) AS roles,
+              latest_invite.created_at AS latest_invited_at,
+              latest_invite.expires_at AS latest_invite_expires_at,
+              latest_invite.accepted_at AS latest_invite_accepted_at
        FROM users u
        LEFT JOIN people p ON p.id = u.person_id
        LEFT JOIN user_roles ur ON ur.user_id = u.id
        LEFT JOIN roles r ON r.id = ur.role_id
-       GROUP BY u.id, u.email, u.display_name, u.is_active, u.person_id, p.first_name, p.last_name
+       LEFT JOIN LATERAL (
+         SELECT created_at, expires_at, accepted_at
+         FROM user_invites ui
+         WHERE ui.user_id = u.id
+         ORDER BY ui.created_at DESC
+         LIMIT 1
+       ) latest_invite ON TRUE
+       GROUP BY u.id, u.email, u.display_name, u.is_active, u.person_id, u.password_hash, u.last_login_at,
+                p.first_name, p.last_name,
+                latest_invite.created_at, latest_invite.expires_at, latest_invite.accepted_at
        ORDER BY u.created_at DESC, u.id DESC`
     );
 
-    return res.json(result.rows.map((row) => ({
-      id: row.id,
-      email: row.email,
-      displayName: row.display_name,
-      isActive: row.is_active,
-      personId: row.person_id,
-      personName: row.person_id ? `${row.first_name || ''} ${row.last_name || ''}`.trim() : null,
-      personEmail: row.person_email || null,
-      roles: row.roles || []
-    })));
+    return res.json(result.rows.map((row) => {
+      const hasInvite = Boolean(row.latest_invited_at);
+      const inviteAccepted = Boolean(row.latest_invite_accepted_at);
+      const inviteExpired = hasInvite && !inviteAccepted && new Date(row.latest_invite_expires_at).getTime() <= Date.now();
+      const status = !row.is_active
+        ? 'inactive'
+        : inviteAccepted
+          ? 'active'
+          : inviteExpired
+            ? 'invite_expired'
+            : hasInvite
+              ? 'invited'
+              : row.password_hash
+                ? 'active'
+                : 'provisioned';
+
+      return {
+        id: row.id,
+        email: row.email,
+        displayName: row.display_name,
+        isActive: row.is_active,
+        personId: row.person_id,
+        personName: row.person_id ? `${row.first_name || ''} ${row.last_name || ''}`.trim() : null,
+        personEmail: row.person_email || null,
+        roles: row.roles || [],
+        status,
+        hasPassword: Boolean(row.password_hash),
+        lastLoginAt: row.last_login_at || null,
+        latestInvitedAt: row.latest_invited_at || null,
+        latestInviteExpiresAt: row.latest_invite_expires_at || null,
+        latestInviteAcceptedAt: row.latest_invite_accepted_at || null
+      };
+    }));
   } catch (error) {
     return handleDbError(res, error);
   }
@@ -1145,9 +1285,13 @@ app.post('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async 
 });
 
 app.put('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
-  const { displayName, role, personId, isActive } = req.body || {};
+  const { email, displayName, role, personId, isActive } = req.body || {};
   if (!displayName || !String(displayName).trim()) {
     return badRequest(res, 'displayName is required.');
+  }
+
+  if (!isValidEmail(email)) {
+    return badRequest(res, 'Valid email is required.');
   }
 
   let client = null;
@@ -1161,11 +1305,12 @@ app.put('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), asy
     await client.query('BEGIN');
     const updated = await client.query(
       `UPDATE users
-       SET display_name = $1,
-           person_id = $2,
-           is_active = $3
-       WHERE id = $4`,
-      [String(displayName).trim(), personId || null, isActive !== false, req.params.id]
+       SET email = $1,
+           display_name = $2,
+           person_id = $3,
+           is_active = $4
+       WHERE id = $5`,
+      [String(email).trim().toLowerCase(), String(displayName).trim(), personId || null, isActive !== false, req.params.id]
     );
 
     if (updated.rowCount === 0) {
@@ -1188,6 +1333,23 @@ app.put('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), asy
     return handleDbError(res, error);
   } finally {
     if (client) client.release();
+  }
+});
+
+app.delete('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  try {
+    if (req.auth?.userId && Number(req.params.id) === Number(req.auth.userId)) {
+      return res.status(409).json({ error: 'You cannot delete your own account.' });
+    }
+
+    const deleted = await pool.query(`DELETE FROM users WHERE id = $1`, [req.params.id]);
+    if (deleted.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    return handleDbError(res, error);
   }
 });
 
@@ -1216,10 +1378,34 @@ app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCE
 
     const invite = await createUserInvite(userResult.rows[0].id, req.auth.userId, expiresHours);
 
-    // SMTP delivery will be wired in a follow-up iteration; this endpoint already persists invite state.
+    const smtpResult = await pool.query(
+      `SELECT host, port, username, password, from_email, secure, enabled
+       FROM smtp_settings
+       WHERE id = 1`
+    );
+    const smtp = smtpResult.rows[0] || null;
+
+    if (!smtp || !smtp.enabled || !smtp.host || !smtp.port || !smtp.from_email) {
+      return res.status(409).json({ error: 'SMTP is not configured. Configure SMTP settings before sending invites.' });
+    }
+
+    if (!invite.inviteLink) {
+      return res.status(400).json({ error: 'APP_BASE_URL must be configured to generate invite links.' });
+    }
+
+    await sendSmtpEmail(smtp, {
+      toEmail: String(userResult.rows[0].email || '').trim(),
+      subject: 'Projectory account invitation',
+      textBody: buildInviteEmailBody({
+        inviteLink: invite.inviteLink,
+        recipientName: userResult.rows[0].email,
+        expiresHours
+      })
+    });
+
     return res.json({
       ok: true,
-      deliveryStatus: 'queued',
+      deliveryStatus: 'sent',
       inviteLink: process.env.AUTH_RETURN_DEBUG_TOKENS === 'true' ? invite.inviteLink : undefined,
       inviteToken: process.env.AUTH_RETURN_DEBUG_TOKENS === 'true' ? invite.token : undefined
     });

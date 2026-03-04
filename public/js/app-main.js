@@ -673,7 +673,11 @@ function clientsView() {
       window.removeConfigurationItem = removeConfigurationItem;
 
       function accessManagementView() {
-        const userRows = (state.adminUsers || []).map((user) => `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td></tr>`).join('');
+        const userRows = (state.adminUsers || []).map((user) => {
+          const statusLabel = String(user.status || 'unknown').replace(/_/g, ' ');
+          const inviteMeta = user.latestInvitedAt ? `<div class="text-[11px] text-slate-500">Invited: ${user.latestInvitedAt}</div>` : '';
+          return `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td><td class="p-2 text-slate-300"><div class="capitalize">${statusLabel}</div>${inviteMeta}</td><td class="p-2 text-right"><div class="flex flex-wrap justify-end gap-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" onclick="updateAdminUserFromAccessTab(${Number(user.id)})">Edit</button><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="inviteAdminUserFromAccessTab(${Number(user.id)})">Invite</button><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800" onclick="deleteAdminUserFromAccessTab(${Number(user.id)})">Delete</button></div></td></tr>`;
+        }).join('');
         const auditRows = (state.auditEntries || []).slice(0, 20).map((entry) => `<tr class="border-t border-slate-800"><td class="p-2 text-xs text-slate-300">${entry.created_at || ''}</td><td class="p-2 text-xs">${entry.action || ''}</td><td class="p-2 text-xs text-slate-300">${entry.actor_role || '—'}</td><td class="p-2 text-xs text-slate-300">${entry.entity_type || '—'} ${entry.entity_id || ''}</td></tr>`).join('');
         const smtp = state.smtpSettings || {};
         const personOptions = (state.people || [])
@@ -712,7 +716,7 @@ function clientsView() {
               </label>
               <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800 md:col-start-5" onclick="createAdminUserFromAccessTab()">${i18n.t('admin.access.actions.createUser')}</button>
             </div>
-            <div class="overflow-x-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.access.table.name')}</th><th class="p-2">${i18n.t('admin.access.table.email')}</th><th class="p-2">${i18n.t('admin.access.table.roles')}</th><th class="p-2">${i18n.t('admin.access.table.person')}</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-slate-400" colspan="4">${i18n.t('admin.access.table.empty')}</td></tr>`}</tbody></table></div>
+            <div class="overflow-x-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.access.table.name')}</th><th class="p-2">${i18n.t('admin.access.table.email')}</th><th class="p-2">${i18n.t('admin.access.table.roles')}</th><th class="p-2">${i18n.t('admin.access.table.person')}</th><th class="p-2">Status</th><th class="p-2 text-right">Actions</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-slate-400" colspan="6">${i18n.t('admin.access.table.empty')}</td></tr>`}</tbody></table></div>
           </div>
 
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
@@ -780,6 +784,69 @@ function clientsView() {
           await loadAdminAccessData();
           render();
           showMessage(i18n.t('admin.access.messages.userCreated'));
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+
+      window.updateAdminUserFromAccessTab = async function updateAdminUserFromAccessTab(userId) {
+        try {
+          const user = (state.adminUsers || []).find((entry) => Number(entry.id) === Number(userId));
+          if (!user) {
+            showMessage('User not found.', 'error');
+            return;
+          }
+
+          const displayName = String(window.prompt('Display name', user.displayName || '') || '').trim();
+          if (!displayName) return;
+          const email = String(window.prompt('Email', user.email || '') || '').trim();
+          if (!email) return;
+          const roleInput = String(window.prompt('Role (viewer, planner, teammate, admin)', (user.roles || [])[0] || 'viewer') || '').trim().toLowerCase();
+          if (!roleInput) return;
+
+          await api(`/api/admin/users/${Number(userId)}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              displayName,
+              email,
+              role: roleInput,
+              personId: user.personId || null,
+              isActive: user.isActive !== false
+            })
+          });
+          await loadAdminAccessData();
+          render();
+          showMessage('User updated.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+      window.deleteAdminUserFromAccessTab = async function deleteAdminUserFromAccessTab(userId) {
+        try {
+          const user = (state.adminUsers || []).find((entry) => Number(entry.id) === Number(userId));
+          if (!user) return;
+          if (!window.confirm(`Delete user ${user.displayName} (${user.email})?`)) return;
+
+          await api(`/api/admin/users/${Number(userId)}`, { method: 'DELETE' });
+          await loadAdminAccessData();
+          render();
+          showMessage('User deleted.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+      window.inviteAdminUserFromAccessTab = async function inviteAdminUserFromAccessTab(userId) {
+        try {
+          await api(`/api/admin/users/${Number(userId)}/invite`, {
+            method: 'POST',
+            body: JSON.stringify({ expiresHours: 72 })
+          });
+          await loadAdminAccessData();
+          render();
+          showMessage('Invite sent.');
         } catch (error) {
           showMessage(error.message, 'error');
         }
