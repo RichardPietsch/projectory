@@ -448,7 +448,9 @@ test('PUT /api/admin/smtp-settings validates required fields when enabled', asyn
 
 
 
-test('POST /api/admin/smtp-settings/test-email sends mail with AUTH PLAIN when advertised by SMTP server', async () => {
+test('POST /api/admin/smtp-settings/test-email uses test recipient and supports AUTH=PLAIN capability format', async () => {
+  let rcptToCommand = null;
+
   const smtpServer = net.createServer((socket) => {
     let dataMode = false;
     let dataBuffer = '';
@@ -470,12 +472,13 @@ test('POST /api/admin/smtp-settings/test-email sends mail with AUTH PLAIN when a
       const commands = text.split('\r\n').filter(Boolean);
       for (const command of commands) {
         if (command.startsWith('EHLO')) {
-          socket.write('250-localhost\r\n250-AUTH PLAIN\r\n250 SIZE 35882577\r\n');
+          socket.write('250-localhost\r\n250 AUTH=PLAIN\r\n');
         } else if (command.startsWith('AUTH PLAIN ')) {
           socket.write('235 2.7.0 Authentication successful\r\n');
         } else if (command.startsWith('MAIL FROM:')) {
           socket.write('250 2.1.0 OK\r\n');
         } else if (command.startsWith('RCPT TO:')) {
+          rcptToCommand = command;
           socket.write('250 2.1.5 OK\r\n');
         } else if (command === 'DATA') {
           dataMode = true;
@@ -525,6 +528,7 @@ test('POST /api/admin/smtp-settings/test-email sends mail with AUTH PLAIN when a
     assert.equal(response.status, 200);
     const body = await response.json();
     assert.deepEqual(body, { ok: true, toEmail: 'qa@example.com', dryRun: false });
+    assert.equal(rcptToCommand, 'RCPT TO:<qa@example.com>');
   } finally {
     server.close();
     pool.query = originalQuery;

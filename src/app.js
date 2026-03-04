@@ -261,14 +261,40 @@ async function writeSmtpCommand(socket, command, expectedCodes) {
   return response;
 }
 
+function getSmtpAuthMethods(capabilities) {
+  const methods = new Set();
+
+  for (const capability of capabilities || []) {
+    const normalized = String(capability || '').trim().toUpperCase();
+
+    if (normalized.startsWith('AUTH=')) {
+      normalized
+        .slice('AUTH='.length)
+        .split(/\s+/)
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .forEach((method) => methods.add(method));
+      continue;
+    }
+
+    if (normalized.startsWith('AUTH ')) {
+      normalized
+        .slice('AUTH '.length)
+        .split(/\s+/)
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .forEach((method) => methods.add(method));
+    }
+  }
+
+  return Array.from(methods);
+}
+
 async function authenticateSmtp(socket, capabilities, username, password) {
-  const authLine = capabilities.find((line) => line.startsWith('AUTH '));
-  const methods = authLine
-    ? authLine.replace(/^AUTH\s+/i, '').split(/\s+/).map((method) => method.trim().toUpperCase()).filter(Boolean)
-    : [];
+  const methods = getSmtpAuthMethods(capabilities);
 
   if (methods.includes('PLAIN')) {
-    const plainToken = Buffer.from(`\u0000${username}\u0000${password}`).toString('base64');
+    const plainToken = Buffer.from(`${String.fromCharCode(0)}${username}${String.fromCharCode(0)}${password}`).toString('base64');
     await writeSmtpCommand(socket, `AUTH PLAIN ${plainToken}`, [235]);
     return;
   }
@@ -282,6 +308,7 @@ async function authenticateSmtp(socket, capabilities, username, password) {
 
   throw new Error(`SMTP AUTH mechanism not supported by server (advertised: ${methods.join(', ')}).`);
 }
+
 
 async function sendSmtpTestEmail(config, toEmail) {
   const host = String(config.host || '').trim();
@@ -1330,7 +1357,15 @@ app.post('/api/admin/smtp-settings/test-email', requirePermission(PERMISSIONS.AD
 
     return res.json({ ok: true, toEmail, dryRun });
   } catch (error) {
-    return res.status(502).json({ error: `SMTP test failed: ${error.message}` });
+    const reason = String(error?.message || 'Unknown SMTP failure');
+    const hint = /AUTH|535|5\.7\./i.test(reason)
+      ? 'Check SMTP auth mode/app password and whether the provider requires OAuth/app-specific passwords.'
+      : /STARTTLS|TLS|SSL|certificate|alert/i.test(reason)
+        ? 'Check secure setting vs port (465 implicit TLS, 587 STARTTLS) and certificate trust.'
+        : /RCPT TO|550|553|recipient/i.test(reason)
+          ? 'Verify the test recipient address is accepted by the SMTP provider.'
+          : 'Check host/port reachability and provider restrictions.';
+    return res.status(502).json({ error: `SMTP test failed: ${reason}`, hint });
   }
 });
 
