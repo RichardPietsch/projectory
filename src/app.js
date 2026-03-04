@@ -428,8 +428,8 @@ async function createUserInvite(userId, invitedByUserId, expiresHours = 72) {
     [userId, tokenHash, String(expiresHours), invitedByUserId || null]
   );
 
-  const appBaseUrl = String(process.env.APP_BASE_URL || '').trim();
-  const inviteLink = appBaseUrl ? `${appBaseUrl.replace(/\/$/, '')}/invite?token=${encodeURIComponent(token)}` : null;
+  const appBaseUrl = String(process.env.APP_BASE_URL || 'https://localhost:3000/').trim();
+  const inviteLink = `${appBaseUrl.replace(/\/$/, '')}/invite?token=${encodeURIComponent(token)}`;
 
   return {
     id: inserted.rows[0]?.id || null,
@@ -1392,9 +1392,6 @@ app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCE
       return res.status(409).json({ error: 'SMTP is not configured. Configure SMTP settings before sending invites.' });
     }
 
-    if (!invite.inviteLink) {
-      return res.status(400).json({ error: 'APP_BASE_URL must be configured to generate invite links.', hint: 'Set APP_BASE_URL as an environment variable in your deployment configuration (e.g. Helm values/Kubernetes YAML, Docker compose env, or .env).' });
-    }
 
     await sendSmtpEmail(smtp, {
       toEmail: String(userResult.rows[0].email || '').trim(),
