@@ -1190,6 +1190,7 @@ app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (
               p.last_name,
               NULL::text AS person_email,
               COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), ARRAY[]::text[]) AS roles,
+              latest_invite.id AS latest_invite_id,
               latest_invite.created_at AS latest_invited_at,
               latest_invite.expires_at AS latest_invite_expires_at,
               latest_invite.accepted_at AS latest_invite_accepted_at
@@ -1198,7 +1199,7 @@ app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (
        LEFT JOIN user_roles ur ON ur.user_id = u.id
        LEFT JOIN roles r ON r.id = ur.role_id
        LEFT JOIN LATERAL (
-         SELECT created_at, expires_at, accepted_at
+         SELECT id, created_at, expires_at, accepted_at
          FROM user_invites ui
          WHERE ui.user_id = u.id
          ORDER BY ui.created_at DESC
@@ -1206,7 +1207,7 @@ app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (
        ) latest_invite ON TRUE
        GROUP BY u.id, u.email, u.display_name, u.is_active, u.person_id, u.password_hash, u.last_login_at,
                 p.first_name, p.last_name,
-                latest_invite.created_at, latest_invite.expires_at, latest_invite.accepted_at
+                latest_invite.id, latest_invite.created_at, latest_invite.expires_at, latest_invite.accepted_at
        ORDER BY u.created_at DESC, u.id DESC`
     );
 
@@ -1240,7 +1241,9 @@ app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (
         lastLoginAt: row.last_login_at || null,
         latestInvitedAt: row.latest_invited_at || null,
         latestInviteExpiresAt: row.latest_invite_expires_at || null,
-        latestInviteAcceptedAt: row.latest_invite_accepted_at || null
+        latestInviteAcceptedAt: row.latest_invite_accepted_at || null,
+        latestInviteId: row.latest_invite_id || null,
+        canRevokeInvite: status === 'invited'
       };
     }));
   } catch (error) {
@@ -1390,7 +1393,7 @@ app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCE
     }
 
     if (!invite.inviteLink) {
-      return res.status(400).json({ error: 'APP_BASE_URL must be configured to generate invite links.' });
+      return res.status(400).json({ error: 'APP_BASE_URL must be configured to generate invite links.', hint: 'Set APP_BASE_URL as an environment variable in your deployment configuration (e.g. Helm values/Kubernetes YAML, Docker compose env, or .env).' });
     }
 
     await sendSmtpEmail(smtp, {
@@ -1409,6 +1412,28 @@ app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCE
       inviteLink: process.env.AUTH_RETURN_DEBUG_TOKENS === 'true' ? invite.inviteLink : undefined,
       inviteToken: process.env.AUTH_RETURN_DEBUG_TOKENS === 'true' ? invite.token : undefined
     });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+
+app.post('/api/admin/users/:id/invite/revoke', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+  try {
+    const revoked = await pool.query(
+      `UPDATE user_invites
+       SET expires_at = NOW()
+       WHERE user_id = $1
+         AND accepted_at IS NULL
+         AND expires_at > NOW()`,
+      [req.params.id]
+    );
+
+    if (revoked.rowCount === 0) {
+      return res.status(404).json({ error: 'No active invite to revoke for this user.' });
+    }
+
+    return res.json({ ok: true, revoked: revoked.rowCount });
   } catch (error) {
     return handleDbError(res, error);
   }

@@ -676,7 +676,8 @@ function clientsView() {
         const userRows = (state.adminUsers || []).map((user) => {
           const statusLabel = String(user.status || 'unknown').replace(/_/g, ' ');
           const inviteMeta = user.latestInvitedAt ? `<div class="text-[11px] text-slate-500">Invited: ${user.latestInvitedAt}</div>` : '';
-          return `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td><td class="p-2 text-slate-300"><div class="capitalize">${statusLabel}</div>${inviteMeta}</td><td class="p-2 text-right"><div class="flex flex-wrap justify-end gap-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" onclick="updateAdminUserFromAccessTab(${Number(user.id)})">Edit</button><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="inviteAdminUserFromAccessTab(${Number(user.id)})">Invite</button><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800" onclick="deleteAdminUserFromAccessTab(${Number(user.id)})">Delete</button></div></td></tr>`;
+          const revokeButton = user.canRevokeInvite ? `<button class="rounded border border-amber-500/50 px-2 py-1 text-xs text-amber-300 hover:bg-slate-800" onclick="revokeInviteFromAccessTab(${Number(user.id)})">Revoke Invite</button>` : '';
+          return `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td><td class="p-2 text-slate-300"><div class="capitalize">${statusLabel}</div>${inviteMeta}</td><td class="p-2 text-right"><div class="flex flex-wrap justify-end gap-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" onclick="openAdminUserEditModal(${Number(user.id)})">Edit</button><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="inviteAdminUserFromAccessTab(${Number(user.id)})">Invite</button>${revokeButton}<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800" onclick="deleteAdminUserFromAccessTab(${Number(user.id)})">Delete</button></div></td></tr>`;
         }).join('');
         const auditRows = (state.auditEntries || []).slice(0, 20).map((entry) => `<tr class="border-t border-slate-800"><td class="p-2 text-xs text-slate-300">${entry.created_at || ''}</td><td class="p-2 text-xs">${entry.action || ''}</td><td class="p-2 text-xs text-slate-300">${entry.actor_role || '—'}</td><td class="p-2 text-xs text-slate-300">${entry.entity_type || '—'} ${entry.entity_id || ''}</td></tr>`).join('');
         const smtp = state.smtpSettings || {};
@@ -688,7 +689,7 @@ function clientsView() {
           .filter((person) => Number.isInteger(person.id) && person.id > 0 && person.name)
           .sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id);
         const personOptionsHtml = personOptions
-          .map((person) => `<option value="${person.name.replace(/"/g, '&quot;')}" label="ID: ${person.id}"></option>`)
+          .map((person) => `<option value="${person.name.replace(/"/g, '&quot;')}"></option>`)
           .join('');
 
         return `<div class="space-y-4">
@@ -790,38 +791,78 @@ function clientsView() {
       };
 
 
-      window.updateAdminUserFromAccessTab = async function updateAdminUserFromAccessTab(userId) {
+      window.openAdminUserEditModal = function openAdminUserEditModal(userId) {
+        const user = (state.adminUsers || []).find((entry) => Number(entry.id) === Number(userId));
+        const modal = document.getElementById('admin-user-modal');
+        if (!user || !modal) {
+          showMessage('User not found.', 'error');
+          return;
+        }
+
+        const personSelect = document.getElementById('admin-user-edit-person');
+        if (personSelect) {
+          const options = (state.people || [])
+            .map((person) => ({
+              id: Number(person.id),
+              name: `${String(person.first_name || '').trim()} ${String(person.last_name || '').trim()}`.trim()
+            }))
+            .filter((person) => Number.isInteger(person.id) && person.id > 0 && person.name)
+            .sort((a, b) => a.name.localeCompare(b.name));
+          personSelect.innerHTML = `<option value="">Unlinked</option>${options.map((person) => `<option value="${person.id}">${person.name}</option>`).join('')}`;
+        }
+
+        document.getElementById('admin-user-edit-id').value = String(user.id);
+        document.getElementById('admin-user-edit-name').value = String(user.displayName || '');
+        document.getElementById('admin-user-edit-email').value = String(user.email || '');
+        document.getElementById('admin-user-edit-role').value = String((user.roles || [])[0] || 'viewer').toLowerCase();
+        document.getElementById('admin-user-edit-person').value = user.personId ? String(user.personId) : '';
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+
+      window.closeAdminUserEditModal = function closeAdminUserEditModal() {
+        const modal = document.getElementById('admin-user-modal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      };
+
+      window.updateAdminUserFromAccessTab = async function updateAdminUserFromAccessTab(event) {
+        event?.preventDefault();
         try {
-          const user = (state.adminUsers || []).find((entry) => Number(entry.id) === Number(userId));
-          if (!user) {
-            showMessage('User not found.', 'error');
-            return;
-          }
+          const id = Number(document.getElementById('admin-user-edit-id')?.value || 0);
+          const displayName = String(document.getElementById('admin-user-edit-name')?.value || '').trim();
+          const email = String(document.getElementById('admin-user-edit-email')?.value || '').trim();
+          const roleInput = String(document.getElementById('admin-user-edit-role')?.value || 'viewer').trim().toLowerCase();
+          const personValue = String(document.getElementById('admin-user-edit-person')?.value || '').trim();
 
-          const displayName = String(window.prompt('Display name', user.displayName || '') || '').trim();
-          if (!displayName) return;
-          const email = String(window.prompt('Email', user.email || '') || '').trim();
-          if (!email) return;
-          const roleInput = String(window.prompt('Role (viewer, planner, teammate, admin)', (user.roles || [])[0] || 'viewer') || '').trim().toLowerCase();
-          if (!roleInput) return;
-
-          await api(`/api/admin/users/${Number(userId)}`, {
+          await api(`/api/admin/users/${id}`, {
             method: 'PUT',
             body: JSON.stringify({
               displayName,
               email,
               role: roleInput,
-              personId: user.personId || null,
-              isActive: user.isActive !== false
+              personId: personValue ? Number(personValue) : null,
+              isActive: true
             })
           });
+
           await loadAdminAccessData();
+          closeAdminUserEditModal();
           render();
           showMessage('User updated.');
         } catch (error) {
           showMessage(error.message, 'error');
         }
       };
+
+      function bindAdminUserModalActions() {
+        document.getElementById('admin-user-modal-close')?.addEventListener('click', window.closeAdminUserEditModal);
+        document.getElementById('admin-user-modal-cancel')?.addEventListener('click', window.closeAdminUserEditModal);
+        document.getElementById('admin-user-edit-form')?.addEventListener('submit', window.updateAdminUserFromAccessTab);
+      }
+
 
       window.deleteAdminUserFromAccessTab = async function deleteAdminUserFromAccessTab(userId) {
         try {
@@ -847,6 +888,19 @@ function clientsView() {
           await loadAdminAccessData();
           render();
           showMessage('Invite sent.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      };
+
+
+
+      window.revokeInviteFromAccessTab = async function revokeInviteFromAccessTab(userId) {
+        try {
+          await api(`/api/admin/users/${Number(userId)}/invite/revoke`, { method: 'POST' });
+          await loadAdminAccessData();
+          render();
+          showMessage('Invite revoked.');
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -2843,6 +2897,7 @@ function filteredPeople() {
           bindProjectStatusModalActions();
           bindPeopleOverviewModalActions();
           bindAdminEntityModalActions();
+          bindAdminUserModalActions();
 
           if (!needsLoginScreen() && !applyAppRoute(window.location.pathname)) {
             state.homeTab = 'client-teams';

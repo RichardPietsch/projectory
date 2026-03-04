@@ -380,7 +380,9 @@ test('GET /api/admin/users returns users for admin without requiring people.emai
       lastLoginAt: null,
       latestInvitedAt: null,
       latestInviteExpiresAt: null,
-      latestInviteAcceptedAt: null
+      latestInviteAcceptedAt: null,
+      latestInviteId: null,
+      canRevokeInvite: false
     }]);
   } finally {
     server.close();
@@ -528,6 +530,32 @@ test('POST /api/admin/users/:id/invite requires smtp config before sending', asy
     assert.equal(response.status, 409);
     const body = await response.json();
     assert.equal(body.error, 'SMTP is not configured. Configure SMTP settings before sending invites.');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+
+test('POST /api/admin/users/:id/invite/revoke expires active invites', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('UPDATE user_invites')) {
+      return { rowCount: 1, rows: [] };
+    }
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users/5/invite/revoke`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, revoked: 1 });
   } finally {
     server.close();
     pool.query = originalQuery;
