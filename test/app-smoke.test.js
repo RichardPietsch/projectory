@@ -30,6 +30,20 @@ test('app module exports app and startServer', () => {
   assert.equal(typeof startServer, 'function');
 });
 
+test('GET /invite serves SPA shell route', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/invite`);
+    assert.equal(response.status, 200);
+    const text = await response.text();
+    assert.equal(/<html[\s>]/i.test(text), true);
+  } finally {
+    server.close();
+  }
+});
+
 test('GET /health returns ok when db query succeeds', async () => {
   const originalQuery = pool.query;
   pool.query = async () => ({ rows: [{ ok: 1 }] });

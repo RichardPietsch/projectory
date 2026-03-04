@@ -428,7 +428,7 @@ async function createUserInvite(userId, invitedByUserId, expiresHours = 72) {
     [userId, tokenHash, String(expiresHours), invitedByUserId || null]
   );
 
-  const appBaseUrl = String(process.env.APP_BASE_URL || 'https://localhost:3000/').trim();
+  const appBaseUrl = String(process.env.APP_BASE_URL || 'http://localhost:3000/').trim();
   const inviteLink = `${appBaseUrl.replace(/\/$/, '')}/invite?token=${encodeURIComponent(token)}`;
 
   return {
@@ -2874,7 +2874,7 @@ app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, r
 });
 
 
-app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab'], (_req, res) => {
+app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab', '/invite'], (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
