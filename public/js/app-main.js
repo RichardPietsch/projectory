@@ -259,27 +259,27 @@
         return `<div class="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
           <div class="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
-              <h2 class="text-3xl font-bold">Welcome to Projectory</h2>
-              <p class="mt-2 text-slate-300">Sign in to continue with your personal account.</p>
+              <h2 class="text-3xl font-bold">${i18n.t('auth.login.title')}</h2>
+              <p class="mt-2 text-slate-300">${i18n.t('auth.login.subtitle')}</p>
               <ul class="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-400">
-                <li>Access your role-based permissions securely</li>
-                <li>Use persistent session authentication</li>
-                <li>Track admin actions in the audit log</li>
+                <li>${i18n.t('auth.login.bullet.permissions')}</li>
+                <li>${i18n.t('auth.login.bullet.session')}</li>
+                <li>${i18n.t('auth.login.bullet.audit')}</li>
               </ul>
             </div>
             <form id="login-form" class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-              <h3 class="mb-3 text-lg font-semibold">Login</h3>
-              <label class="mb-2 block text-sm text-slate-300">E-mail
-                <input id="login-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="you@example.com" required />
+              <h3 class="mb-3 text-lg font-semibold">${i18n.t('auth.login.formTitle')}</h3>
+              <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.login.email')}
+                <input id="login-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
               </label>
-              <label class="mb-3 block text-sm text-slate-300">Password
-                <input id="login-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="••••••••" required />
+              <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.login.password')}
+                <input id="login-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.password')}" required />
               </label>
               <div class="flex gap-2">
-                <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950">Sign in</button>
-                <button type="button" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="continueWithCurrentAccess()">Continue without login</button>
+                <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950">${i18n.t('auth.login.submit')}</button>
+                <button type="button" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="continueWithCurrentAccess()">${i18n.t('auth.login.continueWithout')}</button>
               </div>
-              <p class="mt-3 text-xs text-slate-500">Tip: "Continue without login" keeps local header-simulation mode for development only.</p>
+              <p class="mt-3 text-xs text-slate-500">${i18n.t('auth.login.devTip')}</p>
             </form>
           </div>
         </div>`;
@@ -673,48 +673,48 @@ function clientsView() {
 
         return `<div class="space-y-4">
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h3 class="mb-3 text-lg font-semibold">Access Management</h3>
+            <h3 class="mb-3 text-lg font-semibold">${i18n.t('admin.access.title')}</h3>
             <div class="mb-3 grid gap-2 md:grid-cols-5">
-              <input id="access-user-name" class="rounded bg-slate-950 p-2 text-sm" placeholder="Display name" />
-              <input id="access-user-email" class="rounded bg-slate-950 p-2 text-sm" placeholder="E-mail" />
-              <input id="access-user-role" class="rounded bg-slate-950 p-2 text-sm" placeholder="Role (admin/planner/viewer/teammate)" value="viewer" />
-              <input id="access-user-person-id" class="rounded bg-slate-950 p-2 text-sm" placeholder="Person ID (optional)" />
-              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="createAdminUserFromAccessTab()">Create User</button>
+              <input id="access-user-name" class="rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.displayName')}" />
+              <input id="access-user-email" class="rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.email')}" />
+              <input id="access-user-role" class="rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.role')}" value="viewer" />
+              <input id="access-user-person-id" class="rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.personId')}" />
+              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="createAdminUserFromAccessTab()">${i18n.t('admin.access.actions.createUser')}</button>
             </div>
-            <div class="overflow-x-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Name</th><th class="p-2">Email</th><th class="p-2">Role(s)</th><th class="p-2">Linked Person</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-slate-400" colspan="4">No users yet.</td></tr>`}</tbody></table></div>
+            <div class="overflow-x-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.access.table.name')}</th><th class="p-2">${i18n.t('admin.access.table.email')}</th><th class="p-2">${i18n.t('admin.access.table.roles')}</th><th class="p-2">${i18n.t('admin.access.table.person')}</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-slate-400" colspan="4">${i18n.t('admin.access.table.empty')}</td></tr>`}</tbody></table></div>
           </div>
 
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h3 class="mb-3 text-lg font-semibold">SMTP Settings</h3>
+            <h3 class="mb-3 text-lg font-semibold">${i18n.t('admin.smtp.title')}</h3>
             <div class="grid gap-3 md:grid-cols-3">
-              <label class="text-xs text-slate-400">SMTP Host
-                <input id="smtp-host" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="smtp.example.com" value="${smtp.host || ''}" />
+              <label class="text-xs text-slate-400">${i18n.t('admin.smtp.fields.host')}
+                <input id="smtp-host" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.host')}" value="${smtp.host || ''}" />
               </label>
-              <label class="text-xs text-slate-400">SMTP Port
-                <input id="smtp-port" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="465" value="${smtp.port || ''}" />
+              <label class="text-xs text-slate-400">${i18n.t('admin.smtp.fields.port')}
+                <input id="smtp-port" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.port')}" value="${smtp.port || ''}" />
               </label>
-              <label class="text-xs text-slate-400">SMTP Username
-                <input id="smtp-user" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="mailer-user" value="${smtp.username || ''}" />
+              <label class="text-xs text-slate-400">${i18n.t('admin.smtp.fields.username')}
+                <input id="smtp-user" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.username')}" value="${smtp.username || ''}" />
               </label>
-              <label class="text-xs text-slate-400 md:col-span-2">From E-mail
-                <input id="smtp-from" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="noreply@example.com" value="${smtp.fromEmail || ''}" />
+              <label class="text-xs text-slate-400 md:col-span-2">${i18n.t('admin.smtp.fields.fromEmail')}
+                <input id="smtp-from" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.fromEmail')}" value="${smtp.fromEmail || ''}" />
               </label>
-              <label class="text-xs text-slate-400">SMTP Password
-                <input id="smtp-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${smtp.passwordSet ? 'Password set (enter to rotate)' : 'Password'}" />
+              <label class="text-xs text-slate-400">${i18n.t('admin.smtp.fields.password')}
+                <input id="smtp-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${smtp.passwordSet ? i18n.t('admin.smtp.placeholders.passwordSet') : i18n.t('admin.smtp.placeholders.password')}" />
               </label>
-              <label class="inline-flex items-center gap-2 self-end text-sm"><input id="smtp-enabled" type="checkbox" ${smtp.enabled ? 'checked' : ''} /> Enabled</label>
-              <label class="inline-flex items-center gap-2 self-end text-sm"><input id="smtp-secure" type="checkbox" ${smtp.secure !== false ? 'checked' : ''} /> Secure (TLS)</label>
-              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="saveSmtpSettingsFromAccessTab()">Save SMTP</button>
-              <label class="text-xs text-slate-400 md:col-span-2">Test recipient E-mail
-                <input id="smtp-test-to" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="qa@example.com" value="${smtp.fromEmail || ''}" />
+              <label class="inline-flex items-center gap-2 self-end text-sm"><input id="smtp-enabled" type="checkbox" ${smtp.enabled ? 'checked' : ''} /> ${i18n.t('admin.smtp.fields.enabled')}</label>
+              <label class="inline-flex items-center gap-2 self-end text-sm"><input id="smtp-secure" type="checkbox" ${smtp.secure !== false ? 'checked' : ''} /> ${i18n.t('admin.smtp.fields.secure')}</label>
+              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="saveSmtpSettingsFromAccessTab()">${i18n.t('admin.smtp.actions.save')}</button>
+              <label class="text-xs text-slate-400 md:col-span-2">${i18n.t('admin.smtp.fields.testRecipient')}
+                <input id="smtp-test-to" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.testRecipient')}" value="${smtp.fromEmail || ''}" />
               </label>
-              <button class="rounded border border-emerald-500/50 px-3 py-2 text-sm text-emerald-300 hover:bg-slate-800" onclick="sendSmtpTestMailFromAccessTab()">Send Test Mail</button>
+              <button class="rounded border border-emerald-500/50 px-3 py-2 text-sm text-emerald-300 hover:bg-slate-800" onclick="sendSmtpTestMailFromAccessTab()">${i18n.t('admin.smtp.actions.sendTest')}</button>
             </div>
           </div>
 
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div class="mb-3 flex items-center justify-between"><h3 class="text-lg font-semibold">Audit Log</h3><button class="rounded border border-slate-600 px-3 py-1 text-sm hover:bg-slate-800" onclick="refreshAuditFromAccessTab()">Refresh</button></div>
-            <div class="max-h-80 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">Timestamp</th><th class="p-2">Action</th><th class="p-2">Role</th><th class="p-2">Entity</th></tr></thead><tbody>${auditRows || `<tr><td class="p-3 text-slate-400" colspan="4">No audit entries yet.</td></tr>`}</tbody></table></div>
+            <div class="mb-3 flex items-center justify-between"><h3 class="text-lg font-semibold">${i18n.t('admin.audit.title')}</h3><button class="rounded border border-slate-600 px-3 py-1 text-sm hover:bg-slate-800" onclick="refreshAuditFromAccessTab()">${i18n.t('admin.audit.refresh')}</button></div>
+            <div class="max-h-80 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.audit.columns.timestamp')}</th><th class="p-2">${i18n.t('admin.audit.columns.action')}</th><th class="p-2">${i18n.t('admin.audit.columns.role')}</th><th class="p-2">${i18n.t('admin.audit.columns.entity')}</th></tr></thead><tbody>${auditRows || `<tr><td class="p-3 text-slate-400" colspan="4">${i18n.t('admin.audit.empty')}</td></tr>`}</tbody></table></div>
           </div>
         </div>`;
       }
@@ -729,7 +729,7 @@ function clientsView() {
           await api('/api/admin/users', { method: 'POST', body: JSON.stringify({ displayName, email, role, personId }) });
           await loadAdminAccessData();
           render();
-          showMessage('User created.');
+          showMessage(i18n.t('admin.access.messages.userCreated'));
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -748,7 +748,7 @@ function clientsView() {
           };
           state.smtpSettings = await api('/api/admin/smtp-settings', { method: 'PUT', body: JSON.stringify(payload) });
           render();
-          showMessage('SMTP settings saved.');
+          showMessage(i18n.t('admin.smtp.messages.saved'));
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -758,7 +758,7 @@ function clientsView() {
         try {
           const toEmail = String(document.getElementById('smtp-test-to')?.value || '').trim();
           if (!toEmail) {
-            showMessage('Please provide a recipient e-mail for the test.', 'error');
+            showMessage(i18n.t('admin.smtp.messages.testRecipientRequired'), 'error');
             return;
           }
 
@@ -766,7 +766,7 @@ function clientsView() {
             method: 'POST',
             body: JSON.stringify({ toEmail })
           });
-          showMessage(`Test e-mail sent to ${toEmail}.`);
+          showMessage(i18n.t('admin.smtp.messages.testSent', { toEmail }));
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -1890,7 +1890,7 @@ function filteredPeople() {
             state.selectedProjectId = '';
             navigateFromState();
             render();
-            showMessage('Logged out.');
+            showMessage(i18n.t('auth.logout.success'));
           } catch (error) {
             showMessage(error.message, 'error');
           }
@@ -2659,7 +2659,7 @@ function filteredPeople() {
           });
           await loadData({ forceAppData: true });
           state.authRequired = false;
-          showMessage('Login successful.');
+          showMessage(i18n.t('auth.login.success'));
           render();
         } catch (error) {
           showMessage(error.message, 'error');
