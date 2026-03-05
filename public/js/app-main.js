@@ -1936,6 +1936,12 @@ function filteredPeople() {
         showMessage('Import completed.');
       }
 
+
+      function onboardingSteps() {
+        if (!isTeammateMode()) return onboardingDemo.steps;
+        return onboardingDemo.steps.filter((step) => step.titleKey !== 'onboarding.demo.step9.title');
+      }
+
       function clearOnboardingHighlight() {
         if (!onboardingDemo.highlightedElement) return;
         onboardingDemo.highlightedElement.classList.remove('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[82]');
@@ -1950,14 +1956,15 @@ function filteredPeople() {
       }
 
       function runOnboardingStepEnter(stepIndex) {
-        const step = onboardingDemo.steps[stepIndex];
+        const step = onboardingSteps()[stepIndex];
         if (step && typeof step.onEnter === 'function') {
           step.onEnter();
         }
       }
 
       function moveOnboardingStep(nextIndex) {
-        const clamped = Math.max(0, Math.min(onboardingDemo.steps.length - 1, nextIndex));
+        const steps = onboardingSteps();
+        const clamped = Math.max(0, Math.min(steps.length - 1, nextIndex));
         onboardingDemo.stepIndex = clamped;
         runOnboardingStepEnter(clamped);
         renderOnboardingDemo();
@@ -1978,7 +1985,8 @@ function filteredPeople() {
           return;
         }
 
-        const step = onboardingDemo.steps[onboardingDemo.stepIndex];
+        const steps = onboardingSteps();
+        const step = steps[onboardingDemo.stepIndex];
         const target = step.target ? document.querySelector(step.target) : null;
 
         overlay.classList.remove('hidden');
@@ -1992,7 +2000,7 @@ function filteredPeople() {
 
         document.getElementById('onboarding-step-indicator').textContent = i18n.t('onboarding.demo.stepIndicator', {
           current: onboardingDemo.stepIndex + 1,
-          total: onboardingDemo.steps.length
+          total: steps.length
         });
         document.getElementById('onboarding-title').textContent = i18n.t(step.titleKey);
         document.getElementById('onboarding-description').textContent = i18n.t(step.descriptionKey);
@@ -2000,7 +2008,7 @@ function filteredPeople() {
         prevButton.disabled = onboardingDemo.stepIndex === 0;
         prevButton.classList.toggle('opacity-50', onboardingDemo.stepIndex === 0);
 
-        const isLastStep = onboardingDemo.stepIndex === onboardingDemo.steps.length - 1;
+        const isLastStep = onboardingDemo.stepIndex === steps.length - 1;
         nextButton.textContent = isLastStep ? i18n.t('onboarding.demo.finish') : i18n.t('onboarding.demo.next');
 
         if (!target) {
@@ -2059,7 +2067,8 @@ function filteredPeople() {
         document.getElementById('onboarding-close')?.addEventListener('click', closeOnboardingDemo);
         document.getElementById('onboarding-prev')?.addEventListener('click', () => moveOnboardingStep(onboardingDemo.stepIndex - 1));
         document.getElementById('onboarding-next')?.addEventListener('click', () => {
-          if (onboardingDemo.stepIndex >= onboardingDemo.steps.length - 1) {
+          const steps = onboardingSteps();
+          if (onboardingDemo.stepIndex >= steps.length - 1) {
             closeOnboardingDemo();
             return;
           }
