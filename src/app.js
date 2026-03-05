@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const net = require('node:net');
 const tls = require('node:tls');
+const crypto = require('node:crypto');
 const { Pool } = require('pg');
 const { registerModuleRoutes } = require('./modules');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
@@ -37,7 +38,11 @@ const REQUEST_BODY_LIMIT = process.env.REQUEST_BODY_LIMIT || '100kb';
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 15000);
 const requestRateBuckets = new Map();
 const RATE_LIMIT_BUCKET_SWEEP_INTERVAL_MS = 30000;
+const AUTH_ATTEMPT_SWEEP_INTERVAL_MS = 30000;
+const SMTP_PASSWORD_PREFIX = 'enc:v1:';
 let lastRateLimitBucketSweepAt = 0;
+const authAttemptBuckets = new Map();
+let lastAuthAttemptSweepAt = 0;
 
 
 function clearRequestRateLimitBuckets() {
@@ -57,6 +62,110 @@ function sweepExpiredRateLimitBuckets(now, windowMs) {
   }
 
   lastRateLimitBucketSweepAt = now;
+}
+
+function clearAuthAttemptBuckets() {
+  authAttemptBuckets.clear();
+  lastAuthAttemptSweepAt = 0;
+}
+
+function getAuthProtectionConfig() {
+  const maxFailures = Number(process.env.AUTH_PROTECTION_MAX_FAILURES || 5);
+  const windowMs = Number(process.env.AUTH_PROTECTION_WINDOW_MS || 15 * 60 * 1000);
+  const lockoutMs = Number(process.env.AUTH_PROTECTION_LOCKOUT_MS || 15 * 60 * 1000);
+  const backoffBaseMs = Number(process.env.AUTH_PROTECTION_BACKOFF_BASE_MS || 500);
+  const backoffMaxMs = Number(process.env.AUTH_PROTECTION_BACKOFF_MAX_MS || 10000);
+  return {
+    maxFailures: Number.isFinite(maxFailures) && maxFailures > 0 ? maxFailures : 5,
+    windowMs: Number.isFinite(windowMs) && windowMs > 0 ? windowMs : 15 * 60 * 1000,
+    lockoutMs: Number.isFinite(lockoutMs) && lockoutMs > 0 ? lockoutMs : 15 * 60 * 1000,
+    backoffBaseMs: Number.isFinite(backoffBaseMs) && backoffBaseMs > 0 ? backoffBaseMs : 500,
+    backoffMaxMs: Number.isFinite(backoffMaxMs) && backoffMaxMs > 0 ? backoffMaxMs : 10000
+  };
+}
+
+function obfuscateSecurityKey(rawValue) {
+  return crypto.createHash('sha256').update(String(rawValue || 'unknown')).digest('hex').slice(0, 16);
+}
+
+function emitAuthSecurityEvent(eventName, fields = {}) {
+  const payload = {
+    event: eventName,
+    at: new Date().toISOString(),
+    ...fields
+  };
+  console.warn('[auth-security]', JSON.stringify(payload));
+}
+
+function buildAuthThrottleKey(scope, { ip, identifier }) {
+  return `${scope}:${obfuscateSecurityKey(ip)}:${obfuscateSecurityKey(identifier)}`;
+}
+
+function sweepExpiredAuthAttemptBuckets(now, config) {
+  if (now - lastAuthAttemptSweepAt < AUTH_ATTEMPT_SWEEP_INTERVAL_MS) {
+    return;
+  }
+
+  for (const [key, bucket] of authAttemptBuckets.entries()) {
+    const isExpired = now - bucket.firstFailureAt >= config.windowMs
+      && now >= bucket.backoffUntil
+      && now >= bucket.lockedUntil;
+    if (isExpired) {
+      authAttemptBuckets.delete(key);
+    }
+  }
+
+  lastAuthAttemptSweepAt = now;
+}
+
+function getAuthThrottleState(key, config) {
+  const now = Date.now();
+  sweepExpiredAuthAttemptBuckets(now, config);
+  const bucket = authAttemptBuckets.get(key);
+  if (!bucket) {
+    return { throttled: false, locked: false, retryAfterMs: 0, failureCount: 0 };
+  }
+
+  if (now - bucket.firstFailureAt >= config.windowMs) {
+    authAttemptBuckets.delete(key);
+    return { throttled: false, locked: false, retryAfterMs: 0, failureCount: 0 };
+  }
+
+  if (bucket.lockedUntil > now) {
+    return { throttled: true, locked: true, retryAfterMs: bucket.lockedUntil - now, failureCount: bucket.failures };
+  }
+
+  if (bucket.backoffUntil > now) {
+    return { throttled: true, locked: false, retryAfterMs: bucket.backoffUntil - now, failureCount: bucket.failures };
+  }
+
+  return { throttled: false, locked: false, retryAfterMs: 0, failureCount: bucket.failures };
+}
+
+function registerAuthFailure(key, config) {
+  const now = Date.now();
+  const current = authAttemptBuckets.get(key);
+  const resetWindow = !current || now - current.firstFailureAt >= config.windowMs;
+  const failures = resetWindow ? 1 : current.failures + 1;
+  const backoffMs = Math.min(config.backoffBaseMs * (2 ** Math.max(0, failures - 1)), config.backoffMaxMs);
+  const lockUntil = failures >= config.maxFailures ? now + config.lockoutMs : 0;
+  const bucket = {
+    firstFailureAt: resetWindow ? now : current.firstFailureAt,
+    failures,
+    backoffUntil: now + backoffMs,
+    lockedUntil: lockUntil
+  };
+  authAttemptBuckets.set(key, bucket);
+  return {
+    failures,
+    backoffMs,
+    locked: lockUntil > now,
+    retryAfterMs: Math.max(lockUntil - now, backoffMs)
+  };
+}
+
+function clearAuthFailureState(key) {
+  authAttemptBuckets.delete(key);
 }
 
 function getRateLimitConfig() {
@@ -254,6 +363,90 @@ function sanitizeRoleInput(roleName) {
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
+
+function getSmtpEncryptionKey() {
+  const configured = String(process.env.SMTP_PASSWORD_ENCRYPTION_KEY || '').trim();
+  if (!configured) return null;
+
+  const asHex = /^[0-9a-f]+$/i.test(configured) && configured.length % 2 === 0
+    ? Buffer.from(configured, 'hex')
+    : null;
+  const asBase64 = /^[A-Za-z0-9+/=]+$/.test(configured)
+    ? Buffer.from(configured, 'base64')
+    : null;
+  const raw = asHex && asHex.length >= 32 ? asHex : asBase64 && asBase64.length >= 32 ? asBase64 : Buffer.from(configured);
+
+  if (raw.length < 32) {
+    return null;
+  }
+
+  return crypto.createHash('sha256').update(raw).digest();
+}
+
+function encryptSmtpPassword(plaintext) {
+  if (!plaintext) return null;
+  const key = getSmtpEncryptionKey();
+  if (!key) {
+    throw new Error('SMTP password encryption key is not configured. Set SMTP_PASSWORD_ENCRYPTION_KEY.');
+  }
+
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([cipher.update(String(plaintext), 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `${SMTP_PASSWORD_PREFIX}${iv.toString('base64')}:${tag.toString('base64')}:${encrypted.toString('base64')}`;
+}
+
+function decryptSmtpPassword(value) {
+  const serialized = String(value || '').trim();
+  if (!serialized) return '';
+  if (!serialized.startsWith(SMTP_PASSWORD_PREFIX)) {
+    return serialized;
+  }
+
+  const key = getSmtpEncryptionKey();
+  if (!key) {
+    throw new Error('SMTP password encryption key is not configured. Set SMTP_PASSWORD_ENCRYPTION_KEY.');
+  }
+
+  const [, payload] = serialized.split(SMTP_PASSWORD_PREFIX);
+  const [ivB64, tagB64, dataB64] = String(payload || '').split(':');
+  const iv = Buffer.from(String(ivB64 || ''), 'base64');
+  const tag = Buffer.from(String(tagB64 || ''), 'base64');
+  const encrypted = Buffer.from(String(dataB64 || ''), 'base64');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
+}
+
+async function resolveSmtpSettingsRow(row, { persistLegacyUpgrade = false } = {}) {
+  const smtp = { ...(row || {}) };
+  const storedPassword = String(smtp.password || '').trim();
+  if (!storedPassword) {
+    smtp.password = '';
+    return smtp;
+  }
+
+  if (storedPassword.startsWith(SMTP_PASSWORD_PREFIX)) {
+    smtp.password = decryptSmtpPassword(storedPassword);
+    return smtp;
+  }
+
+  if (persistLegacyUpgrade) {
+    try {
+      const encrypted = encryptSmtpPassword(storedPassword);
+      await pool.query('UPDATE smtp_settings SET password = $1, updated_at = NOW() WHERE id = 1', [encrypted]);
+      smtp.password = storedPassword;
+      emitAuthSecurityEvent('smtp_password_upgraded', { endpoint: 'smtp-settings' });
+      return smtp;
+    } catch (error) {
+      emitAuthSecurityEvent('smtp_password_upgrade_failed', { endpoint: 'smtp-settings', reason: String(error?.message || 'unknown') });
+    }
+  }
+
+  smtp.password = storedPassword;
+  return smtp;
 }
 
 function redactSmtpSettings(row) {
@@ -1057,37 +1250,46 @@ app.post('/api/auth/login', async (req, res) => {
     return badRequest(res, 'email and password are required.');
   }
 
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const securityKey = buildAuthThrottleKey('login', { ip: req.ip || 'unknown', identifier: normalizedEmail || 'unknown' });
+  const authConfig = getAuthProtectionConfig();
+  const preflight = getAuthThrottleState(securityKey, authConfig);
+  if (preflight.throttled) {
+    emitAuthSecurityEvent('auth_login_throttled', {
+      endpoint: '/api/auth/login',
+      ipHash: obfuscateSecurityKey(req.ip || 'unknown'),
+      identifierHash: obfuscateSecurityKey(normalizedEmail),
+      failureCount: preflight.failureCount,
+      retryAfterMs: preflight.retryAfterMs,
+      lockout: preflight.locked
+    });
+    return res.status(429).json({ error: 'Invalid email or password.' });
+  }
+
   try {
     const userResult = await pool.query(
-      `SELECT id, email, display_name, person_id, password_hash, is_active, failed_login_count, locked_until
+      `SELECT id, email, display_name, person_id, password_hash, is_active
        FROM users
        WHERE LOWER(email) = LOWER($1)
        LIMIT 1`,
-      [String(email).trim()]
+      [normalizedEmail]
     );
 
-    if (userResult.rowCount === 0) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
-    }
+    const user = userResult.rowCount > 0 ? userResult.rows[0] : null;
+    const isValid = user?.password_hash ? await verifyPassword(password, user.password_hash) : false;
 
-    const user = userResult.rows[0];
-    if (!user.is_active) {
-      return res.status(403).json({ error: 'Account is inactive.' });
-    }
-
-    if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
-      return res.status(423).json({ error: 'Account temporarily locked. Please try again later.' });
-    }
-
-    const isValid = user.password_hash ? await verifyPassword(password, user.password_hash) : false;
-    if (!isValid) {
-      await pool.query(
-        `UPDATE users
-         SET failed_login_count = failed_login_count + 1,
-             locked_until = CASE WHEN failed_login_count + 1 >= 5 THEN NOW() + INTERVAL '15 minutes' ELSE locked_until END
-         WHERE id = $1`,
-        [user.id]
-      );
+    if (!user || !user.is_active || !isValid) {
+      const fail = registerAuthFailure(securityKey, authConfig);
+      emitAuthSecurityEvent('auth_login_failed', {
+        endpoint: '/api/auth/login',
+        ipHash: obfuscateSecurityKey(req.ip || 'unknown'),
+        identifierHash: obfuscateSecurityKey(normalizedEmail),
+        userFound: Boolean(user),
+        active: Boolean(user?.is_active),
+        failureCount: fail.failures,
+        retryAfterMs: fail.retryAfterMs,
+        lockout: fail.locked
+      });
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
@@ -1109,6 +1311,7 @@ app.post('/api/auth/login', async (req, res) => {
       [user.id]
     );
 
+    clearAuthFailureState(securityKey);
     res.setHeader('Set-Cookie', serializeSessionCookie(sessionId, expiresAt));
     return res.json({ ok: true });
   } catch (error) {
@@ -1279,6 +1482,21 @@ app.post('/api/auth/accept-invite', async (req, res) => {
     return badRequest(res, validationError);
   }
 
+  const throttleKey = buildAuthThrottleKey('accept-invite', { ip: req.ip || 'unknown', identifier: token });
+  const authConfig = getAuthProtectionConfig();
+  const preflight = getAuthThrottleState(throttleKey, authConfig);
+  if (preflight.throttled) {
+    emitAuthSecurityEvent('auth_invite_accept_throttled', {
+      endpoint: '/api/auth/accept-invite',
+      ipHash: obfuscateSecurityKey(req.ip || 'unknown'),
+      tokenHash: obfuscateSecurityKey(token),
+      failureCount: preflight.failureCount,
+      retryAfterMs: preflight.retryAfterMs,
+      lockout: preflight.locked
+    });
+    return res.status(429).json({ error: 'Invite activation failed.' });
+  }
+
   const tokenHash = hashOpaqueToken(token);
   const client = await pool.connect();
   try {
@@ -1296,7 +1514,17 @@ app.post('/api/auth/accept-invite', async (req, res) => {
 
     if (inviteResult.rowCount === 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Invalid or expired invite token.' });
+      const fail = registerAuthFailure(throttleKey, authConfig);
+      emitAuthSecurityEvent('auth_invite_accept_failed', {
+        endpoint: '/api/auth/accept-invite',
+        ipHash: obfuscateSecurityKey(req.ip || 'unknown'),
+        tokenHash: obfuscateSecurityKey(token),
+        failureCount: fail.failures,
+        retryAfterMs: fail.retryAfterMs,
+        lockout: fail.locked,
+        reason: 'invalid_token'
+      });
+      return res.status(400).json({ error: 'Invite activation failed.' });
     }
 
     const passwordHash = await hashPassword(password);
@@ -1320,6 +1548,7 @@ app.post('/api/auth/accept-invite', async (req, res) => {
     const userInfo = await client.query(`SELECT email, display_name FROM users WHERE id = $1 LIMIT 1`, [inviteResult.rows[0].user_id]);
 
     await client.query('COMMIT');
+    clearAuthFailureState(throttleKey);
     return res.json({ ok: true, email: userInfo.rows[0]?.email || null, displayName: userInfo.rows[0]?.display_name || null });
   } catch (error) {
     if (client) await client.query('ROLLBACK');
@@ -1540,7 +1769,7 @@ app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCE
        FROM smtp_settings
        WHERE id = 1`
     );
-    const smtp = smtpResult.rows[0] || null;
+    const smtp = smtpResult.rows[0] ? await resolveSmtpSettingsRow(smtpResult.rows[0], { persistLegacyUpgrade: true }) : null;
 
     if (!smtp || !smtp.enabled || !smtp.host || !smtp.port || !smtp.from_email) {
       return res.status(409).json({ error: 'SMTP is not configured. Configure SMTP settings before sending invites.' });
@@ -1642,7 +1871,8 @@ app.get('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS),
        WHERE id = 1`
     );
 
-    return res.json(redactSmtpSettings(result.rows[0] || {}));
+    const resolved = await resolveSmtpSettingsRow(result.rows[0] || {}, { persistLegacyUpgrade: true });
+    return res.json(redactSmtpSettings(resolved));
   } catch (error) {
     return handleDbError(res, error);
   }
@@ -1671,7 +1901,7 @@ app.put('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS),
            enabled = $7,
            updated_at = NOW()
        WHERE id = 1`,
-      [host || null, port || null, username || null, password || null, fromEmail || null, secure !== false, Boolean(enabled)]
+      [host || null, port || null, username || null, password ? encryptSmtpPassword(password) : null, fromEmail || null, secure !== false, Boolean(enabled)]
     );
 
     const refreshed = await pool.query(
@@ -1680,7 +1910,8 @@ app.put('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS),
        WHERE id = 1`
     );
 
-    return res.json(redactSmtpSettings(refreshed.rows[0] || {}));
+    const resolved = await resolveSmtpSettingsRow(refreshed.rows[0] || {}, { persistLegacyUpgrade: true });
+    return res.json(redactSmtpSettings(resolved));
   } catch (error) {
     return handleDbError(res, error);
   }
@@ -1704,7 +1935,7 @@ app.post('/api/admin/smtp-settings/test-email', requirePermission(PERMISSIONS.AD
        LIMIT 1`
     );
 
-    const smtp = current.rows[0] || null;
+    const smtp = current.rows[0] ? await resolveSmtpSettingsRow(current.rows[0], { persistLegacyUpgrade: true }) : null;
     if (!smtp || !smtp.enabled) {
       return badRequest(res, 'SMTP must be enabled before sending test email.');
     }
@@ -3074,4 +3305,4 @@ async function startServer() {
   });
 }
 
-module.exports = { app, startServer, pool, getAuthMode, validateAuthRuntimeSafety, clearRequestRateLimitBuckets };
+module.exports = { app, startServer, pool, getAuthMode, validateAuthRuntimeSafety, clearRequestRateLimitBuckets, clearAuthAttemptBuckets };

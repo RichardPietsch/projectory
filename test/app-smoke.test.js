@@ -2,8 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const net = require('node:net');
 
-const { app, pool, startServer, clearRequestRateLimitBuckets } = require('../src/app');
+const { app, pool, startServer, clearRequestRateLimitBuckets, clearAuthAttemptBuckets } = require('../src/app');
 const { buildPersonPayload, buildClientPayload, buildOnboardingProfilePayload } = require('../test-utils/builders');
+const { hashPassword } = require('../src/auth/passwords');
+const { hashOpaqueToken } = require('../src/auth/tokens');
 
 const PLANNER_HEADERS = {
   'content-type': 'application/json',
@@ -763,6 +765,63 @@ test('PUT /api/admin/smtp-settings validates required fields when enabled', asyn
 
 
 
+test('PUT /api/admin/smtp-settings encrypts SMTP password before persistence', async () => {
+  const originalQuery = pool.query;
+  const previousKey = process.env.SMTP_PASSWORD_ENCRYPTION_KEY;
+  process.env.SMTP_PASSWORD_ENCRYPTION_KEY = '0123456789abcdef0123456789abcdef';
+
+  let storedPassword = null;
+  pool.query = async (sql, params) => {
+    if (String(sql).includes('UPDATE smtp_settings')) {
+      storedPassword = params?.[3] || null;
+      return { rowCount: 1, rows: [] };
+    }
+    if (String(sql).includes('SELECT host, port, username, password, from_email, secure, enabled')) {
+      return {
+        rowCount: 1,
+        rows: [{
+          host: 'smtp.example.com',
+          port: 587,
+          username: 'mailer',
+          password: storedPassword,
+          from_email: 'hello@example.com',
+          secure: false,
+          enabled: true
+        }]
+      };
+    }
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/smtp-settings`, {
+      method: 'PUT',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({
+        host: 'smtp.example.com',
+        port: 587,
+        username: 'mailer',
+        password: 'plain-secret',
+        fromEmail: 'hello@example.com',
+        secure: false,
+        enabled: true
+      })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(typeof storedPassword, 'string');
+    assert.equal(storedPassword.includes('plain-secret'), false);
+    assert.equal(storedPassword.startsWith('enc:v1:'), true);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    if (previousKey === undefined) delete process.env.SMTP_PASSWORD_ENCRYPTION_KEY; else process.env.SMTP_PASSWORD_ENCRYPTION_KEY = previousKey;
+  }
+});
+
 test('POST /api/admin/smtp-settings/test-email uses test recipient and supports AUTH=PLAIN capability format', async () => {
   let rcptToCommand = null;
 
@@ -936,6 +995,184 @@ test('PUT /api/admin/users/:id/project-access validates payload shape', async ()
 });
 
 
+
+test('POST /api/auth/login applies deterministic lockout and resets counters after successful login', async () => {
+  const originalQuery = pool.query;
+  const previousMax = process.env.AUTH_PROTECTION_MAX_FAILURES;
+  const previousWindow = process.env.AUTH_PROTECTION_WINDOW_MS;
+  const previousLockout = process.env.AUTH_PROTECTION_LOCKOUT_MS;
+  const previousBackoff = process.env.AUTH_PROTECTION_BACKOFF_BASE_MS;
+
+  process.env.AUTH_PROTECTION_MAX_FAILURES = '2';
+  process.env.AUTH_PROTECTION_WINDOW_MS = '60000';
+  process.env.AUTH_PROTECTION_LOCKOUT_MS = '80';
+  process.env.AUTH_PROTECTION_BACKOFF_BASE_MS = '1';
+
+  const passwordHash = await hashPassword('correct-password');
+  pool.query = async (sql, params) => {
+    if (String(sql).includes('FROM users') && String(sql).includes('password_hash')) {
+      return {
+        rowCount: 1,
+        rows: [{ id: 99, email: 'user@example.com', display_name: 'User', person_id: null, password_hash: passwordHash, is_active: true }]
+      };
+    }
+    if (String(sql).includes('INSERT INTO auth_sessions')) {
+      return { rowCount: 1, rows: [] };
+    }
+    if (String(sql).includes('UPDATE users')) {
+      return { rowCount: 1, rows: [] };
+    }
+    return { rowCount: 0, rows: [] };
+  };
+
+  clearAuthAttemptBuckets();
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const fail1 = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com', password: 'wrong' })
+    });
+    assert.equal(fail1.status, 401);
+
+    const fail2 = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com', password: 'wrong' })
+    });
+    assert.equal(fail2.status, 401);
+
+    const locked = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com', password: 'wrong' })
+    });
+    assert.equal(locked.status, 429);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const success = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com', password: 'correct-password' })
+    });
+    assert.equal(success.status, 200);
+
+    const failAfterReset = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com', password: 'wrong' })
+    });
+    assert.equal(failAfterReset.status, 401);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    clearAuthAttemptBuckets();
+    if (previousMax === undefined) delete process.env.AUTH_PROTECTION_MAX_FAILURES; else process.env.AUTH_PROTECTION_MAX_FAILURES = previousMax;
+    if (previousWindow === undefined) delete process.env.AUTH_PROTECTION_WINDOW_MS; else process.env.AUTH_PROTECTION_WINDOW_MS = previousWindow;
+    if (previousLockout === undefined) delete process.env.AUTH_PROTECTION_LOCKOUT_MS; else process.env.AUTH_PROTECTION_LOCKOUT_MS = previousLockout;
+    if (previousBackoff === undefined) delete process.env.AUTH_PROTECTION_BACKOFF_BASE_MS; else process.env.AUTH_PROTECTION_BACKOFF_BASE_MS = previousBackoff;
+  }
+});
+
+test('POST /api/auth/accept-invite throttles repeated failures and resets after success', async () => {
+  const originalConnect = pool.connect;
+  const originalQuery = pool.query;
+  const previousMax = process.env.AUTH_PROTECTION_MAX_FAILURES;
+  const previousWindow = process.env.AUTH_PROTECTION_WINDOW_MS;
+  const previousLockout = process.env.AUTH_PROTECTION_LOCKOUT_MS;
+  const previousBackoff = process.env.AUTH_PROTECTION_BACKOFF_BASE_MS;
+
+  process.env.AUTH_PROTECTION_MAX_FAILURES = '2';
+  process.env.AUTH_PROTECTION_WINDOW_MS = '60000';
+  process.env.AUTH_PROTECTION_LOCKOUT_MS = '80';
+  process.env.AUTH_PROTECTION_BACKOFF_BASE_MS = '1';
+
+  const validTokenHash = hashOpaqueToken('valid-token');
+  let validTokenFailureCount = 0;
+  let allowValidToken = false;
+
+  const fakeClient = {
+    async query(sql, params) {
+      if (String(sql).includes('FROM user_invites')) {
+        if (params?.[0] === validTokenHash && allowValidToken) {
+          return { rowCount: 1, rows: [{ id: 55, user_id: 10 }] };
+        }
+        if (params?.[0] === validTokenHash) {
+          validTokenFailureCount += 1;
+        }
+        return { rowCount: 0, rows: [] };
+      }
+      if (String(sql).includes('SELECT email, display_name FROM users')) {
+        return { rowCount: 1, rows: [{ email: 'invite@example.com', display_name: 'Invitee' }] };
+      }
+      return { rowCount: 1, rows: [] };
+    },
+    release() {}
+  };
+
+  pool.connect = async () => fakeClient;
+  pool.query = async () => ({ rowCount: 0, rows: [] });
+
+  clearAuthAttemptBuckets();
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const invalid1 = await fetch(`http://127.0.0.1:${port}/api/auth/accept-invite`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'valid-token', password: 'long-enough-password' })
+    });
+    assert.equal(invalid1.status, 400);
+
+    const invalid2 = await fetch(`http://127.0.0.1:${port}/api/auth/accept-invite`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'valid-token', password: 'long-enough-password' })
+    });
+    assert.equal(invalid2.status, 400);
+
+    const throttled = await fetch(`http://127.0.0.1:${port}/api/auth/accept-invite`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'valid-token', password: 'long-enough-password' })
+    });
+    assert.equal(throttled.status, 429);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    allowValidToken = true;
+    const success = await fetch(`http://127.0.0.1:${port}/api/auth/accept-invite`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'valid-token', password: 'long-enough-password' })
+    });
+    assert.equal(success.status, 200);
+
+    allowValidToken = false;
+    const invalidAfterSuccess = await fetch(`http://127.0.0.1:${port}/api/auth/accept-invite`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'valid-token', password: 'long-enough-password' })
+    });
+    assert.equal(invalidAfterSuccess.status, 400);
+    assert.equal(validTokenFailureCount >= 3, true);
+  } finally {
+    server.close();
+    pool.connect = originalConnect;
+    pool.query = originalQuery;
+    clearAuthAttemptBuckets();
+    if (previousMax === undefined) delete process.env.AUTH_PROTECTION_MAX_FAILURES; else process.env.AUTH_PROTECTION_MAX_FAILURES = previousMax;
+    if (previousWindow === undefined) delete process.env.AUTH_PROTECTION_WINDOW_MS; else process.env.AUTH_PROTECTION_WINDOW_MS = previousWindow;
+    if (previousLockout === undefined) delete process.env.AUTH_PROTECTION_LOCKOUT_MS; else process.env.AUTH_PROTECTION_LOCKOUT_MS = previousLockout;
+    if (previousBackoff === undefined) delete process.env.AUTH_PROTECTION_BACKOFF_BASE_MS; else process.env.AUTH_PROTECTION_BACKOFF_BASE_MS = previousBackoff;
+  }
+});
 
 test('POST /api/auth/accept-invite sets password and marks invite as accepted', async () => {
   const originalConnect = pool.connect;
