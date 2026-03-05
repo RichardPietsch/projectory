@@ -50,6 +50,14 @@ function getAuthMode() {
   return AUTH_MODES.has(mode) ? mode : 'hybrid';
 }
 
+function validateAuthRuntimeSafety() {
+  const isProduction = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
+  const authMode = getAuthMode();
+  if (isProduction && authMode !== 'session') {
+    throw new Error(`Unsafe auth configuration: AUTH_MODE=${authMode}. Production requires AUTH_MODE=session.`);
+  }
+}
+
 function buildSessionOnlyFallbackAuth(previousAuth = {}) {
   // Rollout safety: in strict session mode we never trust header role simulation.
   return {
@@ -2961,6 +2969,8 @@ app.get('/health', async (_req, res) => {
 });
 
 async function startServer() {
+  validateAuthRuntimeSafety();
+
   try {
     await ensureProjectStatusColumn();
     await ensurePeopleFlagsColumns();
@@ -2978,4 +2988,4 @@ async function startServer() {
   });
 }
 
-module.exports = { app, startServer, pool };
+module.exports = { app, startServer, pool, getAuthMode, validateAuthRuntimeSafety };

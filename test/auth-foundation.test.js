@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { app } = require('../src/app');
+const { app, startServer, validateAuthRuntimeSafety } = require('../src/app');
 const { getPermissionsForRole, PERMISSIONS, hasPermission } = require('../src/auth/permissions');
 
 test('permissions map resolves expected role capabilities', () => {
@@ -135,5 +135,54 @@ test('GET /api/auth/me ignores header simulation when AUTH_MODE=session without 
     } else {
       process.env.AUTH_MODE = previousAuthMode;
     }
+  }
+});
+
+
+test('production request handling ignores header simulation on /api/auth/me', async () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousAuthMode = process.env.AUTH_MODE;
+  process.env.NODE_ENV = 'production';
+  process.env.AUTH_MODE = 'hybrid';
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/me`, {
+      headers: {
+        'x-projectory-user-role': 'admin',
+        'x-projectory-user-id': 'u-999',
+        'x-projectory-user-email': 'admin@example.com',
+        'x-projectory-user-name': 'Injected Admin'
+      }
+    });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.authSource, 'header');
+    assert.equal(body.role, 'viewer');
+    assert.equal(body.userId, null);
+    assert.equal(body.email, null);
+    assert.equal(body.displayName, null);
+    assert.equal(body.permissions.includes('admin:access'), false);
+  } finally {
+    server.close();
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousNodeEnv;
+    if (previousAuthMode === undefined) delete process.env.AUTH_MODE; else process.env.AUTH_MODE = previousAuthMode;
+  }
+});
+
+test('startServer fails fast in production when AUTH_MODE is not session', async () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousAuthMode = process.env.AUTH_MODE;
+  process.env.NODE_ENV = 'production';
+  process.env.AUTH_MODE = 'header';
+
+  try {
+    assert.throws(() => validateAuthRuntimeSafety(), /Production requires AUTH_MODE=session/);
+    await assert.rejects(startServer(), /Production requires AUTH_MODE=session/);
+  } finally {
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousNodeEnv;
+    if (previousAuthMode === undefined) delete process.env.AUTH_MODE; else process.env.AUTH_MODE = previousAuthMode;
   }
 });

@@ -11,15 +11,18 @@ const AUTH_HEADERS = {
 
 // Derive a lightweight auth context on every request.
 function attachAuthContext(req, _res, next) {
+  const isProduction = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
   const defaultRole = String(process.env.AUTH_DEFAULT_ROLE || 'admin').trim().toLowerCase();
-  const role = String(req.header(AUTH_HEADERS.USER_ROLE) || defaultRole).trim().toLowerCase();
+  const resolvedDefaultRole = isProduction ? 'viewer' : defaultRole;
+  const roleHeader = isProduction ? null : req.header(AUTH_HEADERS.USER_ROLE);
+  const role = String(roleHeader || resolvedDefaultRole).trim().toLowerCase();
 
-  const personIdHeader = req.header(AUTH_HEADERS.USER_PERSON_ID);
+  const personIdHeader = isProduction ? null : req.header(AUTH_HEADERS.USER_PERSON_ID);
 
   req.auth = {
-    userId: req.header(AUTH_HEADERS.USER_ID) || null,
-    email: req.header(AUTH_HEADERS.USER_EMAIL) || null,
-    displayName: req.header(AUTH_HEADERS.USER_NAME) || null,
+    userId: isProduction ? null : req.header(AUTH_HEADERS.USER_ID) || null,
+    email: isProduction ? null : req.header(AUTH_HEADERS.USER_EMAIL) || null,
+    displayName: isProduction ? null : req.header(AUTH_HEADERS.USER_NAME) || null,
     personId: personIdHeader ? Number.parseInt(personIdHeader, 10) || null : null,
     role,
     permissions: getPermissionsForRole(role)
