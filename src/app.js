@@ -35,6 +35,40 @@ const PROJECT_STATUS_VALUES = ['green', 'blue', 'yellow', 'red', 'white'];
 const PEOPLE_STATUS_VALUES = ['active', 'paused', 'leaver'];
 const REQUEST_BODY_LIMIT = process.env.REQUEST_BODY_LIMIT || '100kb';
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 15000);
+const requestRateBuckets = new Map();
+const RATE_LIMIT_BUCKET_SWEEP_INTERVAL_MS = 30000;
+let lastRateLimitBucketSweepAt = 0;
+
+
+function clearRequestRateLimitBuckets() {
+  requestRateBuckets.clear();
+  lastRateLimitBucketSweepAt = 0;
+}
+
+function sweepExpiredRateLimitBuckets(now, windowMs) {
+  if (now - lastRateLimitBucketSweepAt < RATE_LIMIT_BUCKET_SWEEP_INTERVAL_MS) {
+    return;
+  }
+
+  for (const [ipKey, bucket] of requestRateBuckets.entries()) {
+    if (now - bucket.windowStart >= windowMs) {
+      requestRateBuckets.delete(ipKey);
+    }
+  }
+
+  lastRateLimitBucketSweepAt = now;
+}
+
+function getRateLimitConfig() {
+  const isProduction = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
+  const defaultMax = isProduction ? 120 : 10000;
+  const max = Number(process.env.REQUEST_RATE_LIMIT_MAX || defaultMax);
+  const windowMs = Number(process.env.REQUEST_RATE_LIMIT_WINDOW_MS || 60000);
+  return {
+    max: Number.isFinite(max) && max > 0 ? max : defaultMax,
+    windowMs: Number.isFinite(windowMs) && windowMs > 0 ? windowMs : 60000
+  };
+}
 
 app.disable('x-powered-by');
 app.use((req, res, next) => {
@@ -44,6 +78,26 @@ app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.tailwindcss.com https://code.iconify.design; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
   next();
 });
+app.use((req, res, next) => {
+  const { max, windowMs } = getRateLimitConfig();
+  const now = Date.now();
+  sweepExpiredRateLimitBuckets(now, windowMs);
+  const ipKey = String(req.ip || req.socket?.remoteAddress || 'unknown');
+  const bucket = requestRateBuckets.get(ipKey);
+
+  if (!bucket || now - bucket.windowStart >= windowMs) {
+    requestRateBuckets.set(ipKey, { windowStart: now, count: 1 });
+    return next();
+  }
+
+  bucket.count += 1;
+  if (bucket.count > max) {
+    return res.status(429).json({ error: 'Too many requests.' });
+  }
+
+  return next();
+});
+
 app.use((req, res, next) => {
   req.setTimeout(REQUEST_TIMEOUT_MS, () => {
     if (!res.headersSent) {
@@ -3020,4 +3074,4 @@ async function startServer() {
   });
 }
 
-module.exports = { app, startServer, pool, getAuthMode, validateAuthRuntimeSafety };
+module.exports = { app, startServer, pool, getAuthMode, validateAuthRuntimeSafety, clearRequestRateLimitBuckets };

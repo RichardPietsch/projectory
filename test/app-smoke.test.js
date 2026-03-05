@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const net = require('node:net');
 
-const { app, pool, startServer } = require('../src/app');
+const { app, pool, startServer, clearRequestRateLimitBuckets } = require('../src/app');
 const { buildPersonPayload, buildClientPayload, buildOnboardingProfilePayload } = require('../test-utils/builders');
 
 const PLANNER_HEADERS = {
@@ -108,6 +108,70 @@ test('POST /api/onboarding/profiles returns deterministic 400 for malformed JSON
     assert.equal(body.error, 'Invalid JSON payload.');
   } finally {
     server.close();
+  }
+});
+
+test('GET /health returns 429 after per-IP request limit is exceeded', async () => {
+  const originalQuery = pool.query;
+  pool.query = async () => ({ rows: [{ ok: 1 }] });
+
+  const previousMax = process.env.REQUEST_RATE_LIMIT_MAX;
+  const previousWindow = process.env.REQUEST_RATE_LIMIT_WINDOW_MS;
+  process.env.REQUEST_RATE_LIMIT_MAX = '3';
+  process.env.REQUEST_RATE_LIMIT_WINDOW_MS = '60000';
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    clearRequestRateLimitBuckets();
+    for (let i = 0; i < 3; i += 1) {
+      const okResponse = await fetch(`http://127.0.0.1:${port}/health`);
+      assert.equal(okResponse.status, 200);
+    }
+
+    const blocked = await fetch(`http://127.0.0.1:${port}/health`);
+    assert.equal(blocked.status, 429);
+    const body = await blocked.json();
+    assert.equal(body.error, 'Too many requests.');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    if (previousMax === undefined) delete process.env.REQUEST_RATE_LIMIT_MAX; else process.env.REQUEST_RATE_LIMIT_MAX = previousMax;
+    if (previousWindow === undefined) delete process.env.REQUEST_RATE_LIMIT_WINDOW_MS; else process.env.REQUEST_RATE_LIMIT_WINDOW_MS = previousWindow;
+  }
+});
+
+test('GET /health rate limit window resets after configured interval', async () => {
+  const originalQuery = pool.query;
+  pool.query = async () => ({ rows: [{ ok: 1 }] });
+
+  const previousMax = process.env.REQUEST_RATE_LIMIT_MAX;
+  const previousWindow = process.env.REQUEST_RATE_LIMIT_WINDOW_MS;
+  process.env.REQUEST_RATE_LIMIT_MAX = '1';
+  process.env.REQUEST_RATE_LIMIT_WINDOW_MS = '20';
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    clearRequestRateLimitBuckets();
+
+    const first = await fetch(`http://127.0.0.1:${port}/health`);
+    assert.equal(first.status, 200);
+
+    const blocked = await fetch(`http://127.0.0.1:${port}/health`);
+    assert.equal(blocked.status, 429);
+
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    const allowedAgain = await fetch(`http://127.0.0.1:${port}/health`);
+    assert.equal(allowedAgain.status, 200);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    if (previousMax === undefined) delete process.env.REQUEST_RATE_LIMIT_MAX; else process.env.REQUEST_RATE_LIMIT_MAX = previousMax;
+    if (previousWindow === undefined) delete process.env.REQUEST_RATE_LIMIT_WINDOW_MS; else process.env.REQUEST_RATE_LIMIT_WINDOW_MS = previousWindow;
   }
 });
 
