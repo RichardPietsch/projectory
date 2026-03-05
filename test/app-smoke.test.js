@@ -876,6 +876,42 @@ test('GET /api/projects returns empty scoped payload for teammate without assign
   }
 });
 
+test('GET /api/projects includes teammate assignment-scoped projects by person link', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('SELECT DISTINCT project_id') && sql.includes('FROM assignments') && sql.includes('WHERE person_id = $1')) {
+      return { rows: [{ project_id: 1 }] };
+    }
+    if (sql.includes('FROM projects p')) return { rows: [{ id: 1, name: 'P' }, { id: 2, name: 'Hidden' }] };
+    if (sql.includes('FROM challenges ch')) return { rows: [{ id: 10, project_id: 1 }, { id: 20, project_id: 2 }] };
+    if (sql.includes('FROM assignments a')) return { rows: [{ id: 30, project_id: 1 }, { id: 40, project_id: 2 }] };
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/projects`, {
+      headers: {
+        ...TEAMMATE_HEADERS,
+        'x-projectory-person-id': '55'
+      }
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body, {
+      projects: [{ id: 1, name: 'P' }],
+      challenges: [{ id: 10, project_id: 1 }],
+      assignments: [{ id: 30, project_id: 1 }]
+    });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
 test('POST /api/projects forbids teammate role', async () => {
   const server = app.listen(0);
   const port = server.address().port;

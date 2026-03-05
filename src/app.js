@@ -466,6 +466,35 @@ function canAccessProjectById(auth, projectId) {
   return (auth.scopedProjectIds || []).includes(normalizedProjectId);
 }
 
+async function resolveTeammateScopedProjectIds(auth) {
+  const scopedIds = new Set((auth?.scopedProjectIds || [])
+    .map((id) => Number.parseInt(id, 10))
+    .filter((id) => Number.isInteger(id) && id > 0));
+
+  if (!isScopedTeammate(auth)) {
+    return [...scopedIds];
+  }
+
+  const personId = Number.parseInt(auth?.personId, 10);
+  if (!Number.isInteger(personId) || personId <= 0) {
+    return [...scopedIds];
+  }
+
+  const assignmentScope = await pool.query(
+    `SELECT DISTINCT project_id
+     FROM assignments
+     WHERE person_id = $1`,
+    [personId]
+  );
+
+  for (const row of assignmentScope.rows) {
+    const projectId = Number.parseInt(row.project_id, 10);
+    if (Number.isInteger(projectId) && projectId > 0) scopedIds.add(projectId);
+  }
+
+  return [...scopedIds];
+}
+
 async function getChallengeProjectId(challengeId) {
   const result = await pool.query(
     `SELECT project_id
@@ -605,6 +634,11 @@ app.use(async (req, _res, next) => {
         scopedProjectIds: [],
         isScopedTeammate: isScopedTeammate(req.auth)
       };
+    }
+
+    if (isScopedTeammate(req.auth)) {
+      req.auth.scopedProjectIds = await resolveTeammateScopedProjectIds(req.auth);
+      req.auth.isScopedTeammate = true;
     }
   } catch (_error) {
     // Keep app available even when auth storage is unavailable.

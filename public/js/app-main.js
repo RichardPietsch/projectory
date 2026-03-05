@@ -251,6 +251,10 @@
         return currentRole() === 'admin';
       }
 
+      function canViewPeopleOverview() {
+        return ['viewer', 'planner', 'admin'].includes(currentRole());
+      }
+
       function currentPersonId() {
         const personId = state.auth?.personId;
         return personId === null || personId === undefined || personId === '' ? '' : String(personId);
@@ -2887,7 +2891,11 @@ function filteredPeople() {
         state.showAdmin = false;
         state.homeTab = route.homeTab;
 
-        if (route.homeTab === 'client-teams') {
+        if (!canViewPeopleOverview() && state.homeTab === 'people-overview') {
+          state.homeTab = 'client-teams';
+        }
+
+        if (route.homeTab === 'client-teams' || state.homeTab === 'client-teams') {
           const hasProject = route.projectId && state.projectsPayload.projects.some((project) => String(project.id) === String(route.projectId));
           state.selectedProjectId = hasProject ? String(route.projectId) : '';
           state.peopleOverviewModal.open = false;
@@ -2916,7 +2924,7 @@ function filteredPeople() {
           return state.adminTab === 'people' ? '/admin' : `/admin/${state.adminTab}`;
         }
 
-        if (state.homeTab === 'people-overview') {
+        if (state.homeTab === 'people-overview' && canViewPeopleOverview()) {
           if (state.peopleOverviewModal.open && state.peopleOverviewModal.personId) {
             return `/people/${state.peopleOverviewModal.personId}`;
           }
@@ -2938,6 +2946,12 @@ function filteredPeople() {
       }
 
       window.setHomeTab = function setHomeTab(tabId) {
+        if (tabId === 'people-overview' && !canViewPeopleOverview()) {
+          state.homeTab = 'client-teams';
+          navigateFromState();
+          render();
+          return;
+        }
         state.homeTab = tabId;
         if (tabId === 'client-teams') {
           state.peopleOverviewModal.open = false;
@@ -3004,8 +3018,12 @@ function filteredPeople() {
         } else if (state.showAdmin) {
           document.getElementById('view').innerHTML = adminStandaloneView();
         } else {
-        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-client-teams" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>${i18n.t('home.clientTeams')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-people-overview" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>${i18n.t('home.peopleOverview')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.filter(personIsVisibleInNonAdmin).length}</span></button></nav></div>`;
-        const homeContent = state.homeTab === 'people-overview' ? peopleOverviewView() : ownershipView();
+        if (!canViewPeopleOverview() && state.homeTab === 'people-overview') state.homeTab = 'client-teams';
+        const peopleTab = canViewPeopleOverview()
+          ? `<button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-people-overview" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>${i18n.t('home.peopleOverview')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.filter(personIsVisibleInNonAdmin).length}</span></button>`
+          : '';
+        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-client-teams" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>${i18n.t('home.clientTeams')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button>${peopleTab}</nav></div>`;
+        const homeContent = state.homeTab === 'people-overview' && canViewPeopleOverview() ? peopleOverviewView() : ownershipView();
         document.getElementById('view').innerHTML = homeTabs + homeContent;
 
         }

@@ -5,7 +5,8 @@ const AUTH_HEADERS = {
   USER_ID: 'x-projectory-user-id',
   USER_EMAIL: 'x-projectory-user-email',
   USER_NAME: 'x-projectory-user-name',
-  USER_ROLE: 'x-projectory-user-role'
+  USER_ROLE: 'x-projectory-user-role',
+  USER_PERSON_ID: 'x-projectory-person-id'
 };
 
 // Derive a lightweight auth context on every request.
@@ -13,10 +14,13 @@ function attachAuthContext(req, _res, next) {
   const defaultRole = String(process.env.AUTH_DEFAULT_ROLE || 'admin').trim().toLowerCase();
   const role = String(req.header(AUTH_HEADERS.USER_ROLE) || defaultRole).trim().toLowerCase();
 
+  const personIdHeader = req.header(AUTH_HEADERS.USER_PERSON_ID);
+
   req.auth = {
     userId: req.header(AUTH_HEADERS.USER_ID) || null,
     email: req.header(AUTH_HEADERS.USER_EMAIL) || null,
     displayName: req.header(AUTH_HEADERS.USER_NAME) || null,
+    personId: personIdHeader ? Number.parseInt(personIdHeader, 10) || null : null,
     role,
     permissions: getPermissionsForRole(role)
   };
