@@ -996,6 +996,73 @@ test('PUT /api/admin/users/:id/project-access validates payload shape', async ()
 
 
 
+test('POST /api/auth/login returns non-enumerating failures for unknown/inactive/wrong credentials', async () => {
+  const originalQuery = pool.query;
+  const activeHash = await hashPassword('correct-password');
+
+  pool.query = async (sql, params) => {
+    if (String(sql).includes('FROM users') && String(sql).includes('password_hash')) {
+      const email = String(params?.[0] || '').toLowerCase();
+      if (email === 'unknown@example.com') {
+        return { rowCount: 0, rows: [] };
+      }
+      if (email === 'inactive@example.com') {
+        return {
+          rowCount: 1,
+          rows: [{ id: 7, email, display_name: 'Inactive', person_id: null, password_hash: activeHash, is_active: false }]
+        };
+      }
+      return {
+        rowCount: 1,
+        rows: [{ id: 8, email, display_name: 'Active', person_id: null, password_hash: activeHash, is_active: true }]
+      };
+    }
+    return { rowCount: 0, rows: [] };
+  };
+
+  clearAuthAttemptBuckets();
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const unknown = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'unknown@example.com', password: 'bad-password' })
+    });
+
+    const inactive = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'inactive@example.com', password: 'correct-password' })
+    });
+
+    const wrongPassword = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'active@example.com', password: 'bad-password' })
+    });
+
+    assert.equal(unknown.status, 401);
+    assert.equal(inactive.status, 401);
+    assert.equal(wrongPassword.status, 401);
+
+    const [unknownBody, inactiveBody, wrongBody] = await Promise.all([
+      unknown.json(),
+      inactive.json(),
+      wrongPassword.json()
+    ]);
+
+    assert.equal(unknownBody.error, 'Invalid email or password.');
+    assert.equal(inactiveBody.error, 'Invalid email or password.');
+    assert.equal(wrongBody.error, 'Invalid email or password.');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    clearAuthAttemptBuckets();
+  }
+});
+
 test('POST /api/auth/login applies deterministic lockout and resets counters after successful login', async () => {
   const originalQuery = pool.query;
   const previousMax = process.env.AUTH_PROTECTION_MAX_FAILURES;
@@ -1051,6 +1118,7 @@ test('POST /api/auth/login applies deterministic lockout and resets counters aft
       body: JSON.stringify({ email: 'user@example.com', password: 'wrong' })
     });
     assert.equal(locked.status, 429);
+    assert.equal(Number(locked.headers.get('retry-after')) >= 1, true);
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -1143,6 +1211,7 @@ test('POST /api/auth/accept-invite throttles repeated failures and resets after 
       body: JSON.stringify({ token: 'valid-token', password: 'long-enough-password' })
     });
     assert.equal(throttled.status, 429);
+    assert.equal(Number(throttled.headers.get('retry-after')) >= 1, true);
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 

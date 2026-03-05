@@ -168,6 +168,20 @@ function clearAuthFailureState(key) {
   authAttemptBuckets.delete(key);
 }
 
+function toRetryAfterSeconds(retryAfterMs) {
+  const asSeconds = Math.ceil(Math.max(0, Number(retryAfterMs) || 0) / 1000);
+  return asSeconds > 0 ? asSeconds : 1;
+}
+
+function sendAuthFailure(res, statusCode, message) {
+  return res.status(statusCode).json({ error: message });
+}
+
+function sendAuthThrottle(res, message, retryAfterMs) {
+  res.setHeader('Retry-After', String(toRetryAfterSeconds(retryAfterMs)));
+  return res.status(429).json({ error: message });
+}
+
 function getRateLimitConfig() {
   const isProduction = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
   const defaultMax = isProduction ? 120 : 10000;
@@ -1263,7 +1277,7 @@ app.post('/api/auth/login', async (req, res) => {
       retryAfterMs: preflight.retryAfterMs,
       lockout: preflight.locked
     });
-    return res.status(429).json({ error: 'Invalid email or password.' });
+    return sendAuthThrottle(res, 'Invalid email or password.', preflight.retryAfterMs);
   }
 
   try {
@@ -1290,7 +1304,7 @@ app.post('/api/auth/login', async (req, res) => {
         retryAfterMs: fail.retryAfterMs,
         lockout: fail.locked
       });
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return sendAuthFailure(res, 401, 'Invalid email or password.');
     }
 
     const sessionId = createOpaqueToken(48);
@@ -1494,7 +1508,7 @@ app.post('/api/auth/accept-invite', async (req, res) => {
       retryAfterMs: preflight.retryAfterMs,
       lockout: preflight.locked
     });
-    return res.status(429).json({ error: 'Invite activation failed.' });
+    return sendAuthThrottle(res, 'Invite activation failed.', preflight.retryAfterMs);
   }
 
   const tokenHash = hashOpaqueToken(token);
@@ -1524,7 +1538,7 @@ app.post('/api/auth/accept-invite', async (req, res) => {
         lockout: fail.locked,
         reason: 'invalid_token'
       });
-      return res.status(400).json({ error: 'Invite activation failed.' });
+      return sendAuthFailure(res, 400, 'Invite activation failed.');
     }
 
     const passwordHash = await hashPassword(password);
