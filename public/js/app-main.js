@@ -251,6 +251,15 @@
         return currentRole() === 'admin';
       }
 
+      function currentPersonId() {
+        const personId = state.auth?.personId;
+        return personId === null || personId === undefined || personId === '' ? '' : String(personId);
+      }
+
+      function selfRoleIcon(isSelf) {
+        return isSelf ? '<span class="iconify" data-icon="mdi:account-circle" aria-hidden="true"></span>' : '';
+      }
+
       function needsLoginScreen() {
         return Boolean(state.authRequired);
       }
@@ -664,7 +673,14 @@
           }
         });
 
-        const rows = sorted.map((person) => `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openPeopleOverviewModal(${person.id})">
+        const viewerPersonId = currentPersonId();
+        const rows = sorted
+          .map((person) => {
+            const isCurrentUser = viewerPersonId && String(person.id) === viewerPersonId;
+            const rowClass = isCurrentUser
+              ? 'cursor-pointer border-t border-cyan-400/50 bg-cyan-500/10 hover:bg-cyan-500/20'
+              : 'cursor-pointer border-t border-slate-800 hover:bg-slate-800/40';
+            return `<tr class="${rowClass}" onclick="openPeopleOverviewModal(${person.id})">
             <td class="p-2">${person.first_name} ${person.last_name}${personLeaverBadge(person)}</td>
             <td class="p-2">${person.trade_name}</td>
             <td class="p-2">${person.level_name}</td>
@@ -673,7 +689,9 @@
             <td class="p-2 font-semibold ${roleCountWarningClass(person.leadershipCount)}">${person.leadershipCount}</td>
             <td class="p-2 font-semibold ${assignmentsWarningClass(person.contributionsCount)}">${person.contributionsCount}</td>
             <td class="p-2 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}% (${formatWorkloadDuration(person.workloadTotal, person.working_hours)})</td>
-          </tr>`).join('');
+          </tr>`;
+          })
+          .join('');
 
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
           <div class="mb-3">
@@ -1035,6 +1053,7 @@ function clientsView() {
       function ownershipView() {
         const projects = state.projectsPayload.projects;
         const viewerMode = isViewerMode();
+        const viewerPersonId = currentPersonId();
 
         if (projects.length === 0) {
           return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-300">No projects available yet. Ask an admin to create one first.</div>`;
@@ -1138,21 +1157,39 @@ function clientsView() {
 
           const projectRows = filteredProjects
             .map((project) => {
+              const hasCurrentUserAssignment = viewerPersonId && state.projectsPayload.assignments.some((assignment) => Number(assignment.project_id) === Number(project.id) && String(assignment.person_id) === viewerPersonId);
               const ownerPills = project.ownerEntries.length
-                ? project.ownerEntries.map((person) => `<span class="mb-1 mr-1 inline-flex rounded border border-blue-400/70 bg-blue-600 px-2 py-1 text-xs text-blue-50">${person.name}${leaverRunIcon(person.isLeaver)}</span>`).join('')
+                ? project.ownerEntries
+                    .map((person) => {
+                      const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
+                      const ownerClass = isSelf
+                        ? 'border-blue-300 bg-blue-500 text-blue-50'
+                        : 'border-blue-400/70 bg-blue-600 text-blue-50';
+                      return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${ownerClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
+                    })
+                    .join('')
                 : `<span class="text-slate-400">${i18n.t('clientTeams.noOwnerAssigned')}</span>`;
               const leaderPills = project.leaderEntries.length
                 ? project.leaderEntries
                     .map((person) => {
+                      const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
                       const leaderClass = person.owner
-                        ? 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200'
-                        : 'border-emerald-400/70 bg-emerald-600 text-emerald-50';
-                      return `<span class="mb-1 mr-1 inline-flex rounded border px-2 py-1 text-xs ${leaderClass}">${person.name}${leaverRunIcon(person.isLeaver)}</span>`;
+                        ? (isSelf
+                            ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100'
+                            : 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200')
+                        : (isSelf
+                            ? 'border-emerald-300 bg-emerald-500 text-emerald-50'
+                            : 'border-emerald-400/70 bg-emerald-600 text-emerald-50');
+                      return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${leaderClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
                     })
                     .join('')
                 : `<span class="text-slate-400">${i18n.t('clientTeams.noLeaderAssigned')}</span>`;
 
-              return `<tr class="cursor-pointer border-t border-slate-800 hover:bg-slate-800/40" onclick="openProjectDetail(${project.id})">
+              const rowClass = hasCurrentUserAssignment
+                ? 'cursor-pointer border-t border-cyan-400/50 bg-cyan-500/10 hover:bg-cyan-500/20'
+                : 'cursor-pointer border-t border-slate-800 hover:bg-slate-800/40';
+
+              return `<tr class="${rowClass}" onclick="openProjectDetail(${project.id})">
                 <td class="p-2 text-slate-300">${renderProjectStatusPill(project.status, project.id)}</td>
                 <td class="p-2">
                   <div class="font-medium text-slate-100">${project.name}</div>
@@ -1262,11 +1299,26 @@ function clientsView() {
               const totalQuantity = personAssignments.reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
               const quantity = Math.round(totalQuantity);
               const name = `${sample.first_name} ${sample.last_name}${leaverRunIcon(sample.is_leaver)}`;
-              const tierClass = isSecondaryRole(personId) ? secondaryTierClass : primaryTierClass;
-              if (viewerMode) {
-                return `<span class="rounded border px-2 py-1 text-xs ${tierClass}">${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</span>`;
+              const isSelf = viewerPersonId && String(sample.person_id) === viewerPersonId;
+              let tierClass = isSecondaryRole(personId) ? secondaryTierClass : primaryTierClass;
+              if (isSelf) {
+                if (tierLabel.includes('owner')) {
+                  tierClass = 'border-blue-300 bg-blue-500 text-blue-50';
+                } else if (tierLabel.includes('leader')) {
+                  tierClass = isSecondaryRole(personId)
+                    ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100'
+                    : 'border-emerald-300 bg-emerald-500 text-emerald-50';
+                } else {
+                  tierClass = isSecondaryRole(personId)
+                    ? 'border-slate-300 border-dotted bg-slate-200/10 text-slate-100'
+                    : 'border-slate-300 bg-slate-100 text-slate-900';
+                }
               }
-              return `<button class="rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</button>`;
+              const tierLabelWithMeta = `${selfRoleIcon(isSelf)}<span>${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</span>`;
+              if (viewerMode) {
+                return `<span class="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${tierClass}">${tierLabelWithMeta}</span>`;
+              }
+              return `<button class="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${tierLabelWithMeta}</button>`;
             })
             .filter(Boolean)
             .join(' ');
@@ -1339,20 +1391,22 @@ function clientsView() {
                     const personId = String(assignment.person_id);
                     const hasOwnerRole = ownerIds.has(personId);
                     const hasLeaderRole = leaderIds.has(personId);
+                    const isSelf = viewerPersonId && personId === viewerPersonId;
                     const roleClass = assignment.is_owner
-                      ? 'border-blue-400/70 bg-blue-600 text-blue-50'
+                      ? (isSelf ? 'border-blue-300 bg-blue-500 text-blue-50' : 'border-blue-400/70 bg-blue-600 text-blue-50')
                       : assignment.is_leader
                         ? hasOwnerRole
-                          ? 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200'
-                          : 'border-emerald-400/70 bg-emerald-600 text-emerald-50'
+                          ? (isSelf ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100' : 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200')
+                          : (isSelf ? 'border-emerald-300 bg-emerald-500 text-emerald-50' : 'border-emerald-400/70 bg-emerald-600 text-emerald-50')
                         : hasOwnerRole || hasLeaderRole
-                          ? 'border-slate-500 border-dotted bg-transparent text-slate-300'
-                          : 'border-slate-500 bg-slate-700 text-slate-100';
+                          ? (isSelf ? 'border-slate-300 border-dotted bg-slate-200/10 text-slate-100' : 'border-slate-500 border-dotted bg-transparent text-slate-300')
+                          : (isSelf ? 'border-slate-300 bg-slate-100 text-slate-900' : 'border-slate-500 bg-slate-700 text-slate-100');
                     const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
+                    const assignmentLabel = `${selfRoleIcon(isSelf)}<span>${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</span>`;
                     if (viewerMode) {
-                      return `<span class="mb-1 mr-1 inline-flex rounded border px-2 py-1 text-xs ${roleClass}">${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</span>`;
+                      return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${roleClass}">${assignmentLabel}</span>`;
                     }
-                    return `<button class="mb-1 mr-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</button>`;
+                    return `<button class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignmentLabel}</button>`;
                   })
                   .join('')
               : viewerMode ? `<span class="text-slate-400">—</span>` : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff]" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
