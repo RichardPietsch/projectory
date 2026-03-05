@@ -33,8 +33,27 @@ const TRADE_CATALOG = [
 const LEVEL_CATALOG = ['—', 'JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LEVEL'];
 const PROJECT_STATUS_VALUES = ['green', 'blue', 'yellow', 'red', 'white'];
 const PEOPLE_STATUS_VALUES = ['active', 'paused', 'leaver'];
+const REQUEST_BODY_LIMIT = process.env.REQUEST_BODY_LIMIT || '100kb';
+const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 15000);
 
-app.use(express.json());
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.tailwindcss.com https://code.iconify.design; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+  next();
+});
+app.use((req, res, next) => {
+  req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+    if (!res.headersSent) {
+      res.status(408).json({ error: 'Request timeout.' });
+    }
+  });
+  next();
+});
+app.use(express.json({ limit: REQUEST_BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
 app.use(attachAuthContext);
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -2966,6 +2985,19 @@ app.get('/health', async (_req, res) => {
   } catch (error) {
     res.status(500).json({ status: 'error', details: error.message });
   }
+});
+
+
+app.use((error, _req, res, next) => {
+  if (error?.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Payload too large.' });
+  }
+
+  if (error instanceof SyntaxError && error?.status === 400 && 'body' in error) {
+    return res.status(400).json({ error: 'Invalid JSON payload.' });
+  }
+
+  return next(error);
 });
 
 async function startServer() {

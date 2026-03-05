@@ -44,6 +44,70 @@ test('GET /invite serves SPA shell route', async () => {
   }
 });
 
+test('GET /api/meta includes baseline security headers', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM priorities')) return { rows: [] };
+    if (sql.includes('FROM trades')) return { rows: [] };
+    if (sql.includes('FROM levels')) return { rows: [] };
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/meta`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(response.headers.get('x-frame-options'), 'DENY');
+    assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+    assert.equal(String(response.headers.get('content-security-policy') || '').includes("default-src 'self'"), true);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('POST /api/onboarding/profiles returns 413 for oversized JSON payload', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const huge = 'x'.repeat(180 * 1024);
+    const response = await fetch(`http://127.0.0.1:${port}/api/onboarding/profiles`, {
+      method: 'POST',
+      headers: PLANNER_HEADERS,
+      body: JSON.stringify({ firstName: huge })
+    });
+
+    assert.equal(response.status, 413);
+    const body = await response.json();
+    assert.equal(body.error, 'Payload too large.');
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /api/onboarding/profiles returns deterministic 400 for malformed JSON', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/onboarding/profiles`, {
+      method: 'POST',
+      headers: { ...PLANNER_HEADERS, 'content-type': 'application/json' },
+      body: '{"firstName": "bad"'
+    });
+
+    assert.equal(response.status, 400);
+    const body = await response.json();
+    assert.equal(body.error, 'Invalid JSON payload.');
+  } finally {
+    server.close();
+  }
+});
+
 test('POST /api/auth/invite-preview returns invite user context for valid token', async () => {
   const originalQuery = pool.query;
   pool.query = async (sql) => {
