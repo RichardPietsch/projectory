@@ -62,7 +62,10 @@ test('GET /api/meta includes baseline security headers', async () => {
     assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
     assert.equal(response.headers.get('x-frame-options'), 'DENY');
     assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
-    assert.equal(String(response.headers.get('content-security-policy') || '').includes("default-src 'self'"), true);
+    const csp = String(response.headers.get('content-security-policy') || '');
+    assert.equal(csp.includes("default-src 'self'"), true);
+    assert.equal(csp.includes("script-src 'self'"), true);
+    assert.equal(/script-src[^;]*'unsafe-inline'/.test(csp), false);
   } finally {
     server.close();
     pool.query = originalQuery;

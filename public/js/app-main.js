@@ -108,6 +108,138 @@
       };
 
 
+
+      function splitInlineArgs(argsString) {
+        const args = [];
+        let current = '';
+        let depth = 0;
+        let quote = '';
+        let escape = false;
+
+        for (const char of String(argsString || '')) {
+          if (escape) {
+            current += char;
+            escape = false;
+            continue;
+          }
+
+          if (char === '\\') {
+            current += char;
+            escape = true;
+            continue;
+          }
+
+          if (quote) {
+            current += char;
+            if (char === quote) quote = '';
+            continue;
+          }
+
+          if (char === '"' || char === "'") {
+            quote = char;
+            current += char;
+            continue;
+          }
+
+          if (char === '(' || char === '[' || char === '{') {
+            depth += 1;
+            current += char;
+            continue;
+          }
+
+          if (char === ')' || char === ']' || char === '}') {
+            depth = Math.max(0, depth - 1);
+            current += char;
+            continue;
+          }
+
+          if (char === ',' && depth === 0) {
+            args.push(current.trim());
+            current = '';
+            continue;
+          }
+
+          current += char;
+        }
+
+        if (current.trim()) args.push(current.trim());
+        return args;
+      }
+
+      function parseInlineArg(token, element, event) {
+        const value = String(token || '').trim();
+        if (!value) return undefined;
+        if (value === 'event') return event;
+        if (value === 'this') return element;
+        if (value === 'this.value') return element?.value;
+        if (value === 'this.checked') return Boolean(element?.checked);
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        if (value === 'null') return null;
+        if (value === 'undefined') return undefined;
+        if (/^-?\d+(?:\.\d+)?$/.test(value)) return Number(value);
+
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          if (value.startsWith('"')) {
+            try {
+              return JSON.parse(value);
+            } catch (_error) {
+              return value.slice(1, -1);
+            }
+          }
+
+          return value.slice(1, -1).replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+        }
+
+        if ((value.startsWith('{') && value.endsWith('}')) || (value.startsWith('[') && value.endsWith(']'))) {
+          try {
+            return JSON.parse(value);
+          } catch (_error) {
+            return value;
+          }
+        }
+
+        return value;
+      }
+
+      function resolveInlineFunction(functionPath) {
+        return String(functionPath || '')
+          .split('.')
+          .filter(Boolean)
+          .reduce((ref, key) => (ref ? ref[key] : undefined), window);
+      }
+
+      function bindInlineHandlers(root = document) {
+        const events = ['onclick', 'oninput', 'onchange', 'onsubmit'];
+        for (const attr of events) {
+          root.querySelectorAll(`[${attr}]`).forEach((element) => {
+            const marker = `inlineBound${attr}`;
+            if (element.dataset[marker]) return;
+
+            const expression = String(element.getAttribute(attr) || '').trim();
+            if (!expression) return;
+
+            const match = expression.match(/^([A-Za-z_$][\w$.]*)\((.*)\)$/s);
+            if (!match) return;
+
+            const functionName = match[1];
+            const argTokens = splitInlineArgs(match[2]);
+            const eventName = attr.slice(2);
+
+            element.addEventListener(eventName, (event) => {
+              const targetFn = resolveInlineFunction(functionName);
+              if (typeof targetFn !== 'function') return;
+              const args = argTokens.map((token) => parseInlineArg(token, element, event));
+              targetFn(...args);
+              if (eventName === 'submit') event.preventDefault();
+            });
+
+            element.dataset[marker] = '1';
+            element.removeAttribute(attr);
+          });
+        }
+      }
+
       function showMessage(message, type = 'ok', options = {}) {
         const { actionLabel, onAction } = options;
         const container = document.getElementById('toast-container');
@@ -3048,6 +3180,7 @@ function filteredPeople() {
 
         document.getElementById('admin-panel').classList.add('hidden');
 
+        bindInlineHandlers(document);
         bindForms();
         renderChallengeModal();
         renderAssignModal();
