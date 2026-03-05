@@ -255,6 +255,10 @@
         return ['viewer', 'planner', 'admin'].includes(currentRole());
       }
 
+      function isTeammateMode() {
+        return currentRole() === 'teammate';
+      }
+
       function currentPersonId() {
         const personId = state.auth?.personId;
         return personId === null || personId === undefined || personId === '' ? '' : String(personId);
@@ -1448,7 +1452,7 @@ function clientsView() {
           ? `<div class="inline-flex h-9 items-center gap-2 rounded-md border border-slate-600 bg-slate-950 px-3"><span class="h-2.5 w-2.5 rounded-full ${statusPresentation.classes}"></span><span class="text-xs font-semibold text-slate-100">${statusPresentation.label}</span></div>`
           : `<button class="inline-flex h-9 items-center gap-2 rounded-md border border-slate-600 bg-slate-950 px-3 hover:bg-slate-800" onclick="openProjectStatusModal(${selectedProject.id}, '${String(selectedProject.status || 'white').toLowerCase()}')"><span class="h-2.5 w-2.5 rounded-full ${statusPresentation.classes}"></span><span class="text-xs font-semibold text-slate-100">${statusPresentation.label}</span></button>`;
 
-        const priorityControl = viewerMode
+        const priorityControl = viewerMode || isTeammateMode()
           ? `<div class="inline-flex h-9 items-center">${renderPriorityPill(selectedProject.priority_name)}</div>`
           : `<button class="inline-flex h-9 items-center" onclick="openProjectPriorityModal(${selectedProject.client_id}, ${selectedProject.priority_id})">${renderPriorityPill(selectedProject.priority_name)}</button>`;
 
@@ -1481,11 +1485,16 @@ function clientsView() {
 
 function filteredPeople() {
         const search = state.assignModal.search.trim().toLowerCase();
+        const isPersonAllowed = (person) => {
+          if (!personIsVisibleInNonAdmin(person)) return false;
+          if (isTeammateMode() && person.is_hidden) return false;
+          return true;
+        };
         if (!search) {
-          return state.people.filter(personIsVisibleInNonAdmin);
+          return state.people.filter(isPersonAllowed);
         }
 
-        return state.people.filter((person) => personIsVisibleInNonAdmin(person) && `${person.first_name} ${person.last_name}`.toLowerCase().includes(search));
+        return state.people.filter((person) => isPersonAllowed(person) && `${person.first_name} ${person.last_name}`.toLowerCase().includes(search));
       }
 
       function renderAssignModal() {
@@ -2535,7 +2544,7 @@ function filteredPeople() {
       };
 
       window.openProjectPriorityModal = function openProjectPriorityModal(clientId, priorityId) {
-        if (isViewerMode()) return;
+        if (isViewerMode() || isTeammateMode()) return;
         state.projectPriorityModal.open = true;
         state.projectPriorityModal.clientId = Number(clientId);
         state.projectPriorityModal.priorityId = Number(priorityId);
@@ -2543,7 +2552,7 @@ function filteredPeople() {
       };
 
       window.updateProjectClientPriority = async function updateProjectClientPriority(clientId, priorityId) {
-        if (isViewerMode()) return;
+        if (isViewerMode() || isTeammateMode()) return;
         const client = state.clients.find((entry) => String(entry.id) === String(clientId));
         if (!client) {
           showMessage('Client not found.', 'error');

@@ -951,9 +951,15 @@ test('PUT /api/projects/:projectId/people/:personId/quantity forbids teammate ed
 });
 
 
-test('GET /api/people returns empty list for teammate without project scope', async () => {
+test('GET /api/people returns full non-hidden list for teammate assignment modal', async () => {
   const originalQuery = pool.query;
-  pool.query = async () => ({ rows: [], rowCount: 0 });
+  pool.query = async () => ({
+    rows: [
+      { id: 1, first_name: 'Visible', last_name: 'Person', is_hidden: false },
+      { id: 2, first_name: 'Hidden', last_name: 'Person', is_hidden: true }
+    ],
+    rowCount: 2
+  });
 
   const server = app.listen(0);
   const port = server.address().port;
@@ -965,7 +971,7 @@ test('GET /api/people returns empty list for teammate without project scope', as
 
     assert.equal(response.status, 200);
     const body = await response.json();
-    assert.deepEqual(body, []);
+    assert.deepEqual(body, [{ id: 1, first_name: 'Visible', last_name: 'Person', is_hidden: false }]);
   } finally {
     server.close();
     pool.query = originalQuery;

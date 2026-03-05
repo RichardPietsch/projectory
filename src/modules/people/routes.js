@@ -6,13 +6,9 @@ function registerPeopleRoutes(app, deps) {
   app.get('/api/people', async (req, res) => {
     try {
       if (req.auth?.isScopedTeammate) {
-        // Teammates only see people from projects within their assigned scope.
-        const scopedIds = Array.isArray(req.auth.scopedProjectIds) ? req.auth.scopedProjectIds : [];
-        if (scopedIds.length === 0) {
-          return res.json([]);
-        }
-        const people = await peopleService.getPeopleByProjectIds(pool, scopedIds);
-        return res.json(people);
+        // Teammates can assign from the full visible people catalog.
+        const people = await peopleService.getPeople(pool);
+        return res.json(people.filter((person) => !person.is_hidden));
       }
 
       const people = await peopleService.getPeople(pool);
