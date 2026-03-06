@@ -768,7 +768,7 @@ test('PUT /api/admin/smtp-settings validates required fields when enabled', asyn
 test('PUT /api/admin/smtp-settings encrypts SMTP password before persistence', async () => {
   const originalQuery = pool.query;
   const previousKey = process.env.SMTP_PASSWORD_ENCRYPTION_KEY;
-  process.env.SMTP_PASSWORD_ENCRYPTION_KEY = '0123456789abcdef0123456789abcdef';
+  process.env.SMTP_PASSWORD_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('hex');
 
   let storedPassword = null;
   pool.query = async (sql, params) => {
