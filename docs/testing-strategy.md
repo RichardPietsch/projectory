@@ -1,45 +1,93 @@
 # Testing Strategy
 
-Projectory uses a layered testing approach.
+Projectory follows a pragmatic testing pyramid:
+
+1. **Fast mocked/unit checks (default `npm test`)** for rapid feedback.
+2. **Real-DB contract coverage (`RUN_DB_INTEGRATION=1 npm test`)** for high-risk API/database flows.
+3. **Targeted migration invariants** to catch schema/index/constraint drift.
 
 ## 1) Fast local checks
 
 - `npm run check:syntax`
 - `npm test`
 
-These run quickly and should pass before every commit.
+These should be run continuously while developing and before each commit.
 
 ## 2) Test layers
 
-### Smoke/API tests
-Located in `test/app-smoke.test.js` and `test/auth-foundation.test.js`.
+### A) Mocked smoke/API tests (fast)
+
+Primary files:
+- `test/app-smoke.test.js`
+- `test/auth-foundation.test.js`
 
 Purpose:
-- verify endpoint contracts and auth behavior
-- ensure key happy/error paths remain stable
+- verify endpoint contract shape and permission gates quickly
+- exercise happy/error responses without requiring a live Postgres instance
+- keep CI feedback loops short and deterministic
 
-### Unit tests (schema/service utilities)
-Examples:
+### B) Unit/schema validation tests (fast)
+
+Primary files:
 - `test/people-schema.test.js`
 - `test/onboarding-schema.test.js`
+- `test/auth-local-utils.test.js`
 
 Purpose:
-- validate normalization and payload rules without network/DB requirements
+- validate payload normalization and schema logic in isolation
+- ensure auth/password helper behavior remains stable
 
-### DB integration tests (opt-in)
-`test/db-integration.test.js` is guarded by environment variable:
-- run with `RUN_DB_INTEGRATION=1 npm test`
+### C) Real-DB contract integration tests (opt-in)
+
+Primary files:
+- `test/api-contract.db.test.js`
+- `test/db-integration.test.js`
+
+Run with:
+- `RUN_DB_INTEGRATION=1 npm test`
 
 Purpose:
-- verify assumptions against a real Postgres instance (e.g., migration artifacts)
+- validate API behavior against real Postgres state transitions
+- detect regressions where route contract and DB constraints diverge
+- verify migration artifacts (tables/indexes/constraints) remain intact
 
-## 3) Test data builders
+## 3) Endpoints that require real-DB contract coverage
 
-Use payload builders from `test-utils/builders.js` to:
-- keep tests concise
-- reduce duplication
-- standardize payload shapes
+The following high-risk flows must keep non-mocked integration coverage:
 
-## 4) CI expectations
+- **Auth/session lifecycle**
+  - `POST /api/auth/login`
+  - `GET /api/auth/me`
+  - `POST /api/auth/logout`
+- **Invite acceptance/auth bootstrap**
+  - `POST /api/auth/invite-preview`
+  - `POST /api/auth/accept-invite`
+- **Admin user provisioning/invite lifecycle**
+  - `POST /api/admin/users`
+  - `POST /api/admin/users/:id/invite`
+  - `POST /api/admin/users/:id/invite/revoke`
+  - `GET /api/admin/users`
+- **Import/export contracts**
+  - `POST /api/import`
+  - `GET /api/export`
 
-CI runs migrations, syntax checks, and tests. Keep tests deterministic and network-independent.
+These tests are focused on persistent side effects (insert/update/revoke/replace) and serialized payload contract stability.
+
+## 4) Fixture/setup isolation rules
+
+Real-DB suites must:
+
+- reset mutable tables before each test (`TRUNCATE ... RESTART IDENTITY CASCADE`)
+- recreate singleton settings rows (for example `smtp_settings.id = 1`) deterministically
+- use unique suffixes/tokens for generated entities
+- avoid network dependencies outside the local app + local Postgres
+
+This keeps tests repeatable and makes failures actionable (API or schema regression instead of test flakiness).
+
+## 5) CI expectations
+
+- Default CI path keeps fast checks enabled (`npm run lint:ci`, `npm run format:check`, `npm test`).
+- Real-DB contract tests are opt-in and should run in DB-capable environments (pre-release gates/nightly/local validation).
+- Any new high-risk auth/admin/import-export endpoint should be added to both:
+  - the real-DB contract suite, and
+  - this strategy document.
