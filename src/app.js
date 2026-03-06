@@ -36,6 +36,7 @@ const PROJECT_STATUS_VALUES = ['green', 'blue', 'yellow', 'red', 'white'];
 const PEOPLE_STATUS_VALUES = ['active', 'paused', 'leaver'];
 const REQUEST_BODY_LIMIT = process.env.REQUEST_BODY_LIMIT || '100kb';
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 15000);
+const CORRELATION_ID_HEADER = 'x-correlation-id';
 const requestRateBuckets = new Map();
 const RATE_LIMIT_BUCKET_SWEEP_INTERVAL_MS = 30000;
 const AUTH_ATTEMPT_SWEEP_INTERVAL_MS = 30000;
@@ -43,6 +44,24 @@ const SMTP_PASSWORD_PREFIX = 'enc:v1:';
 let lastRateLimitBucketSweepAt = 0;
 const authAttemptBuckets = new Map();
 let lastAuthAttemptSweepAt = 0;
+
+const SENSITIVE_LOG_KEYS = new Set([
+  'password',
+  'passwordhash',
+  'password_hash',
+  'token',
+  'tokenhash',
+  'token_hash',
+  'authorization',
+  'cookie',
+  'set-cookie',
+  'secret',
+  'smtp',
+  'apikey',
+  'api_key',
+  'clientsecret',
+  'client_secret'
+]);
 
 
 function clearRequestRateLimitBuckets() {
@@ -69,6 +88,73 @@ function clearAuthAttemptBuckets() {
   lastAuthAttemptSweepAt = 0;
 }
 
+function normalizeLogKeyName(key) {
+  return String(key || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+}
+
+function shouldRedactLogKey(key) {
+  const normalized = normalizeLogKeyName(key);
+  if (!normalized) return false;
+  if (SENSITIVE_LOG_KEYS.has(normalized)) return true;
+  return normalized.includes('password') || normalized.includes('token') || normalized.includes('secret');
+}
+
+function redactSensitiveValue(value, parentKey = '') {
+  if (shouldRedactLogKey(parentKey)) return '[REDACTED]';
+  if (Array.isArray(value)) {
+    return value.map((entry) => redactSensitiveValue(entry, parentKey));
+  }
+
+  if (!value || typeof value !== 'object') return value;
+
+  const output = {};
+  for (const [key, nested] of Object.entries(value)) {
+    output[key] = shouldRedactLogKey(key)
+      ? '[REDACTED]'
+      : redactSensitiveValue(nested, key);
+  }
+  return output;
+}
+
+function buildSafeErrorDetails(error) {
+  return {
+    type: error?.name || 'Error',
+    code: error?.code || null,
+    message: shouldRedactLogKey('message') ? '[REDACTED]' : String(error?.message || 'Unknown error')
+  };
+}
+
+function getCorrelationIdFromHeader(req) {
+  const incoming = String(req.header(CORRELATION_ID_HEADER) || '').trim();
+  if (incoming && incoming.length <= 128) {
+    return incoming;
+  }
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return crypto.randomBytes(16).toString('hex');
+}
+
+function emitStructuredLog(level, event, payload = {}) {
+  const record = {
+    at: new Date().toISOString(),
+    level,
+    event,
+    ...redactSensitiveValue(payload)
+  };
+
+  const rendered = JSON.stringify(record);
+  if (level === 'error') {
+    console.error(rendered);
+    return;
+  }
+  if (level === 'warn') {
+    console.warn(rendered);
+    return;
+  }
+  console.log(rendered);
+}
+
 function getAuthProtectionConfig() {
   const maxFailures = Number(process.env.AUTH_PROTECTION_MAX_FAILURES || 5);
   const windowMs = Number(process.env.AUTH_PROTECTION_WINDOW_MS || 15 * 60 * 1000);
@@ -89,12 +175,10 @@ function obfuscateSecurityKey(rawValue) {
 }
 
 function emitAuthSecurityEvent(eventName, fields = {}) {
-  const payload = {
-    event: eventName,
-    at: new Date().toISOString(),
+  emitStructuredLog('warn', 'auth.security', {
+    securityEvent: eventName,
     ...fields
-  };
-  console.warn('[auth-security]', JSON.stringify(payload));
+  });
 }
 
 function buildAuthThrottleKey(scope, { ip, identifier }) {
@@ -195,6 +279,14 @@ function getRateLimitConfig() {
 
 app.disable('x-powered-by');
 app.use((req, res, next) => {
+  const correlationId = getCorrelationIdFromHeader(req);
+  req.correlationId = correlationId;
+  res.setHeader(CORRELATION_ID_HEADER, correlationId);
+
+  next();
+});
+
+app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');
@@ -231,6 +323,30 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: REQUEST_BODY_LIMIT }));
 app.use(express.urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  emitStructuredLog('info', 'request.start', {
+    correlationId: req.correlationId,
+    method: req.method,
+    path: req.path,
+    ipHash: obfuscateSecurityKey(req.ip || req.socket?.remoteAddress || 'unknown'),
+    userAgent: req.header('user-agent') || null,
+    requestHeaders: req.path.startsWith('/api/') ? (req.headers || {}) : undefined,
+    requestBody: req.path.startsWith('/api/') ? (req.body || {}) : undefined
+  });
+
+  res.on('finish', () => {
+    emitStructuredLog('info', 'request.finish', {
+      correlationId: req.correlationId,
+      method: req.method,
+      path: req.path,
+      statusCode: Number(res.statusCode || 0),
+      durationMs: Date.now() - startedAt
+    });
+  });
+
+  next();
+});
 app.use(attachAuthContext);
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -976,19 +1092,48 @@ function parseWorkingHours(value) {
 
 // Normalize common Postgres errors into stable API responses.
 function handleDbError(res, error) {
+  const req = res?.req;
+
   if (error.code === '23503') {
+    emitStructuredLog('error', 'request.error', {
+      correlationId: req?.correlationId || null,
+      method: req?.method || null,
+      path: req?.path || null,
+      statusCode: 409,
+      error: buildSafeErrorDetails(error)
+    });
     return res.status(409).json({ error: 'Cannot delete record because dependencies exist.' });
   }
 
   if (error.code === '23514') {
+    emitStructuredLog('error', 'request.error', {
+      correlationId: req?.correlationId || null,
+      method: req?.method || null,
+      path: req?.path || null,
+      statusCode: 400,
+      error: buildSafeErrorDetails(error)
+    });
     return res.status(400).json({ error: 'Validation error.' });
   }
 
   if (error.code === '23505') {
+    emitStructuredLog('error', 'request.error', {
+      correlationId: req?.correlationId || null,
+      method: req?.method || null,
+      path: req?.path || null,
+      statusCode: 409,
+      error: buildSafeErrorDetails(error)
+    });
     return res.status(409).json({ error: 'Duplicate value conflict.' });
   }
 
-  console.error(error);
+  emitStructuredLog('error', 'request.error', {
+    correlationId: req?.correlationId || null,
+    method: req?.method || null,
+    path: req?.path || null,
+    statusCode: 500,
+    error: buildSafeErrorDetails(error)
+  });
   return res.status(500).json({ error: 'Unexpected server error.' });
 }
 

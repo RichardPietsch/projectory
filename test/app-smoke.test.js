@@ -74,6 +74,148 @@ test('GET /api/meta includes baseline security headers', async () => {
   }
 });
 
+test('request lifecycle logging emits correlation id and propagates incoming header', async () => {
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => {
+    logs.push(args.join(' '));
+  };
+
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM priorities')) return { rows: [] };
+    if (sql.includes('FROM trades')) return { rows: [] };
+    if (sql.includes('FROM levels')) return { rows: [] };
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const correlationId = 'corr-test-123';
+    const response = await fetch(`http://127.0.0.1:${port}/api/meta`, {
+      headers: {
+        [ 'x-correlation-id' ]: correlationId,
+        'user-agent': 'smoke-correlation'
+      }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-correlation-id'), correlationId);
+
+    const requestStart = logs
+      .map((entry) => {
+        try { return JSON.parse(entry); } catch { return null; }
+      })
+      .find((entry) => entry && entry.event === 'request.start' && entry.path === '/api/meta');
+
+    const requestFinish = logs
+      .map((entry) => {
+        try { return JSON.parse(entry); } catch { return null; }
+      })
+      .find((entry) => entry && entry.event === 'request.finish' && entry.path === '/api/meta');
+
+    assert.equal(requestStart.correlationId, correlationId);
+    assert.equal(requestFinish.correlationId, correlationId);
+    assert.equal(typeof requestFinish.durationMs, 'number');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    console.log = originalLog;
+  }
+});
+
+test('request lifecycle logs redact sensitive headers/body fields', async () => {
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => {
+    logs.push(args.join(' '));
+  };
+
+  const originalQuery = pool.query;
+  pool.query = async () => ({ rowCount: 0, rows: [] });
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: 'Bearer super-secret-token'
+      },
+      body: JSON.stringify({ email: 'user@example.com', password: 'secret-pass-123' })
+    });
+
+    assert.equal(response.status, 401);
+
+    const requestStart = logs
+      .map((entry) => {
+        try { return JSON.parse(entry); } catch { return null; }
+      })
+      .find((entry) => entry && entry.event === 'request.start' && entry.path === '/api/auth/login');
+
+    assert.equal(requestStart.requestHeaders.authorization, '[REDACTED]');
+    assert.equal(requestStart.requestBody.password, '[REDACTED]');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    console.log = originalLog;
+  }
+});
+
+test('error logging emits stable schema with correlation id and no secret leakage', async () => {
+  const errors = [];
+  const originalError = console.error;
+  console.error = (...args) => {
+    errors.push(args.join(' '));
+  };
+
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (String(sql).includes('INSERT INTO clients')) {
+      const err = new Error('duplicate key value violates unique constraint');
+      err.code = '23505';
+      throw err;
+    }
+    if (String(sql).includes('SELECT id, name FROM priorities')) {
+      return { rows: [{ id: 1, name: 'P1' }] };
+    }
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/clients`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-correlation-id': 'corr-dup-1', 'x-projectory-user-role': 'admin' },
+      body: JSON.stringify({ name: 'Client', location: 'Berlin', sinceMonth: '2024-01', priorityId: 1, token: 'abc123' })
+    });
+
+    assert.equal(response.status, 409);
+
+    const requestError = errors
+      .map((entry) => {
+        try { return JSON.parse(entry); } catch { return null; }
+      })
+      .find((entry) => entry && entry.event === 'request.error');
+
+    assert.equal(requestError.correlationId, 'corr-dup-1');
+    assert.equal(requestError.statusCode, 409);
+    assert.equal(requestError.error.code, '23505');
+    assert.equal(typeof requestError.error.message, 'string');
+    assert.equal(JSON.stringify(requestError).includes('abc123'), false);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    console.error = originalError;
+  }
+});
+
 test('POST /api/onboarding/profiles returns 413 for oversized JSON payload', async () => {
   const server = app.listen(0);
   const port = server.address().port;
