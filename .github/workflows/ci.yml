@@ -142,12 +142,15 @@ jobs:
       - name: Build app image (deterministic, lockfile-based)
         run: docker build --pull --tag projectory:ci .
 
+      - name: Prepare image-scan artifact directory
+        run: mkdir -p ci-artifacts
+
       - name: Container image vulnerability report (Trivy)
         uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: projectory:ci
           format: table
-          output: trivy-image.txt
+          output: ci-artifacts/trivy-image.txt
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           vuln-type: os,library
@@ -159,21 +162,38 @@ jobs:
         with:
           image-ref: projectory:ci
           format: sarif
-          output: trivy-image.sarif
+          output: ci-artifacts/trivy-image.sarif
           severity: CRITICAL
           ignore-unfixed: true
           vuln-type: os,library
           exit-code: '1'
           trivyignores: .trivyignore
 
+      - name: Image scan summary (always)
+        if: always()
+        run: |
+          {
+            echo "# Container Image Security Summary"
+            echo ""
+            echo "- Trivy table report: ci-artifacts/trivy-image.txt"
+            echo "- Trivy SARIF policy report: ci-artifacts/trivy-image.sarif"
+            echo ""
+            if [ -f ci-artifacts/trivy-image.txt ]; then
+              echo "## Top of Trivy report"
+              echo '```text'
+              sed -n '1,80p' ci-artifacts/trivy-image.txt
+              echo '```'
+            else
+              echo "⚠️ trivy-image.txt was not generated; inspect Trivy step logs."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload Trivy image scan artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: trivy-image-scan-artifacts
-          path: |
-            trivy-image.sarif
-            trivy-image.txt
+          path: ci-artifacts/
           if-no-files-found: warn
 
   build-and-test:
