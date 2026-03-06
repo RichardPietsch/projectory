@@ -128,6 +128,42 @@ Migration state is tracked in `schema_migrations`.
 
 ---
 
+
+## Container runtime hardening and reproducibility
+
+- The application image is built from `node:20-alpine` and installs dependencies with `npm ci` using `package-lock.json`.
+- The container process runs as the non-root `node` user (least privilege) by default.
+- Rebuild determinism expectation: with the same `Dockerfile`, base image digest, `package.json`, and `package-lock.json`, the dependency tree is reproducible.
+
+### Reproducible local build
+
+```bash
+docker build --pull -t projectory:local .
+```
+
+If the lockfile changes unexpectedly, re-run:
+
+```bash
+npm install --package-lock-only
+```
+
+and commit `package-lock.json` together with `package.json` changes.
+
+### CI vulnerability triage policy
+
+- CI runs Trivy filesystem and image scans and fails on **critical** vulnerabilities.
+- Temporary exceptions must be tracked in `.trivyignore` with an issue/PR reference and expiry date.
+- Keep `.trivyignore` small and time-bound; remove entries as soon as patched images/dependencies are available.
+
+### Troubleshooting reproducibility failures
+
+1. Ensure `package-lock.json` is committed and in sync with `package.json`.
+2. Rebuild with `--pull` to get the latest base image metadata.
+3. Pin base image by digest for stricter reproducibility if required by your release process.
+4. If Trivy fails on a critical finding, update/patch dependencies or base image first; use `.trivyignore` only for short, documented exceptions.
+
+---
+
 ## Quality checks
 
 ```bash
