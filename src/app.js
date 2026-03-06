@@ -41,9 +41,23 @@ const requestRateBuckets = new Map();
 const RATE_LIMIT_BUCKET_SWEEP_INTERVAL_MS = 30000;
 const AUTH_ATTEMPT_SWEEP_INTERVAL_MS = 30000;
 const SMTP_PASSWORD_PREFIX = 'enc:v1:';
+const METRIC_DURATION_BUCKETS_MS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000];
 let lastRateLimitBucketSweepAt = 0;
 const authAttemptBuckets = new Map();
 let lastAuthAttemptSweepAt = 0;
+
+const metricsState = {
+  requestsTotal: new Map(),
+  requestDurationBuckets: new Map(),
+  requestDurationCount: new Map(),
+  requestDurationSumMs: new Map(),
+  requestErrorsTotal: new Map(),
+  authFailuresTotal: new Map(),
+  dbQueryDurationBuckets: new Map(),
+  dbQueryDurationCount: 0,
+  dbQueryDurationSumMs: 0,
+  dbQueryErrorsTotal: 0
+};
 
 const SENSITIVE_LOG_KEYS = new Set([
   'password',
@@ -87,6 +101,123 @@ function clearAuthAttemptBuckets() {
   authAttemptBuckets.clear();
   lastAuthAttemptSweepAt = 0;
 }
+
+function clearMetrics() {
+  for (const key of Object.keys(metricsState)) {
+    if (metricsState[key] instanceof Map) {
+      metricsState[key].clear();
+    } else {
+      metricsState[key] = 0;
+    }
+  }
+}
+
+function incrementCounter(map, key, value = 1) {
+  map.set(key, (map.get(key) || 0) + value);
+}
+
+function observeDurationBuckets(map, keyPrefix, durationMs) {
+  const prefix = keyPrefix ? `${keyPrefix}|` : '';
+  for (const bucket of METRIC_DURATION_BUCKETS_MS) {
+    if (durationMs <= bucket) {
+      incrementCounter(map, `${prefix}le=${bucket}`);
+    }
+  }
+  incrementCounter(map, `${prefix}le=+Inf`);
+}
+
+function normalizeMetricPath(rawPath) {
+  return String(rawPath || '/')
+    .replace(/\/[0-9]+(?=\/|$)/g, '/:id')
+    .replace(/[0-9a-f]{8}-[0-9a-f-]{27,36}/gi, ':uuid');
+}
+
+function escapePrometheusLabel(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+}
+
+function serializeCounterMetric(name, help, map, labelsBuilder) {
+  const lines = [`# HELP ${name} ${help}`, `# TYPE ${name} counter`];
+  for (const [key, value] of map.entries()) {
+    lines.push(`${name}{${labelsBuilder(key)}} ${value}`);
+  }
+  return lines.join('\n');
+}
+
+function renderPrometheusMetrics() {
+  const sections = [];
+
+  sections.push(serializeCounterMetric(
+    'projectory_http_requests_total',
+    'Total HTTP requests handled.',
+    metricsState.requestsTotal,
+    (key) => {
+      const [method, path, status] = key.split('|');
+      return `method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}",status="${escapePrometheusLabel(status)}"`;
+    }
+  ));
+
+  sections.push(serializeCounterMetric(
+    'projectory_http_request_errors_total',
+    'HTTP 5xx responses.',
+    metricsState.requestErrorsTotal,
+    (key) => {
+      const [method, path] = key.split('|');
+      return `method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}"`;
+    }
+  ));
+
+  const reqDuration = ['# HELP projectory_http_request_duration_ms HTTP request duration in milliseconds.', '# TYPE projectory_http_request_duration_ms histogram'];
+  for (const [key, value] of metricsState.requestDurationBuckets.entries()) {
+    const [method, path, le] = key.split('|');
+    reqDuration.push(`projectory_http_request_duration_ms_bucket{method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}",le="${escapePrometheusLabel(le.replace('le=', ''))}"} ${value}`);
+  }
+  for (const [key, value] of metricsState.requestDurationCount.entries()) {
+    const [method, path] = key.split('|');
+    reqDuration.push(`projectory_http_request_duration_ms_count{method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}"} ${value}`);
+    reqDuration.push(`projectory_http_request_duration_ms_sum{method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}"} ${metricsState.requestDurationSumMs.get(key) || 0}`);
+  }
+  sections.push(reqDuration.join('\n'));
+
+  sections.push(serializeCounterMetric(
+    'projectory_auth_failures_total',
+    'Authentication failure/security events by type.',
+    metricsState.authFailuresTotal,
+    (key) => `type="${escapePrometheusLabel(key)}"`
+  ));
+
+  const dbDuration = ['# HELP projectory_db_query_duration_ms Database query duration in milliseconds.', '# TYPE projectory_db_query_duration_ms histogram'];
+  for (const [key, value] of metricsState.dbQueryDurationBuckets.entries()) {
+    dbDuration.push(`projectory_db_query_duration_ms_bucket{le="${escapePrometheusLabel(key.replace('le=', ''))}"} ${value}`);
+  }
+  dbDuration.push(`projectory_db_query_duration_ms_count ${metricsState.dbQueryDurationCount}`);
+  dbDuration.push(`projectory_db_query_duration_ms_sum ${metricsState.dbQueryDurationSumMs}`);
+  sections.push(dbDuration.join('\n'));
+
+  sections.push(`# HELP projectory_db_query_errors_total Database query failures.\n# TYPE projectory_db_query_errors_total counter\nprojectory_db_query_errors_total ${metricsState.dbQueryErrorsTotal}`);
+
+  return sections.join('\n\n') + '\n';
+}
+
+const originalPoolQuery = pool.query.bind(pool);
+pool.query = async (...args) => {
+  const startedAt = Date.now();
+  try {
+    const result = await originalPoolQuery(...args);
+    const durationMs = Date.now() - startedAt;
+    observeDurationBuckets(metricsState.dbQueryDurationBuckets, '', durationMs);
+    metricsState.dbQueryDurationCount += 1;
+    metricsState.dbQueryDurationSumMs += durationMs;
+    return result;
+  } catch (error) {
+    const durationMs = Date.now() - startedAt;
+    observeDurationBuckets(metricsState.dbQueryDurationBuckets, '', durationMs);
+    metricsState.dbQueryDurationCount += 1;
+    metricsState.dbQueryDurationSumMs += durationMs;
+    metricsState.dbQueryErrorsTotal += 1;
+    throw error;
+  }
+};
 
 function normalizeLogKeyName(key) {
   return String(key || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -175,6 +306,10 @@ function obfuscateSecurityKey(rawValue) {
 }
 
 function emitAuthSecurityEvent(eventName, fields = {}) {
+  if (String(eventName).includes('failed') || String(eventName).includes('throttled')) {
+    incrementCounter(metricsState.authFailuresTotal, eventName, 1);
+  }
+
   emitStructuredLog('warn', 'auth.security', {
     securityEvent: eventName,
     ...fields
@@ -325,6 +460,7 @@ app.use(express.json({ limit: REQUEST_BODY_LIMIT }));
 app.use(express.urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
 app.use((req, res, next) => {
   const startedAt = Date.now();
+  const normalizedPath = normalizeMetricPath(req.path);
   emitStructuredLog('info', 'request.start', {
     correlationId: req.correlationId,
     method: req.method,
@@ -336,12 +472,27 @@ app.use((req, res, next) => {
   });
 
   res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    const method = String(req.method || 'GET').toUpperCase();
+    const statusCode = Number(res.statusCode || 0);
+    const requestKey = `${method}|${normalizedPath}|${statusCode}`;
+    incrementCounter(metricsState.requestsTotal, requestKey, 1);
+
+    const durationKey = `${method}|${normalizedPath}`;
+    observeDurationBuckets(metricsState.requestDurationBuckets, durationKey, durationMs);
+    incrementCounter(metricsState.requestDurationCount, durationKey, 1);
+    incrementCounter(metricsState.requestDurationSumMs, durationKey, durationMs);
+
+    if (statusCode >= 500) {
+      incrementCounter(metricsState.requestErrorsTotal, `${method}|${normalizedPath}`, 1);
+    }
+
     emitStructuredLog('info', 'request.finish', {
       correlationId: req.correlationId,
       method: req.method,
       path: req.path,
-      statusCode: Number(res.statusCode || 0),
-      durationMs: Date.now() - startedAt
+      statusCode,
+      durationMs
     });
   });
 
@@ -3002,13 +3153,32 @@ app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:ta
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
-app.get('/health', async (_req, res) => {
+app.get('/health/live', (_req, res) => {
+  res.json({ status: 'alive', uptimeSeconds: Math.floor(process.uptime()) });
+});
+
+async function sendReadiness(res) {
   try {
+    const startedAt = Date.now();
     await pool.query('SELECT 1');
-    res.json({ status: 'ok' });
-  } catch (error) {
-    res.status(500).json({ status: 'error', details: error.message });
+    return res.json({ status: 'ready', db: 'ok', dbLatencyMs: Date.now() - startedAt });
+  } catch (_error) {
+    return res.status(503).json({ status: 'not_ready', db: 'down' });
   }
+}
+
+app.get('/health/ready', async (_req, res) => {
+  return sendReadiness(res);
+});
+
+// Backward compatibility alias: historical /health behavior maps to readiness checks.
+app.get('/health', async (_req, res) => {
+  return sendReadiness(res);
+});
+
+app.get('/metrics', (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  return res.send(renderPrometheusMetrics());
 });
 
 
@@ -3044,4 +3214,13 @@ async function startServer() {
   });
 }
 
-module.exports = { app, startServer, pool, getAuthMode, validateAuthRuntimeSafety, clearRequestRateLimitBuckets, clearAuthAttemptBuckets };
+module.exports = {
+  app,
+  startServer,
+  pool,
+  getAuthMode,
+  validateAuthRuntimeSafety,
+  clearRequestRateLimitBuckets,
+  clearAuthAttemptBuckets,
+  clearMetrics
+};

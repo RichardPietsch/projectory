@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const net = require('node:net');
 
-const { app, pool, startServer, clearRequestRateLimitBuckets, clearAuthAttemptBuckets } = require('../src/app');
+const { app, pool, startServer, clearRequestRateLimitBuckets, clearAuthAttemptBuckets, clearMetrics } = require('../src/app');
 const { buildPersonPayload, buildClientPayload, buildOnboardingProfilePayload } = require('../test-utils/builders');
 const { hashPassword } = require('../src/auth/passwords');
 const { hashOpaqueToken } = require('../src/auth/tokens');
@@ -363,10 +363,91 @@ test('GET /health returns ok when db query succeeds', async () => {
     const response = await fetch(`http://127.0.0.1:${port}/health`);
     assert.equal(response.status, 200);
     const body = await response.json();
-    assert.deepEqual(body, { status: 'ok' });
+    assert.equal(body.status, 'ready');
+    assert.equal(body.db, 'ok');
+    assert.equal(typeof body.dbLatencyMs, 'number');
   } finally {
     server.close();
     pool.query = originalQuery;
+  }
+});
+
+test('GET /health/live returns alive even if db is unavailable', async () => {
+  const originalQuery = pool.query;
+  pool.query = async () => {
+    throw new Error('db down');
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/health/live`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.status, 'alive');
+    assert.equal(typeof body.uptimeSeconds, 'number');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('GET /health/ready returns 503 when db is unavailable', async () => {
+  const originalQuery = pool.query;
+  pool.query = async () => {
+    throw new Error('db down');
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/health/ready`);
+    assert.equal(response.status, 503);
+    const body = await response.json();
+    assert.deepEqual(body, { status: 'not_ready', db: 'down' });
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('GET /metrics exposes core golden-signal and auth/db metrics', async () => {
+  clearMetrics();
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (String(sql).includes('SELECT 1')) return { rows: [{ ok: 1 }] };
+    if (String(sql).includes('FROM users')) return { rowCount: 0, rows: [] };
+    return { rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    await fetch(`http://127.0.0.1:${port}/health/ready`);
+    await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'metrics@example.com', password: 'bad-pass' })
+    });
+
+    const metricsResponse = await fetch(`http://127.0.0.1:${port}/metrics`);
+    assert.equal(metricsResponse.status, 200);
+    assert.equal(metricsResponse.headers.get('content-type').includes('text/plain'), true);
+    const text = await metricsResponse.text();
+
+    assert.equal(text.includes('projectory_http_requests_total'), true);
+    assert.equal(text.includes('projectory_http_request_duration_ms_bucket'), true);
+    assert.equal(text.includes('projectory_http_request_errors_total'), true);
+    assert.equal(text.includes('projectory_auth_failures_total{type="auth_login_failed"}'), true);
+    assert.equal(text.includes('projectory_db_query_duration_ms_count'), true);
+    assert.equal(text.includes('projectory_db_query_errors_total'), true);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    clearMetrics();
   }
 });
 

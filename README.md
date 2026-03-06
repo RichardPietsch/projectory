@@ -118,6 +118,16 @@ Audit log retention can be tuned with `AUDIT_LOG_RETENTION_MONTHS` (defaults to 
 ---
 
 
+
+## Health and metrics
+
+- Liveness probe: `GET /health/live`
+- Readiness probe: `GET /health/ready`
+- Backward-compatible readiness alias: `GET /health`
+- Prometheus metrics: `GET /metrics`
+
+Operational semantics, baseline alerts, and dashboard guidance are documented in `docs/observability.md`.
+
 ## Architecture governance (ADRs + boundaries)
 
 - Architecture decisions are tracked in `docs/adr/`.
