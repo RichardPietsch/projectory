@@ -142,7 +142,19 @@ jobs:
       - name: Build app image (deterministic, lockfile-based)
         run: docker build --pull --tag projectory:ci .
 
-      - name: Container image vulnerability scan (Trivy, fail on critical)
+      - name: Container image vulnerability report (Trivy)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: projectory:ci
+          format: table
+          output: trivy-image.txt
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          vuln-type: os,library
+          exit-code: '0'
+          trivyignores: .trivyignore
+
+      - name: Container image vulnerability policy gate (Trivy, fail on critical)
         uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: projectory:ci
@@ -154,12 +166,14 @@ jobs:
           exit-code: '1'
           trivyignores: .trivyignore
 
-      - name: Upload Trivy image SARIF artifact
+      - name: Upload Trivy image scan artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-image-sarif
-          path: trivy-image.sarif
+          name: trivy-image-scan-artifacts
+          path: |
+            trivy-image.sarif
+            trivy-image.txt
           if-no-files-found: warn
 
   build-and-test:

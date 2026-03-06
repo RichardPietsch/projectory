@@ -161,6 +161,12 @@ and commit `package-lock.json` together with `package.json` changes.
 2. Rebuild with `--pull` to get the latest base image metadata.
 3. Pin base image by digest for stricter reproducibility if required by your release process.
 4. If Trivy fails on a critical finding, update/patch dependencies or base image first; use `.trivyignore` only for short, documented exceptions.
+5. For image-scan failures, rebuild with the latest base image metadata (`docker build --pull ...`) and confirm the Dockerfile base tag still points to a patched release line.
+6. Re-run a local image scan to validate remediation before pushing:
+
+```bash
+trivy image --severity CRITICAL,HIGH --ignore-unfixed projectory:local
+```
 
 ---
 
