@@ -18,30 +18,46 @@ Current modules:
 - `people`
 - `clients`
 - `onboarding`
+- `projects`
 
 ## Composition model
 
 `src/app.js` is responsible for:
 - infrastructure bootstrap (Express, middleware, db pool)
-- registering all domain routes through `src/modules/index.js`
-- hosting remaining legacy routes (projects/challenges/assignments/import/export)
+- cross-cutting concerns (auth/session overlay, rate limiting, audit middleware, shared helpers)
+- registering domain routes through `src/modules/index.js`
+- non-domain portability/admin endpoints that are still centrally hosted
 
-## Rule of thumb for contributors
+## Architecture governance
 
-1. **No SQL in route handlers** (place SQL in `repo.js`).
-2. **No business logic in controllers/routes** (place in `service.js`).
-3. **Validate at module boundary** using module schema helpers.
-4. **Add/update tests** for each behavior change.
-5. **Register new modules centrally** in `src/modules/index.js`.
+- ADR history is stored in `docs/adr/`.
+- Use `docs/adr/0000-template.md` and process guidance in `docs/adr/README.md`.
+- ADRs are required for auth/data/infra-impacting design changes.
+- Contribution expectations are documented in `CONTRIBUTING.md`.
+
+## Boundary rules (enforced)
+
+1. **No SQL in module route handlers** (`src/modules/*/routes.js`).
+2. **No modularized domain routes in `src/app.js`** for people/clients/onboarding/projects/challenges/assignments families.
+3. **Business rules belong in services**, transport concerns in routes, persistence in repos.
+4. **Architecture-impacting changes require ADR updates**.
+
+CI enforces lightweight checks with `npm run lint:ci`.
+
+## Examples
+
+### Accepted boundary usage
+
+- Add a new endpoint in `src/modules/projects/routes.js`, call `projectsService`, and persist via `projectsRepo`.
+- Add shared auth/session middleware in `src/app.js` and document the architectural rationale in an ADR.
+
+### Rejected boundary usage
+
+- Adding `app.post('/api/projects/...')` directly in `src/app.js` after module extraction.
+- Calling `pool.query(...)` directly inside a module `routes.js` file when a repo layer exists.
+- Changing auth precedence semantics without recording an ADR.
 
 ## Current technical debt (known)
 
-- `src/app.js` still contains legacy non-modular routes and import/export logic.
-- `public/index.html` still contains large inline UI script; modularization is in progress.
-
-## Next intended decomposition targets
-
-- projects module
-- challenges module
-- assignments module
-- import/export module
+- Import/export and some admin/configuration behavior still lives in `src/app.js` and can be extracted over time.
+- `public/index.html` still contains large inline UI script; frontend modularization is ongoing.

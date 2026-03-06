@@ -117,6 +117,14 @@ Audit log retention can be tuned with `AUDIT_LOG_RETENTION_MONTHS` (defaults to 
 
 ---
 
+
+## Architecture governance (ADRs + boundaries)
+
+- Architecture decisions are tracked in `docs/adr/`.
+- Use `docs/adr/0000-template.md` for new records and see `docs/adr/README.md` for required scope (auth/data/infra).
+- Contributor expectations and boundary rules are documented in `CONTRIBUTING.md`.
+- CI runs lightweight boundary checks via `npm run lint:ci` to prevent module boundary drift.
+
 ## Migrations
 
 ```bash

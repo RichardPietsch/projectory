@@ -4,8 +4,49 @@ const path = require('node:path');
 const ROOT = process.cwd();
 const IGNORE_DIRS = new Set(['.git', 'node_modules']);
 const JS_EXTENSIONS = new Set(['.js', '.cjs', '.mjs']);
+const MODULE_ROUTE_FILE = /src\/modules\/[^/]+\/routes\.js$/;
+const MODULARIZED_PREFIXES = [
+  '/api/people',
+  '/api/clients',
+  '/api/onboarding',
+  '/api/projects',
+  '/api/challenges',
+  '/api/assignments'
+];
 
 const lintIssues = [];
+
+function hasDirectSqlCall(line) {
+  return /(pool|client)\.query\s*\(/.test(line);
+}
+
+function hasAppRouteDefinition(line) {
+  return /app\.(get|post|put|delete|patch)\s*\(\s*['"`]/.test(line);
+}
+
+function checkBoundaryRules(relPath, lines) {
+  if (MODULE_ROUTE_FILE.test(relPath)) {
+    for (let i = 0; i < lines.length; i += 1) {
+      if (hasDirectSqlCall(lines[i])) {
+        lintIssues.push(`${relPath}:${i + 1} route files must not execute direct SQL; move SQL to repo layer.`);
+      }
+    }
+  }
+
+  if (relPath === 'src/app.js') {
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      if (!hasAppRouteDefinition(line)) continue;
+
+      for (const prefix of MODULARIZED_PREFIXES) {
+        if (line.includes(`'${prefix}`) || line.includes(`"${prefix}`) || line.includes(`\`${prefix}`)) {
+          lintIssues.push(`${relPath}:${i + 1} defines ${prefix} route in app.js; this route family must live in a domain module.`);
+          break;
+        }
+      }
+    }
+  }
+}
 
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -36,6 +77,8 @@ function walk(dir) {
           lintIssues.push(`${relPath}:${i + 1} contains debugger statement.`);
         }
       }
+
+      checkBoundaryRules(relPath, lines);
     }
   }
 }
@@ -48,7 +91,9 @@ if (lintIssues.length) {
   console.error('\nFix instructions:');
   console.error('1) Remove debugger statements from JS files.');
   console.error('2) Resolve merge conflicts and remove marker lines.');
+  console.error('3) Keep modularized domain routes out of src/app.js.');
+  console.error('4) Keep SQL access in repo layer (not module route handlers).');
   process.exit(1);
 }
 
-console.log('Lint checks passed (no debugger statements or conflict markers found).');
+console.log('Lint checks passed (debug/conflict + architecture boundary checks).');
