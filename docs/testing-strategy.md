@@ -91,3 +91,26 @@ This keeps tests repeatable and makes failures actionable (API or schema regress
 - Any new high-risk auth/admin/import-export endpoint should be added to both:
   - the real-DB contract suite, and
   - this strategy document.
+
+
+## 6) Role-specific onboarding regression expectations (QA)
+
+The onboarding walkthrough must remain deterministic per role.
+
+Expected step visibility:
+
+- `admin`: full walkthrough (includes People Overview step).
+- `planner`: full walkthrough (includes People Overview step).
+- `viewer`: full walkthrough (includes People Overview step).
+- `teammate`: walkthrough excludes the People Overview step.
+
+Guardrails:
+
+- Teammate walkthrough must never navigate to the forbidden People Overview tab/step.
+- Step indicator totals must match the filtered sequence length for the active role.
+- Next/Finish behavior must be derived from filtered step order (last step shows Finish only on final visible step).
+
+Regression coverage:
+
+- `test/onboarding-tour.test.js` validates role-based filtering and step-state behavior.
+- `public/js/onboarding-tour.js` is the single source of truth for role-specific tour filtering rules.

@@ -1,5 +1,6 @@
       const state = window.ProjectoryState.createInitialState();
       const i18n = window.ProjectoryI18n;
+      const onboardingTour = window.ProjectoryOnboardingTour;
 
       const adminTabs = [
         { id: 'people', labelKey: 'admin.tabs.people' },
@@ -19,6 +20,7 @@
         highlightedElement: null,
         steps: [
           {
+            id: 'welcome',
             target: '#app-logo-button',
             titleKey: 'onboarding.demo.step1.title',
             descriptionKey: 'onboarding.demo.step1.description',
@@ -31,6 +33,7 @@
             }
           },
           {
+            id: 'project-overview',
             target: '#onboarding-project-overview-table',
             titleKey: 'onboarding.demo.step2.title',
             descriptionKey: 'onboarding.demo.step2.description',
@@ -43,6 +46,7 @@
             }
           },
           {
+            id: 'challenge-overview',
             target: '#onboarding-challenge-overview',
             titleKey: 'onboarding.demo.step3.title',
             descriptionKey: 'onboarding.demo.step3.description',
@@ -56,31 +60,37 @@
             }
           },
           {
+            id: 'add-challenge',
             target: '#onboarding-add-challenge',
             titleKey: 'onboarding.demo.step4.title',
             descriptionKey: 'onboarding.demo.step4.description'
           },
           {
+            id: 'project-team-overview',
             target: '#onboarding-project-team-overview',
             titleKey: 'onboarding.demo.step5.title',
             descriptionKey: 'onboarding.demo.step5.description'
           },
           {
+            id: 'client-owners',
             target: '#onboarding-client-owners',
             titleKey: 'onboarding.demo.step6.title',
             descriptionKey: 'onboarding.demo.step6.description'
           },
           {
+            id: 'client-leaders',
             target: '#onboarding-client-leaders',
             titleKey: 'onboarding.demo.step7.title',
             descriptionKey: 'onboarding.demo.step7.description'
           },
           {
+            id: 'contributors',
             target: '#onboarding-contributors',
             titleKey: 'onboarding.demo.step8.title',
             descriptionKey: 'onboarding.demo.step8.description'
           },
           {
+            id: 'people-overview',
             target: '#onboarding-people-overview-table',
             titleKey: 'onboarding.demo.step9.title',
             descriptionKey: 'onboarding.demo.step9.description',
@@ -93,6 +103,7 @@
             }
           },
           {
+            id: 'wrap-up',
             target: null,
             titleKey: 'onboarding.demo.step10.title',
             descriptionKey: 'onboarding.demo.step10.description',
@@ -2070,8 +2081,7 @@ function filteredPeople() {
 
 
       function onboardingSteps() {
-        if (!isTeammateMode()) return onboardingDemo.steps;
-        return onboardingDemo.steps.filter((step) => step.titleKey !== 'onboarding.demo.step9.title');
+        return onboardingTour.filterOnboardingStepsByRole(onboardingDemo.steps, currentRole());
       }
 
       function clearOnboardingHighlight() {
@@ -2096,7 +2106,7 @@ function filteredPeople() {
 
       function moveOnboardingStep(nextIndex) {
         const steps = onboardingSteps();
-        const clamped = Math.max(0, Math.min(steps.length - 1, nextIndex));
+        const clamped = onboardingTour.clampOnboardingStepIndex(nextIndex, steps.length);
         onboardingDemo.stepIndex = clamped;
         runOnboardingStepEnter(clamped);
         renderOnboardingDemo();
@@ -2130,18 +2140,20 @@ function filteredPeople() {
           onboardingDemo.highlightedElement = target;
         }
 
+        const stepUi = onboardingTour.getOnboardingStepUiState(onboardingDemo.stepIndex, steps.length);
+        onboardingDemo.stepIndex = stepUi.index;
+
         document.getElementById('onboarding-step-indicator').textContent = i18n.t('onboarding.demo.stepIndicator', {
-          current: onboardingDemo.stepIndex + 1,
-          total: steps.length
+          current: stepUi.current,
+          total: stepUi.total
         });
         document.getElementById('onboarding-title').textContent = i18n.t(step.titleKey);
         document.getElementById('onboarding-description').textContent = i18n.t(step.descriptionKey);
 
-        prevButton.disabled = onboardingDemo.stepIndex === 0;
-        prevButton.classList.toggle('opacity-50', onboardingDemo.stepIndex === 0);
+        prevButton.disabled = stepUi.isFirstStep;
+        prevButton.classList.toggle('opacity-50', stepUi.isFirstStep);
 
-        const isLastStep = onboardingDemo.stepIndex === steps.length - 1;
-        nextButton.textContent = isLastStep ? i18n.t('onboarding.demo.finish') : i18n.t('onboarding.demo.next');
+        nextButton.textContent = stepUi.nextAction === 'finish' ? i18n.t('onboarding.demo.finish') : i18n.t('onboarding.demo.next');
 
         if (!target) {
           const popoverWidth = 420;
@@ -2200,11 +2212,12 @@ function filteredPeople() {
         document.getElementById('onboarding-prev')?.addEventListener('click', () => moveOnboardingStep(onboardingDemo.stepIndex - 1));
         document.getElementById('onboarding-next')?.addEventListener('click', () => {
           const steps = onboardingSteps();
-          if (onboardingDemo.stepIndex >= steps.length - 1) {
+          const stepUi = onboardingTour.getOnboardingStepUiState(onboardingDemo.stepIndex, steps.length);
+          if (stepUi.isLastStep) {
             closeOnboardingDemo();
             return;
           }
-          moveOnboardingStep(onboardingDemo.stepIndex + 1);
+          moveOnboardingStep(stepUi.index + 1);
         });
 
         window.addEventListener('resize', () => {
