@@ -1,17 +1,48 @@
 (function registerProjectoryI18n(globalScope) {
   const STORAGE_KEY = 'projectory.locale';
   const FALLBACK_LOCALE = 'en';
+  const QA_LOCALE_QUERY_KEY = 'qaLocale';
 
   function getAvailableLocales() {
     return Object.keys(globalScope.ProjectoryLocales || {});
   }
 
+
+  function normalizeLocale(input) {
+    const raw = String(input || '').trim().toLowerCase();
+    if (!raw) return '';
+    if (['ps', 'pseudo', 'qps', 'qps-ploc'].includes(raw)) return 'pseudo';
+    return raw;
+  }
+
+  function resolveQueryLocale() {
+    const searchParams = new URLSearchParams(globalScope.location?.search || '');
+    return normalizeLocale(searchParams.get(QA_LOCALE_QUERY_KEY) || searchParams.get('locale'));
+  }
+
+  function syncQaLocaleInUrl(locale) {
+    if (!globalScope.history?.replaceState || !globalScope.location) return;
+
+    const currentUrl = new URL(globalScope.location.href);
+    if (locale === 'pseudo') {
+      currentUrl.searchParams.set(QA_LOCALE_QUERY_KEY, 'pseudo');
+    } else {
+      currentUrl.searchParams.delete(QA_LOCALE_QUERY_KEY);
+    }
+
+    const nextUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+    globalScope.history.replaceState(globalScope.history.state, '', nextUrl);
+  }
+
   function resolveInitialLocale() {
     const available = getAvailableLocales();
-    const stored = String(globalScope.localStorage?.getItem(STORAGE_KEY) || '').toLowerCase();
+    const queryLocale = resolveQueryLocale();
+    if (available.includes(queryLocale)) return queryLocale;
+
+    const stored = normalizeLocale(globalScope.localStorage?.getItem(STORAGE_KEY));
     if (available.includes(stored)) return stored;
 
-    const browserLocale = String(globalScope.navigator?.language || '').slice(0, 2).toLowerCase();
+    const browserLocale = normalizeLocale(String(globalScope.navigator?.language || '').slice(0, 2));
     if (available.includes(browserLocale)) return browserLocale;
 
     return FALLBACK_LOCALE;
@@ -58,13 +89,14 @@
   }
 
   function setLocale(nextLocale) {
-    const locale = String(nextLocale || '').toLowerCase();
+    const locale = normalizeLocale(nextLocale);
     if (!getAvailableLocales().includes(locale)) {
       return false;
     }
 
     i18nState.locale = locale;
     globalScope.localStorage?.setItem(STORAGE_KEY, locale);
+    syncQaLocaleInUrl(locale);
     applyToDom(document);
     globalScope.dispatchEvent(new CustomEvent('projectory:locale-changed', { detail: { locale } }));
     return true;

@@ -88,3 +88,53 @@ Remediation workflow:
 CI enforcement:
 
 - `.github/workflows/ci.yml` runs `npm run locale:check` in the quality/security job and blocks merges on mismatch.
+
+
+## Pseudo-locale mode for QA (untranslated + layout stress)
+
+Use pseudo-locale to exaggerate text length and character shapes so visual regressions are obvious.
+
+Quick enable paths:
+
+- Header language switcher: choose **Pseudo (accented)**.
+- URL override (recommended for reproducible bug reports): append `?qaLocale=pseudo`.
+
+Examples:
+
+```bash
+# local dev
+http://localhost:3000/?qaLocale=pseudo
+
+# staging
+https://<staging-host>/?qaLocale=pseudo
+```
+
+Behavior notes:
+
+- Pseudo strings are generated from the English catalog at runtime and wrapped with markers (`⟪¡¡ ... !!!⟫`) to make untranslated literals easy to spot.
+- Interpolation tokens like `{{count}}` are intentionally preserved so dynamic substitutions still work.
+- Selecting pseudo locale persists in `localStorage` and also updates the URL query for shareable repro links.
+
+## QA checklist (pseudo-locale pass)
+
+Run this checklist before release candidates:
+
+1. Switch to pseudo locale (`?qaLocale=pseudo`).
+2. Navigate every major surface (home tabs, modals, admin tabs, onboarding, auth flows).
+3. Flag any **plain/non-wrapped text** as potentially untranslated hardcoded strings.
+4. Check for layout regressions: clipped buttons, truncated table headers, overlapping badges, modal overflow, and horizontal scrollbars.
+5. Verify interactions still work with long labels (sorting, filtering, form submit/cancel, onboarding next/finish).
+6. Capture each issue with:
+   - URL (including query string)
+   - role used (admin/planner/viewer/teammate)
+   - viewport size
+   - screenshot
+   - impacted translation key/component
+
+## Known caveats and expected false positives
+
+- Proper nouns, IDs, numbers, emails, and user-entered content are expected to remain unaccented.
+- Server-sourced values (e.g., names from DB) are not translation keys and may appear without wrappers.
+- Some icon-only buttons/tooltips can be difficult to evaluate visually; rely on hover/ARIA text checks.
+- Dynamic third-party/browser-native UI text (e.g., file picker controls) is outside application catalog control.
+- Minor line wrapping is expected in pseudo mode; only report clipping/overlap/hidden-content as defects.

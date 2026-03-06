@@ -7,6 +7,7 @@
     'header.language': 'Language',
     'locale.en': 'English',
     'locale.de': 'Deutsch',
+    'locale.pseudo': 'Pseudo (accented)',
 
     'common.close': 'Close',
     'common.cancel': 'Cancel',

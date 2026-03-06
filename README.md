@@ -139,6 +139,7 @@ npm run locale:check
 
 This command is CI-gated and fails when `en`/`de` locale key sets diverge (except explicit temporary exceptions in `scripts/locale-key-exceptions.json`) or when exception entries become stale.
 See `docs/localization.md` for remediation workflow.
+For QA stress runs against hardcoded text and truncation issues, use pseudo locale via the language switcher or `?qaLocale=pseudo` (documented checklist + caveats in `docs/localization.md`).
 
 ## Architecture governance (ADRs + boundaries)
 
