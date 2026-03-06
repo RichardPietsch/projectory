@@ -128,6 +128,18 @@ Audit log retention can be tuned with `AUDIT_LOG_RETENTION_MONTHS` (defaults to 
 
 Operational semantics, baseline alerts, and dashboard guidance are documented in `docs/observability.md`.
 
+
+## Localization parity checks
+
+To prevent locale drift between supported languages, run:
+
+```bash
+npm run locale:check
+```
+
+This command is CI-gated and fails when `en`/`de` locale key sets diverge (except explicit temporary exceptions in `scripts/locale-key-exceptions.json`) or when exception entries become stale.
+See `docs/localization.md` for remediation workflow.
+
 ## Architecture governance (ADRs + boundaries)
 
 - Architecture decisions are tracked in `docs/adr/`.

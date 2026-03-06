@@ -40,6 +40,10 @@ jobs:
         run: |
           npm run format:check | tee ci-artifacts/format.txt
 
+      - name: Locale key parity checks
+        run: |
+          npm run locale:check | tee ci-artifacts/locale-check.txt
+
       - name: Dependency vulnerability scan (fail on high/critical)
         run: |
           set -euo pipefail
@@ -83,6 +87,7 @@ jobs:
             echo ""
             echo "- Lint: see lint.txt"
             echo "- Formatting: see format.txt"
+            echo "- Locale keys: see locale-check.txt"
             echo "- Dependency scan: see dependency-scan.txt and npm-audit.json"
             echo "- Filesystem vuln scan: see trivy-fs.sarif"
             echo "- Secret scan: see gitleaks.sarif and gitleaks step logs"
@@ -90,6 +95,7 @@ jobs:
             echo "## Fast remediation"
             echo "- Lint: npm run lint:ci"
             echo "- Format: npm run format:check"
+            echo "- Locale keys: npm run locale:check"
             echo "- Vulnerabilities: npm audit fix"
           } > ci-artifacts/quality-security-summary.md
           cat ci-artifacts/quality-security-summary.md >> "$GITHUB_STEP_SUMMARY"
