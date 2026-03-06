@@ -145,29 +145,20 @@ jobs:
       - name: Prepare image-scan artifact directory
         run: mkdir -p ci-artifacts
 
-      - name: Container image vulnerability report (Trivy)
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          image-ref: projectory:ci
-          format: table
-          output: ci-artifacts/trivy-image.txt
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          vuln-type: os,library
-          exit-code: '0'
-          trivyignores: .trivyignore
+      - name: Setup Trivy CLI
+        uses: aquasecurity/setup-trivy@v0.2.2
 
-      - name: Container image vulnerability policy gate (Trivy, fail on critical)
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          image-ref: projectory:ci
-          format: sarif
-          output: ci-artifacts/trivy-image.sarif
-          severity: CRITICAL
-          ignore-unfixed: true
-          vuln-type: os,library
-          exit-code: '1'
-          trivyignores: .trivyignore
+      - name: Container image vulnerability report (Trivy CLI)
+        run: |
+          trivy image             --format table             --output ci-artifacts/trivy-image.txt             --severity CRITICAL,HIGH             --ignore-unfixed             --vuln-type os,library             --scanners vuln             --ignorefile .trivyignore             projectory:ci
+
+      - name: Container image vulnerability policy gate (Trivy CLI, fail on critical)
+        run: |
+          trivy image             --format sarif             --output ci-artifacts/trivy-image.sarif             --severity CRITICAL             --ignore-unfixed             --vuln-type os,library             --scanners vuln             --ignorefile .trivyignore             --exit-code 1             projectory:ci
+
+      - name: List image-scan artifacts directory
+        if: always()
+        run: ls -lah ci-artifacts || true
 
       - name: Image scan summary (always)
         if: always()
