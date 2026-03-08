@@ -1,4 +1,5 @@
 const { getPermissionsForRole, hasPermission } = require('./permissions');
+const { isHeaderSimulationEnabled } = require('./runtime');
 
 // Header names used to simulate auth in local/dev requests.
 const AUTH_HEADERS = {
@@ -11,18 +12,18 @@ const AUTH_HEADERS = {
 
 // Derive a lightweight auth context on every request.
 function attachAuthContext(req, _res, next) {
-  const isProduction = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
+  const headerSimulationEnabled = isHeaderSimulationEnabled();
   const defaultRole = String(process.env.AUTH_DEFAULT_ROLE || 'admin').trim().toLowerCase();
-  const resolvedDefaultRole = isProduction ? 'viewer' : defaultRole;
-  const roleHeader = isProduction ? null : req.header(AUTH_HEADERS.USER_ROLE);
+  const resolvedDefaultRole = headerSimulationEnabled ? defaultRole : 'viewer';
+  const roleHeader = headerSimulationEnabled ? req.header(AUTH_HEADERS.USER_ROLE) : null;
   const role = String(roleHeader || resolvedDefaultRole).trim().toLowerCase();
 
-  const personIdHeader = isProduction ? null : req.header(AUTH_HEADERS.USER_PERSON_ID);
+  const personIdHeader = headerSimulationEnabled ? req.header(AUTH_HEADERS.USER_PERSON_ID) : null;
 
   req.auth = {
-    userId: isProduction ? null : req.header(AUTH_HEADERS.USER_ID) || null,
-    email: isProduction ? null : req.header(AUTH_HEADERS.USER_EMAIL) || null,
-    displayName: isProduction ? null : req.header(AUTH_HEADERS.USER_NAME) || null,
+    userId: headerSimulationEnabled ? req.header(AUTH_HEADERS.USER_ID) || null : null,
+    email: headerSimulationEnabled ? req.header(AUTH_HEADERS.USER_EMAIL) || null : null,
+    displayName: headerSimulationEnabled ? req.header(AUTH_HEADERS.USER_NAME) || null : null,
     personId: personIdHeader ? Number.parseInt(personIdHeader, 10) || null : null,
     role,
     permissions: getPermissionsForRole(role)

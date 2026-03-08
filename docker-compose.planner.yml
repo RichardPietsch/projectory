@@ -11,6 +11,9 @@ services:
       DB_NAME: helloapp
       DB_USER: hello
       DB_PASSWORD: hello
+      AUTH_LOCAL_DEV: "true"
+      AUTH_MODE: hybrid
+      AUTH_ALLOW_HEADER_SIMULATION: "true"
       SMTP_PASSWORD_ENCRYPTION_KEY: "example-testing-key-change-me-32-bytes-minimum"
       AUTH_DEFAULT_ROLE: planner
     command: sh -c "npm run migrate && npm start"

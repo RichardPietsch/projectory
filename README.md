@@ -105,13 +105,22 @@ This separation allows operational data migration without forcing catalog change
 - `viewer`: read-only access for transparency
 - `teammate`: scoped collaborator access on assigned projects (challenge/assignment maintenance)
 
-Headers for local role simulation:
+Headers for local role simulation (only when explicitly enabled):
 - `x-projectory-user-id`
 - `x-projectory-user-email`
 - `x-projectory-user-name`
 - `x-projectory-user-role`
 
-Default role is controlled by `AUTH_DEFAULT_ROLE` (defaults to `admin`).
+### Auth runtime safety matrix
+
+| Environment | `AUTH_MODE` | `AUTH_ALLOW_HEADER_SIMULATION` | Expected behavior |
+|---|---|---|---|
+| local/dev (`NODE_ENV` in `development/dev/local/test` or `AUTH_LOCAL_DEV=true`) | default `session` (can be set to `hybrid`/`header` for local-only troubleshooting) | **must be set to `true`** to use header simulation | Header-based simulation is available only with explicit opt-in |
+| non-local (`staging`, `production`, etc.) | **must be `session`** | **must be `false` / unset** | Startup fails fast on unsafe combinations |
+
+Additional auth env defaults:
+- `AUTH_MODE` defaults to `session`.
+- `AUTH_DEFAULT_ROLE` is only used when local header simulation is enabled; otherwise requests default to `viewer` until session auth is established.
 
 Audit log retention can be tuned with `AUDIT_LOG_RETENTION_MONTHS` (defaults to `6`).
 

@@ -7,6 +7,7 @@ const { Pool } = require('pg');
 const { registerModuleRoutes } = require('./modules');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
 const { PERMISSIONS, getPermissionsForRole } = require('./auth/permissions');
+const { getAuthMode, validateAuthRuntimeSafety } = require('./auth/runtime');
 const { validatePasswordStrength, hashPassword, verifyPassword } = require('./auth/passwords');
 const { createOpaqueToken, hashOpaqueToken } = require('./auth/tokens');
 
@@ -563,21 +564,6 @@ const AUTH_SESSION_COOKIE = 'projectory_session';
 const AUTH_SESSION_TTL_HOURS = Number(process.env.AUTH_SESSION_TTL_HOURS || 12);
 const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES || 30);
 const AUDIT_LOG_RETENTION_MONTHS = Number(process.env.AUDIT_LOG_RETENTION_MONTHS || 6);
-
-const AUTH_MODES = new Set(['hybrid', 'session', 'header']);
-
-function getAuthMode() {
-  const mode = String(process.env.AUTH_MODE || 'hybrid').trim().toLowerCase();
-  return AUTH_MODES.has(mode) ? mode : 'hybrid';
-}
-
-function validateAuthRuntimeSafety() {
-  const isProduction = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
-  const authMode = getAuthMode();
-  if (isProduction && authMode !== 'session') {
-    throw new Error(`Unsafe auth configuration: AUTH_MODE=${authMode}. Production requires AUTH_MODE=session.`);
-  }
-}
 
 function buildSessionOnlyFallbackAuth(previousAuth = {}) {
   // Rollout safety: in strict session mode we never trust header role simulation.

@@ -10,6 +10,10 @@ services:
       DB_NAME: helloapp
       DB_USER: hello
       DB_PASSWORD: hello
+      AUTH_LOCAL_DEV: "true"
+      AUTH_MODE: hybrid
+      AUTH_ALLOW_HEADER_SIMULATION: "true"
+      AUTH_DEFAULT_ROLE: admin
     command: sh -c "npm run migrate && npm start"
     depends_on:
       db:
