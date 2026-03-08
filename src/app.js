@@ -44,6 +44,7 @@ const SMTP_PASSWORD_PREFIX = 'enc:v1:';
 const METRIC_DURATION_BUCKETS_MS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000];
 let lastRateLimitBucketSweepAt = 0;
 const authAttemptBuckets = new Map();
+const routeRateLimitBuckets = new Map();
 let lastAuthAttemptSweepAt = 0;
 
 const metricsState = {
@@ -399,6 +400,35 @@ function sendAuthFailure(res, statusCode, message) {
 function sendAuthThrottle(res, message, retryAfterMs) {
   res.setHeader('Retry-After', String(toRetryAfterSeconds(retryAfterMs)));
   return res.status(429).json({ error: message });
+}
+
+
+
+function createRouteRateLimiter({ key, max, windowMs, errorMessage = 'Too many requests.' }) {
+  const normalizedKey = String(key || 'route').trim() || 'route';
+  const normalizedMax = Number.isFinite(Number(max)) && Number(max) > 0 ? Number(max) : 60;
+  const normalizedWindowMs = Number.isFinite(Number(windowMs)) && Number(windowMs) > 0 ? Number(windowMs) : 60000;
+
+  return (req, res, next) => {
+    const now = Date.now();
+    const ipKey = String(req.ip || req.socket?.remoteAddress || 'unknown');
+    const bucketKey = `${normalizedKey}|${ipKey}`;
+    const bucket = routeRateLimitBuckets.get(bucketKey);
+
+    if (!bucket || now - bucket.windowStart >= normalizedWindowMs) {
+      routeRateLimitBuckets.set(bucketKey, { windowStart: now, count: 1 });
+      return next();
+    }
+
+    bucket.count += 1;
+    if (bucket.count > normalizedMax) {
+      const retryAfterMs = Math.max(1, normalizedWindowMs - (now - bucket.windowStart));
+      res.setHeader('Retry-After', String(toRetryAfterSeconds(retryAfterMs)));
+      return res.status(429).json({ error: errorMessage });
+    }
+
+    return next();
+  };
 }
 
 function getRateLimitConfig() {
@@ -1681,7 +1711,12 @@ app.post('/api/auth/logout', async (req, res) => {
   }
 });
 
-app.post('/api/auth/forgot-password', async (req, res) => {
+app.post('/api/auth/forgot-password', createRouteRateLimiter({
+  key: 'auth-forgot-password',
+  max: Number(process.env.AUTH_FORGOT_PASSWORD_RATE_LIMIT_MAX || 10),
+  windowMs: Number(process.env.AUTH_FORGOT_PASSWORD_RATE_LIMIT_WINDOW_MS || 60000),
+  errorMessage: 'Too many password reset requests. Please wait before trying again.'
+}), async (req, res) => {
   const email = String(req.body?.email || '').trim();
   if (!email) {
     return badRequest(res, 'email is required.');
@@ -3206,7 +3241,12 @@ app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, r
 });
 
 
-app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab', '/invite', '/reset-password'], (_req, res) => {
+app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab', '/invite', '/reset-password'], createRouteRateLimiter({
+  key: 'spa-shell',
+  max: Number(process.env.SPA_SHELL_RATE_LIMIT_MAX || 240),
+  windowMs: Number(process.env.SPA_SHELL_RATE_LIMIT_WINDOW_MS || 60000),
+  errorMessage: 'Too many page requests. Please slow down.'
+}), (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
