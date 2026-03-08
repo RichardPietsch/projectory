@@ -79,6 +79,7 @@ const SENSITIVE_LOG_KEYS = new Set([
 ]);
 
 
+
 function clearRequestRateLimitBuckets() {
   requestRateBuckets.clear();
   lastRateLimitBucketSweepAt = 0;
@@ -404,33 +405,6 @@ function sendAuthThrottle(res, message, retryAfterMs) {
 
 
 
-function createRouteRateLimiter({ key, max, windowMs, errorMessage = 'Too many requests.' }) {
-  const normalizedKey = String(key || 'route').trim() || 'route';
-  const normalizedMax = Number.isFinite(Number(max)) && Number(max) > 0 ? Number(max) : 60;
-  const normalizedWindowMs = Number.isFinite(Number(windowMs)) && Number(windowMs) > 0 ? Number(windowMs) : 60000;
-
-  return (req, res, next) => {
-    const now = Date.now();
-    const ipKey = String(req.ip || req.socket?.remoteAddress || 'unknown');
-    const bucketKey = `${normalizedKey}|${ipKey}`;
-    const bucket = routeRateLimitBuckets.get(bucketKey);
-
-    if (!bucket || now - bucket.windowStart >= normalizedWindowMs) {
-      routeRateLimitBuckets.set(bucketKey, { windowStart: now, count: 1 });
-      return next();
-    }
-
-    bucket.count += 1;
-    if (bucket.count > normalizedMax) {
-      const retryAfterMs = Math.max(1, normalizedWindowMs - (now - bucket.windowStart));
-      res.setHeader('Retry-After', String(toRetryAfterSeconds(retryAfterMs)));
-      return res.status(429).json({ error: errorMessage });
-    }
-
-    return next();
-  };
-}
-
 function getRateLimitConfig() {
   const isProduction = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
   const defaultMax = isProduction ? 120 : 10000;
@@ -458,7 +432,7 @@ app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.tailwindcss.com https://code.iconify.design; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
   next();
 });
-app.use((req, res, next) => {
+function requestRateLimitMiddleware(req, res, next) {
   const { max, windowMs } = getRateLimitConfig();
   const now = Date.now();
   sweepExpiredRateLimitBuckets(now, windowMs);
@@ -476,7 +450,9 @@ app.use((req, res, next) => {
   }
 
   return next();
-});
+}
+
+app.use(requestRateLimitMiddleware);
 
 app.use((req, res, next) => {
   req.setTimeout(REQUEST_TIMEOUT_MS, () => {
@@ -1711,12 +1687,7 @@ app.post('/api/auth/logout', async (req, res) => {
   }
 });
 
-app.post('/api/auth/forgot-password', createRouteRateLimiter({
-  key: 'auth-forgot-password',
-  max: Number(process.env.AUTH_FORGOT_PASSWORD_RATE_LIMIT_MAX || 10),
-  windowMs: Number(process.env.AUTH_FORGOT_PASSWORD_RATE_LIMIT_WINDOW_MS || 60000),
-  errorMessage: 'Too many password reset requests. Please wait before trying again.'
-}), async (req, res) => {
+app.post('/api/auth/forgot-password', requestRateLimitMiddleware, async (req, res) => {
   const email = String(req.body?.email || '').trim();
   if (!email) {
     return badRequest(res, 'email is required.');
@@ -3241,12 +3212,25 @@ app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, r
 });
 
 
-app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab', '/invite', '/reset-password'], createRouteRateLimiter({
-  key: 'spa-shell',
-  max: Number(process.env.SPA_SHELL_RATE_LIMIT_MAX || 240),
-  windowMs: Number(process.env.SPA_SHELL_RATE_LIMIT_WINDOW_MS || 60000),
-  errorMessage: 'Too many page requests. Please slow down.'
-}), (_req, res) => {
+app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab', '/invite', '/reset-password'], (req, res) => {
+  const spaShellRateLimitMax = Number(process.env.SPA_SHELL_RATE_LIMIT_MAX || 240);
+  const spaShellRateLimitWindowMs = Number(process.env.SPA_SHELL_RATE_LIMIT_WINDOW_MS || 60000);
+  const spaShellNow = Date.now();
+  const spaShellIpKey = String(req.ip || req.socket?.remoteAddress || 'unknown');
+  const spaShellBucketKey = `spa-shell|${spaShellIpKey}`;
+  const spaShellBucket = routeRateLimitBuckets.get(spaShellBucketKey);
+
+  if (!spaShellBucket || spaShellNow - spaShellBucket.windowStart >= spaShellRateLimitWindowMs) {
+    routeRateLimitBuckets.set(spaShellBucketKey, { windowStart: spaShellNow, count: 1 });
+  } else {
+    spaShellBucket.count += 1;
+    if (spaShellBucket.count > spaShellRateLimitMax) {
+      const retryAfterMs = Math.max(1, spaShellRateLimitWindowMs - (spaShellNow - spaShellBucket.windowStart));
+      res.setHeader('Retry-After', String(toRetryAfterSeconds(retryAfterMs)));
+      return res.status(429).json({ error: 'Too many page requests. Please slow down.' });
+    }
+  }
+
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
