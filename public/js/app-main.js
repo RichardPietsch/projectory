@@ -416,6 +416,12 @@
       }
 
       function loginScreenView() {
+        const forgotBusy = state.forgotPassword.submitting ? i18n.t('auth.forgot.submitBusy') : i18n.t('auth.forgot.submit');
+        const forgotError = state.forgotPassword.error ? `<p class="mt-2 text-xs text-rose-300">${state.forgotPassword.error}</p>` : '';
+        const forgotSuccess = state.forgotPassword.submitted
+          ? `<p class="mt-2 text-xs text-emerald-300">${i18n.t('auth.forgot.success')}</p>`
+          : '';
+
         return `<div class="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
           <div class="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
@@ -427,20 +433,35 @@
                 <li>${i18n.t('auth.login.bullet.audit')}</li>
               </ul>
             </div>
-            <form id="login-form" class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-              <h3 class="mb-3 text-lg font-semibold">${i18n.t('auth.login.formTitle')}</h3>
-              <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.login.email')}
-                <input id="login-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
-              </label>
-              <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.login.password')}
-                <input id="login-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.password')}" required />
-              </label>
-              <div class="flex gap-2">
-                <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950">${i18n.t('auth.login.submit')}</button>
-                <button type="button" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="continueWithCurrentAccess()">${i18n.t('auth.login.continueWithout')}</button>
-              </div>
-              <p class="mt-3 text-xs text-slate-500">${i18n.t('auth.login.devTip')}</p>
-            </form>
+            <div class="space-y-4">
+              <form id="login-form" class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <h3 class="mb-3 text-lg font-semibold">${i18n.t('auth.login.formTitle')}</h3>
+                <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.login.email')}
+                  <input id="login-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
+                </label>
+                <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.login.password')}
+                  <input id="login-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.password')}" required />
+                </label>
+                <div class="flex gap-2">
+                  <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950">${i18n.t('auth.login.submit')}</button>
+                  <button type="button" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="continueWithCurrentAccess()">${i18n.t('auth.login.continueWithout')}</button>
+                </div>
+                <p class="mt-3 text-xs text-slate-500">${i18n.t('auth.login.devTip')}</p>
+              </form>
+
+              <form id="forgot-password-form" class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <h3 class="mb-2 text-sm font-semibold text-slate-200">${i18n.t('auth.forgot.title')}</h3>
+                <label class="block text-sm text-slate-300">${i18n.t('auth.forgot.emailLabel')}
+                  <input id="forgot-password-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
+                </label>
+                <div class="mt-3 flex items-center justify-between gap-3">
+                  <button type="submit" class="rounded border border-slate-600 px-3 py-2 text-xs hover:bg-slate-800 disabled:opacity-60" ${state.forgotPassword.submitting ? 'disabled' : ''}>${forgotBusy}</button>
+                  <a href="/reset-password" class="text-xs text-sky-300 hover:text-sky-200">${i18n.t('auth.forgot.haveToken')}</a>
+                </div>
+                ${forgotSuccess}
+                ${forgotError}
+              </form>
+            </div>
           </div>
         </div>`;
       }
@@ -517,6 +538,92 @@
         } catch (error) {
           state.inviteFlow.submitting = false;
           state.inviteFlow.error = error.message || 'Invite activation failed.';
+          render();
+        }
+      };
+
+
+      function resetPasswordFlowView() {
+        const busyLabel = state.resetPasswordFlow.submitting ? i18n.t('auth.reset.submitBusy') : i18n.t('auth.reset.submit');
+        const errorHtml = state.resetPasswordFlow.error ? `<p class="mt-3 text-sm text-rose-300">${state.resetPasswordFlow.error}</p>` : '';
+        const doneHtml = state.resetPasswordFlow.done ? `<p class="mt-3 text-sm text-emerald-300">${i18n.t('auth.reset.success')}</p>` : '';
+
+        return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
+          <h2 class="text-3xl font-bold">${i18n.t('auth.reset.title')}</h2>
+          <p class="mt-2 text-slate-300">${i18n.t('auth.reset.subtitle')}</p>
+          <p class="mt-1 text-xs text-slate-500">${i18n.t('auth.reset.tokenStatus', { status: state.resetPasswordFlow.token ? i18n.t('auth.reset.tokenLoaded') : i18n.t('auth.reset.tokenMissing') })}</p>
+          <form id="reset-password-form" class="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.reset.newPassword')}
+              <input id="reset-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
+            </label>
+            <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.reset.confirmPassword')}
+              <input id="reset-password-confirm" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
+            </label>
+            <div class="flex items-center gap-3">
+              <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${state.resetPasswordFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
+              <a href="/teams" class="text-xs text-sky-300 hover:text-sky-200">${i18n.t('auth.reset.backToLogin')}</a>
+            </div>
+          </form>
+          ${doneHtml}
+          ${errorHtml}
+        </div>`;
+      }
+
+      window.submitForgotPassword = async function submitForgotPassword(event) {
+        event?.preventDefault();
+        const email = String(document.getElementById('forgot-password-email')?.value || '').trim();
+        if (!email) {
+          state.forgotPassword.error = i18n.t('auth.forgot.emailRequired');
+          render();
+          return;
+        }
+
+        state.forgotPassword.submitting = true;
+        state.forgotPassword.submitted = false;
+        state.forgotPassword.error = '';
+        render();
+        try {
+          await api('/api/auth/forgot-password', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+          });
+          state.forgotPassword.submitting = false;
+          state.forgotPassword.submitted = true;
+          render();
+        } catch (error) {
+          state.forgotPassword.submitting = false;
+          state.forgotPassword.error = error.message || i18n.t('auth.forgot.genericError');
+          render();
+        }
+      };
+
+      window.submitResetPassword = async function submitResetPassword(event) {
+        event?.preventDefault();
+        const password = String(document.getElementById('reset-password')?.value || '');
+        const confirm = String(document.getElementById('reset-password-confirm')?.value || '');
+        if (!password || password !== confirm) {
+          state.resetPasswordFlow.error = i18n.t('auth.reset.passwordsMismatch');
+          render();
+          return;
+        }
+
+        state.resetPasswordFlow.submitting = true;
+        state.resetPasswordFlow.error = '';
+        render();
+        try {
+          await api('/api/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ token: state.resetPasswordFlow.token, password })
+          });
+          state.resetPasswordFlow.submitting = false;
+          state.resetPasswordFlow.done = true;
+          state.authRequired = true;
+          showMessage(i18n.t('auth.reset.success'));
+          window.history.replaceState({}, '', '/teams');
+          render();
+        } catch (error) {
+          state.resetPasswordFlow.submitting = false;
+          state.resetPasswordFlow.error = error.message || i18n.t('auth.reset.genericError');
           render();
         }
       };
@@ -3017,6 +3124,10 @@ function filteredPeople() {
           return { mode: 'invite' };
         }
 
+        if (parts.length === 1 && parts[0] === 'reset-password') {
+          return { mode: 'reset-password' };
+        }
+
         if (parts.length === 1 && parts[0] === 'admin') {
           return { mode: 'admin', adminTab: state.adminTab || 'people' };
         }
@@ -3033,6 +3144,11 @@ function filteredPeople() {
         if (!route) return false;
 
         if (route.mode === 'invite') {
+          state.showAdmin = false;
+          return true;
+        }
+
+        if (route.mode === 'reset-password') {
           state.showAdmin = false;
           return true;
         }
@@ -3081,6 +3197,10 @@ function filteredPeople() {
       function pathFromState() {
         if (state.inviteFlow?.active) {
           return `/invite?token=${encodeURIComponent(state.inviteFlow.token || '')}`;
+        }
+
+        if (state.resetPasswordFlow?.active) {
+          return `/reset-password?token=${encodeURIComponent(state.resetPasswordFlow.token || '')}`;
         }
 
         if (state.showAdmin) {
@@ -3174,10 +3294,15 @@ function filteredPeople() {
           state.showAdmin = false;
           document.getElementById('view').innerHTML = inviteFlowView();
           document.getElementById('invite-activate-form')?.addEventListener('submit', window.submitInviteActivation);
+        } else if (state.resetPasswordFlow?.active) {
+          state.showAdmin = false;
+          document.getElementById('view').innerHTML = resetPasswordFlowView();
+          document.getElementById('reset-password-form')?.addEventListener('submit', window.submitResetPassword);
         } else if (needsLoginScreen()) {
           state.showAdmin = false;
           document.getElementById('view').innerHTML = loginScreenView();
           document.getElementById('login-form')?.addEventListener('submit', window.loginFromSplash);
+          document.getElementById('forgot-password-form')?.addEventListener('submit', window.submitForgotPassword);
         } else if (state.showAdmin) {
           document.getElementById('view').innerHTML = adminStandaloneView();
         } else {
@@ -3232,8 +3357,13 @@ function filteredPeople() {
           const inviteToken = String(params.get('token') || '').trim();
           if (window.location.pathname === '/invite') {
             state.inviteFlow.active = true;
+            state.resetPasswordFlow.active = false;
             state.inviteFlow.token = inviteToken;
             await loadInviteFlow(inviteToken);
+          } else if (window.location.pathname === '/reset-password') {
+            state.inviteFlow.active = false;
+            state.resetPasswordFlow.active = true;
+            state.resetPasswordFlow.token = String(params.get('token') || '').trim();
           } else if (!needsLoginScreen() && !applyAppRoute(window.location.pathname)) {
             state.homeTab = 'client-teams';
             state.selectedProjectId = '';
@@ -3248,11 +3378,21 @@ function filteredPeople() {
             if (window.location.pathname === '/invite') {
               const params = new URLSearchParams(window.location.search || '');
               state.inviteFlow.active = true;
+              state.resetPasswordFlow.active = false;
               state.inviteFlow.token = String(params.get('token') || '').trim();
               loadInviteFlow(state.inviteFlow.token).then(() => render());
               return;
             }
+            if (window.location.pathname === '/reset-password') {
+              const params = new URLSearchParams(window.location.search || '');
+              state.inviteFlow.active = false;
+              state.resetPasswordFlow.active = true;
+              state.resetPasswordFlow.token = String(params.get('token') || '').trim();
+              render();
+              return;
+            }
             state.inviteFlow.active = false;
+            state.resetPasswordFlow.active = false;
             if (!needsLoginScreen()) applyAppRoute(window.location.pathname);
             render();
           });

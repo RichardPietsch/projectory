@@ -1009,6 +1009,40 @@ function buildInviteEmailBody({ inviteLink, recipientName, expiresHours }) {
   ].join('\n');
 }
 
+
+async function createPasswordResetToken(userId, requestedIp) {
+  const token = createOpaqueToken(32);
+  const tokenHash = hashOpaqueToken(token);
+
+  await pool.query(
+    `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, requested_ip)
+     VALUES ($1, $2, NOW() + ($3::text || ' minutes')::interval, $4)`,
+    [userId, tokenHash, String(PASSWORD_RESET_TTL_MINUTES), requestedIp || null]
+  );
+
+  const appBaseUrl = String(process.env.APP_BASE_URL || 'http://localhost:3000/').trim();
+  const resetLink = `${appBaseUrl.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(token)}`;
+
+  return {
+    token,
+    resetLink,
+    expiresMinutes: PASSWORD_RESET_TTL_MINUTES
+  };
+}
+
+function buildForgotPasswordEmailBody({ resetLink, expiresMinutes }) {
+  return [
+    'Hi,',
+    '',
+    'We received a request to reset your Projectory password.',
+    `Open this link to set a new password: ${resetLink}`,
+    '',
+    `This reset link expires in ${expiresMinutes} minute(s).`,
+    '',
+    'If you did not request a password reset, you can ignore this email.'
+  ].join('\n');
+}
+
 // Teammates are project-scoped; this helper keeps scope checks explicit.
 function isScopedTeammate(auth) {
   return String(auth?.role || '').toLowerCase() === 'teammate';
@@ -1655,21 +1689,44 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
   try {
     const userResult = await pool.query(
-      `SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND is_active = TRUE LIMIT 1`,
+      `SELECT id, email, display_name
+       FROM users
+       WHERE LOWER(email) = LOWER($1)
+         AND is_active = TRUE
+       LIMIT 1`,
       [email]
     );
 
     if (userResult.rowCount > 0) {
-      const token = createOpaqueToken(32);
-      const tokenHash = hashOpaqueToken(token);
-      await pool.query(
-        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, requested_ip)
-         VALUES ($1, $2, NOW() + ($3::text || ' minutes')::interval, $4)`,
-        [userResult.rows[0].id, tokenHash, String(PASSWORD_RESET_TTL_MINUTES), req.ip || null]
+      const user = userResult.rows[0];
+      const reset = await createPasswordResetToken(user.id, req.ip || null);
+
+      const smtpResult = await pool.query(
+        `SELECT host, port, username, password, from_email, secure, enabled
+         FROM smtp_settings
+         WHERE id = 1`
       );
+      const smtp = smtpResult.rows[0] ? await resolveSmtpSettingsRow(smtpResult.rows[0], { persistLegacyUpgrade: true }) : null;
+
+      if (smtp && smtp.enabled && smtp.host && smtp.port && smtp.from_email) {
+        try {
+          await sendSmtpEmail(smtp, {
+            toEmail: String(user.email || '').trim().toLowerCase(),
+            subject: 'Projectory password reset',
+            textBody: buildForgotPasswordEmailBody({ resetLink: reset.resetLink, expiresMinutes: reset.expiresMinutes })
+          });
+        } catch (error) {
+          emitAuthSecurityEvent('auth_password_reset_email_failed', {
+            endpoint: '/api/auth/forgot-password',
+            ipHash: obfuscateSecurityKey(req.ip || 'unknown'),
+            identifierHash: obfuscateSecurityKey(email),
+            reason: String(error?.message || 'unknown')
+          });
+        }
+      }
 
       if (process.env.AUTH_RETURN_DEBUG_TOKENS === 'true') {
-        return res.json({ ok: true, debugToken: token });
+        return res.json({ ok: true, debugToken: reset.token, resetLink: reset.resetLink });
       }
     }
 
@@ -3149,7 +3206,7 @@ app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, r
 });
 
 
-app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab', '/invite'], (_req, res) => {
+app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab', '/invite', '/reset-password'], (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 

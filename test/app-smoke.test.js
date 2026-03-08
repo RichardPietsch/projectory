@@ -46,6 +46,22 @@ test('GET /invite serves SPA shell route', async () => {
   }
 });
 
+
+
+test('GET /reset-password serves SPA shell route', async () => {
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/reset-password`);
+    assert.equal(response.status, 200);
+    const text = await response.text();
+    assert.equal(/<html[\s>]/i.test(text), true);
+  } finally {
+    server.close();
+  }
+});
+
 test('GET /api/meta includes baseline security headers', async () => {
   const originalQuery = pool.query;
   pool.query = async (sql) => {
@@ -1218,6 +1234,89 @@ test('PUT /api/admin/users/:id/project-access validates payload shape', async ()
 });
 
 
+
+
+
+test('POST /api/auth/forgot-password creates token and returns debug reset link when enabled', async () => {
+  const originalQuery = pool.query;
+  const previousDebug = process.env.AUTH_RETURN_DEBUG_TOKENS;
+  process.env.AUTH_RETURN_DEBUG_TOKENS = 'true';
+  const calls = [];
+
+  pool.query = async (sql, params = []) => {
+    const normalized = String(sql);
+    calls.push(normalized);
+    if (normalized.includes('FROM users') && normalized.includes('is_active = TRUE')) {
+      return { rowCount: 1, rows: [{ id: 42, email: 'reset@example.com', display_name: 'Reset User' }] };
+    }
+    if (normalized.includes('INSERT INTO password_reset_tokens')) {
+      assert.equal(params[0], 42);
+      assert.equal(typeof params[1], 'string');
+      return { rowCount: 1, rows: [] };
+    }
+    if (normalized.includes('FROM smtp_settings')) {
+      return { rowCount: 0, rows: [] };
+    }
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'reset@example.com' })
+    });
+
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(typeof body.debugToken, 'string');
+    assert.equal(String(body.resetLink || '').includes('/reset-password?token='), true);
+    assert.equal(calls.some((sql) => sql.includes('INSERT INTO password_reset_tokens')), true);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    if (previousDebug === undefined) delete process.env.AUTH_RETURN_DEBUG_TOKENS; else process.env.AUTH_RETURN_DEBUG_TOKENS = previousDebug;
+  }
+});
+
+
+test('POST /api/auth/reset-password rejects invalid token with 400', async () => {
+  const originalConnect = pool.connect;
+
+  const fakeClient = {
+    async query(sql) {
+      if (String(sql).includes('FROM password_reset_tokens')) {
+        return { rowCount: 0, rows: [] };
+      }
+      return { rowCount: 0, rows: [] };
+    },
+    release() {}
+  };
+
+  pool.connect = async () => fakeClient;
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'invalid', password: 'long-enough-password' })
+    });
+
+    assert.equal(response.status, 400);
+    const body = await response.json();
+    assert.equal(body.error, 'Invalid or expired reset token.');
+  } finally {
+    server.close();
+    pool.connect = originalConnect;
+  }
+});
 
 test('POST /api/auth/login returns non-enumerating failures for unknown/inactive/wrong credentials', async () => {
   const originalQuery = pool.query;

@@ -39,6 +39,8 @@ Auth context is built in layers:
 | `/api/auth/me` | GET | none | Returns resolved auth context (`authSource`, `authMode`, role/permissions, teammate scope). |
 | `/api/auth/login` | POST | none | Creates DB-backed session cookie (`projectory_session`) on successful credential validation. |
 | `/api/auth/logout` | POST | none | Revokes current DB session row and clears session cookie. |
+| `/api/auth/forgot-password` | POST | none | Non-enumerating reset request endpoint; creates reset token and sends e-mail when SMTP is configured. |
+| `/api/auth/reset-password` | POST | none | Consumes valid reset token and updates password hash. |
 | `/api/auth/invite-preview` | POST | none | Invite-token lookup endpoint used before invite acceptance. |
 | `/api/auth/accept-invite` | POST | none | Accepts invite, persists password, marks invite accepted. |
 | `/api/meta` | GET | none | Returns priorities/trades/levels catalogs. |

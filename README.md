@@ -115,6 +115,8 @@ Default role is controlled by `AUTH_DEFAULT_ROLE` (defaults to `admin`).
 
 Audit log retention can be tuned with `AUDIT_LOG_RETENTION_MONTHS` (defaults to `6`).
 
+Password reset journey is available via `POST /api/auth/forgot-password` (request e-mail link) and `POST /api/auth/reset-password` (consume token), with reset landing route at `/reset-password?token=...`.
+
 ---
 
 

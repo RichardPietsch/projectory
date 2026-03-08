@@ -59,6 +59,8 @@ The following high-risk flows must keep non-mocked integration coverage:
   - `POST /api/auth/login`
   - `GET /api/auth/me`
   - `POST /api/auth/logout`
+  - `POST /api/auth/forgot-password`
+  - `POST /api/auth/reset-password`
 - **Invite acceptance/auth bootstrap**
   - `POST /api/auth/invite-preview`
   - `POST /api/auth/accept-invite`

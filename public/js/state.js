@@ -77,6 +77,8 @@
       peopleOverviewSort: 'name_asc',
       peopleOverviewSearch: '',
       peopleOverviewModal: { open: false, personId: null },
+      forgotPassword: { submitting: false, submitted: false, error: '' },
+      resetPasswordFlow: { active: false, token: '', submitting: false, done: false, error: '' },
       inviteFlow: { active: false, token: '', loading: false, submitting: false, profile: null, error: '' }
     };
   }
