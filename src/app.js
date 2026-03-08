@@ -416,6 +416,38 @@ function getRateLimitConfig() {
   };
 }
 
+
+function rateLimit(config = {}) {
+  const windowMs = Number(config.windowMs || 60000);
+  const max = Number(config.max || 60);
+  const keyPrefix = String(config.keyPrefix || 'route').trim() || 'route';
+  const message = String(config.message || 'Too many requests.');
+  const keyGenerator = typeof config.keyGenerator === 'function'
+    ? config.keyGenerator
+    : (req) => String(req.ip || req.socket?.remoteAddress || 'unknown');
+
+  return (req, res, next) => {
+    const now = Date.now();
+    const actorKey = String(keyGenerator(req) || 'unknown');
+    const bucketKey = `${keyPrefix}|${actorKey}`;
+    const bucket = routeRateLimitBuckets.get(bucketKey);
+
+    if (!bucket || now - bucket.windowStart >= windowMs) {
+      routeRateLimitBuckets.set(bucketKey, { windowStart: now, count: 1 });
+      return next();
+    }
+
+    bucket.count += 1;
+    if (bucket.count > max) {
+      const retryAfterMs = Math.max(1, windowMs - (now - bucket.windowStart));
+      res.setHeader('Retry-After', String(toRetryAfterSeconds(retryAfterMs)));
+      return res.status(429).json({ error: message });
+    }
+
+    return next();
+  };
+}
+
 app.disable('x-powered-by');
 app.use((req, res, next) => {
   const correlationId = getCorrelationIdFromHeader(req);
@@ -451,6 +483,26 @@ function requestRateLimitMiddleware(req, res, next) {
 
   return next();
 }
+
+
+const forgotPasswordRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'auth-forgot-password',
+  max: Number(process.env.AUTH_FORGOT_PASSWORD_RATE_LIMIT_MAX || 10),
+  windowMs: Number(process.env.AUTH_FORGOT_PASSWORD_RATE_LIMIT_WINDOW_MS || 60000),
+  message: 'Too many password reset requests. Please wait before trying again.',
+  keyGenerator: (req) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const ip = String(req.ip || req.socket?.remoteAddress || 'unknown');
+    return `${ip}|${email || 'unknown'}`;
+  }
+});
+
+const spaShellRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'spa-shell',
+  max: Number(process.env.SPA_SHELL_RATE_LIMIT_MAX || 240),
+  windowMs: Number(process.env.SPA_SHELL_RATE_LIMIT_WINDOW_MS || 60000),
+  message: 'Too many page requests. Please slow down.'
+});
 
 app.use(requestRateLimitMiddleware);
 
@@ -1687,7 +1739,7 @@ app.post('/api/auth/logout', async (req, res) => {
   }
 });
 
-app.post('/api/auth/forgot-password', requestRateLimitMiddleware, async (req, res) => {
+app.post('/api/auth/forgot-password', forgotPasswordRouteRateLimitMiddleware, async (req, res) => {
   const email = String(req.body?.email || '').trim();
   if (!email) {
     return badRequest(res, 'email is required.');
@@ -3212,25 +3264,7 @@ app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, r
 });
 
 
-app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab', '/invite', '/reset-password'], (req, res) => {
-  const spaShellRateLimitMax = Number(process.env.SPA_SHELL_RATE_LIMIT_MAX || 240);
-  const spaShellRateLimitWindowMs = Number(process.env.SPA_SHELL_RATE_LIMIT_WINDOW_MS || 60000);
-  const spaShellNow = Date.now();
-  const spaShellIpKey = String(req.ip || req.socket?.remoteAddress || 'unknown');
-  const spaShellBucketKey = `spa-shell|${spaShellIpKey}`;
-  const spaShellBucket = routeRateLimitBuckets.get(spaShellBucketKey);
-
-  if (!spaShellBucket || spaShellNow - spaShellBucket.windowStart >= spaShellRateLimitWindowMs) {
-    routeRateLimitBuckets.set(spaShellBucketKey, { windowStart: spaShellNow, count: 1 });
-  } else {
-    spaShellBucket.count += 1;
-    if (spaShellBucket.count > spaShellRateLimitMax) {
-      const retryAfterMs = Math.max(1, spaShellRateLimitWindowMs - (spaShellNow - spaShellBucket.windowStart));
-      res.setHeader('Retry-After', String(toRetryAfterSeconds(retryAfterMs)));
-      return res.status(429).json({ error: 'Too many page requests. Please slow down.' });
-    }
-  }
-
+app.get(['/teams', '/teams/:id', '/people', '/people/:id', '/admin', '/admin/:tab', '/invite', '/reset-password'], spaShellRouteRateLimitMiddleware, (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 

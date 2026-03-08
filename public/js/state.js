@@ -41,6 +41,13 @@
         clientId: null,
         priorityId: null
       },
+      workloadModal: {
+        open: false,
+        projectId: null,
+        personId: null,
+        quantity: 0,
+        keepModalOpen: false
+      },
       listenersBound: {
         header: false,
         footer: false,
@@ -53,7 +60,8 @@
         peopleOverviewModal: false,
         adminEntityModals: false,
         projectStatusModal: false,
-        projectPriorityModal: false
+        projectPriorityModal: false,
+        workloadModal: false
       },
       assignSubmitting: false,
       challengeSubmitting: false,

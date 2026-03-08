@@ -2863,37 +2863,90 @@ function filteredPeople() {
         await handleMutation(() => api(`/api/projects/${id}`, { method: 'DELETE' }), 'Project deleted.');
       };
 
-      window.adjustProjectPersonQuantity = async function adjustProjectPersonQuantity(projectId, personId, keepModalOpen = false) {
+      window.adjustProjectPersonQuantity = function adjustProjectPersonQuantity(projectId, personId, keepModalOpen = false) {
         if (isViewerMode()) return;
         const currentAssignments = state.projectsPayload.assignments.filter(
           (assignment) => String(assignment.project_id) === String(projectId) && String(assignment.person_id) === String(personId)
         );
         if (currentAssignments.length === 0) {
-          showMessage('No assignments found for this person in this project.', 'error');
+          showMessage(i18n.t('peopleOverview.workload.noAssignments'), 'error');
           return;
         }
 
         const currentQuantity = Math.round(currentAssignments.reduce((sum, assignment) => sum + Number(assignment.quantity || 0), 0));
-        const input = window.prompt(i18n.t('projectDetail.workloadPrompt'), String(currentQuantity));
-        if (input === null) return;
+        state.workloadModal.open = true;
+        state.workloadModal.projectId = String(projectId);
+        state.workloadModal.personId = String(personId);
+        state.workloadModal.quantity = currentQuantity;
+        state.workloadModal.keepModalOpen = Boolean(keepModalOpen);
+        renderWorkloadModal();
+      };
 
-        const quantity = Number(input);
+      async function confirmWorkloadModal() {
+        const quantityInput = document.getElementById('workload-modal-value');
+        const quantity = Number(quantityInput?.value || 0);
+        const personId = state.workloadModal.personId;
+        const projectId = state.workloadModal.projectId;
+        const keepModalOpen = state.workloadModal.keepModalOpen;
+
         if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100) {
-          showMessage('Workload must be an integer between 0 and 100.', 'error');
+          showMessage(i18n.t('peopleOverview.workload.validation'), 'error');
           return;
         }
 
         await handleMutation(
           () => api(`/api/projects/${projectId}/people/${personId}/quantity`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
-          'Workload updated.'
+          i18n.t('peopleOverview.workload.updated')
         );
+
+        closeWorkloadModal();
 
         if (keepModalOpen) {
           state.peopleOverviewModal.open = true;
           state.peopleOverviewModal.personId = String(personId);
           renderPeopleOverviewModal();
         }
-      };
+      }
+
+      function closeWorkloadModal() {
+        state.workloadModal.open = false;
+        state.workloadModal.projectId = null;
+        state.workloadModal.personId = null;
+        state.workloadModal.quantity = 0;
+        state.workloadModal.keepModalOpen = false;
+        renderWorkloadModal();
+      }
+
+      function renderWorkloadModal() {
+        const modal = document.getElementById('workload-modal');
+        const isOpen = Boolean(state.workloadModal.open);
+        modal?.classList.toggle('hidden', !isOpen);
+        modal?.classList.toggle('flex', isOpen);
+
+        if (!isOpen) return;
+
+        const input = document.getElementById('workload-modal-value');
+        if (input) {
+          input.value = String(state.workloadModal.quantity || 0);
+          input.focus();
+          input.select();
+        }
+      }
+
+      function bindWorkloadModalActions() {
+        if (state.listenersBound.workloadModal) return;
+        state.listenersBound.workloadModal = true;
+
+        document.getElementById('workload-modal-close')?.addEventListener('click', closeWorkloadModal);
+        document.getElementById('workload-modal-cancel')?.addEventListener('click', closeWorkloadModal);
+        document.getElementById('workload-modal-confirm')?.addEventListener('click', async () => {
+          try {
+            await confirmWorkloadModal();
+          } catch (error) {
+            showMessage(error.message, 'error');
+          }
+        });
+      }
 
       function renderPeopleOverviewModal() {
         const modal = document.getElementById('people-overview-modal');
@@ -3328,6 +3381,7 @@ function filteredPeople() {
         renderProjectStatusModal();
         renderProjectPriorityModal();
         renderPeopleOverviewModal();
+        renderWorkloadModal();
         i18n.applyToDom(document);
         renderOnboardingDemo();
       }
@@ -3350,6 +3404,7 @@ function filteredPeople() {
           bindImportModalActions();
           bindProjectStatusModalActions();
           bindPeopleOverviewModalActions();
+          bindWorkloadModalActions();
           bindAdminEntityModalActions();
           bindAdminUserModalActions();
 
