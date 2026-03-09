@@ -97,6 +97,20 @@ Use the provided examples as a starting point:
 - `AUTH_MODE` must remain `session` outside local development.
 - `SMTP_PASSWORD_ENCRYPTION_KEY` is required in non-local runtime and must be a strong secret (minimum 32 characters).
 
+## First-run example dataset
+
+Fresh installs now seed a small example workspace automatically via migrations:
+
+- 1 example client: `Example Client GmbH`
+- 1 example project: `Example Website Relaunch`
+- 3 example users linked to people records:
+  - Olivia Owner (owner assignment)
+  - Liam Lead (lead assignment)
+  - Casey Contributor (contributor assignment)
+- challenges + assignments within the example project showing owner/lead/contributor roles
+
+This dataset is idempotent and is only inserted once per database.
+
 ## Import / Export
 
 Projectory supports two portability scopes:
