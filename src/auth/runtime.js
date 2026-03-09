@@ -1,15 +1,10 @@
 const AUTH_MODES = new Set(['session', 'hybrid', 'header']);
-const LOCAL_NODE_ENVS = new Set(['', 'development', 'dev', 'local', 'test']);
-
 function normalizeEnv(value) {
   return String(value || '').trim().toLowerCase();
 }
 
 function isLocalDevRuntime() {
-  if (normalizeEnv(process.env.AUTH_LOCAL_DEV) === 'true') {
-    return true;
-  }
-  return LOCAL_NODE_ENVS.has(normalizeEnv(process.env.NODE_ENV));
+  return normalizeEnv(process.env.AUTH_LOCAL_DEV) === 'true';
 }
 
 function getAuthMode() {

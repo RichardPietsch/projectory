@@ -18,8 +18,8 @@ function assertPgErrorCode(error, expectedCode, message) {
     host: process.env.DB_HOST || '127.0.0.1',
     port: Number(process.env.DB_PORT || 5432),
     database: process.env.DB_NAME || 'helloapp',
-    user: process.env.DB_USER || 'hello',
-    password: process.env.DB_PASSWORD || 'hello'
+    user: process.env.DB_USER || 'projectory_local_user',
+    password: process.env.DB_PASSWORD || 'projectory_local_password'
   });
 
   const suffix = buildSuffix();

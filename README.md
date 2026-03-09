@@ -92,7 +92,7 @@ Use the provided examples as a starting point:
 
 ### Critical safety rules
 
-- Never promote local defaults (`DB_USER=hello`, `DB_PASSWORD=hello`, `AUTH_ALLOW_HEADER_SIMULATION=true`) into non-local environments.
+- Never promote local defaults (`DB_USER=projectory_local_user`, `DB_PASSWORD=projectory_local_password`, `AUTH_ALLOW_HEADER_SIMULATION=true`) into non-local environments.
 - Non-local runtime is validated at startup and fails fast when required credentials/secrets are missing.
 - `AUTH_MODE` must remain `session` outside local development.
 - `SMTP_PASSWORD_ENCRYPTION_KEY` is required in non-local runtime and must be a strong secret (minimum 32 characters).
@@ -130,7 +130,7 @@ Headers for local role simulation (only when explicitly enabled):
 
 | Environment | `AUTH_MODE` | `AUTH_ALLOW_HEADER_SIMULATION` | Expected behavior |
 |---|---|---|---|
-| local/dev (`NODE_ENV` in `development/dev/local/test` or `AUTH_LOCAL_DEV=true`) | default `session` (can be set to `hybrid`/`header` for local-only troubleshooting) | **must be set to `true`** to use header simulation | Header-based simulation is available only with explicit opt-in |
+| local/dev (`AUTH_LOCAL_DEV=true`) | default `session` (can be set to `hybrid`/`header` for local-only troubleshooting) | **must be set to `true`** to use header simulation | Header-based simulation is available only with explicit opt-in |
 | non-local (`staging`, `production`, etc.) | **must be `session`** | **must be `false` / unset** | Startup fails fast on unsafe combinations and missing required credentials/secrets |
 
 Additional auth env defaults:

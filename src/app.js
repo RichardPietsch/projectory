@@ -21,8 +21,8 @@ function resolveDatabaseConfig() {
     host: process.env.DB_HOST || (localDev ? 'db' : ''),
     port: Number(process.env.DB_PORT || (localDev ? 5432 : 0)),
     database: process.env.DB_NAME || (localDev ? 'helloapp' : ''),
-    user: process.env.DB_USER || (localDev ? 'hello' : ''),
-    password: process.env.DB_PASSWORD || (localDev ? 'hello' : '')
+    user: process.env.DB_USER || (localDev ? 'projectory_local_user' : ''),
+    password: process.env.DB_PASSWORD || (localDev ? 'projectory_local_password' : '')
   };
 }
 
@@ -581,7 +581,7 @@ function validateRuntimeEnvironment() {
     throw new Error(`Missing required environment variables for non-local runtime: ${missing.join(', ')}.`);
   }
 
-  if (String(process.env.DB_USER).trim() === 'hello' || String(process.env.DB_PASSWORD).trim() === 'hello') {
+  if (String(process.env.DB_USER).trim() === 'projectory_local_user' || String(process.env.DB_PASSWORD).trim() === 'projectory_local_password') {
     throw new Error('Unsafe database credentials detected for non-local runtime. Replace DB_USER/DB_PASSWORD defaults.');
   }
 

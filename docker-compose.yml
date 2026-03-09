@@ -8,8 +8,8 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: helloapp
-      DB_USER: hello
-      DB_PASSWORD: hello
+      DB_USER: projectory_local_user
+      DB_PASSWORD: projectory_local_password
       AUTH_LOCAL_DEV: "true"
       AUTH_MODE: hybrid
       AUTH_ALLOW_HEADER_SIMULATION: "true"
@@ -24,12 +24,12 @@ services:
       context: ./db
     environment:
       POSTGRES_DB: helloapp
-      POSTGRES_USER: hello
-      POSTGRES_PASSWORD: hello
+      POSTGRES_USER: projectory_local_user
+      POSTGRES_PASSWORD: projectory_local_password
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hello -d helloapp"]
+      test: ["CMD-SHELL", "pg_isready -U projectory_local_user -d helloapp"]
       interval: 5s
       timeout: 5s
       retries: 10

@@ -54,7 +54,7 @@ test('GET /api/auth/me exposes safe auth context defaults without local header s
 });
 
 test('GET /api/auth/me supports role override headers only when local simulation opt-in is enabled', async () => {
-  await withEnv({ NODE_ENV: 'development', AUTH_ALLOW_HEADER_SIMULATION: 'true', AUTH_DEFAULT_ROLE: 'admin' }, async () => {
+  await withEnv({ NODE_ENV: 'development', AUTH_LOCAL_DEV: 'true', AUTH_ALLOW_HEADER_SIMULATION: 'true', AUTH_DEFAULT_ROLE: 'admin' }, async () => {
     const server = app.listen(0);
     const port = server.address().port;
 
@@ -82,7 +82,7 @@ test('GET /api/auth/me supports role override headers only when local simulation
 
 
 test('GET /api/auth/me marks header teammate context as scoped teammate when simulation is enabled', async () => {
-  await withEnv({ NODE_ENV: 'development', AUTH_ALLOW_HEADER_SIMULATION: 'true' }, async () => {
+  await withEnv({ NODE_ENV: 'development', AUTH_LOCAL_DEV: 'true', AUTH_ALLOW_HEADER_SIMULATION: 'true' }, async () => {
     const server = app.listen(0);
     const port = server.address().port;
 
@@ -121,7 +121,7 @@ test('GET /api/auth/me exposes normalized authMode value and defaults to session
 });
 
 test('GET /api/auth/me ignores header simulation when AUTH_MODE=session without valid session cookie', async () => {
-  await withEnv({ AUTH_MODE: 'session', NODE_ENV: 'development', AUTH_ALLOW_HEADER_SIMULATION: 'true' }, async () => {
+  await withEnv({ AUTH_MODE: 'session', NODE_ENV: 'development', AUTH_LOCAL_DEV: 'true', AUTH_ALLOW_HEADER_SIMULATION: 'true' }, async () => {
     const server = app.listen(0);
     const port = server.address().port;
 
@@ -192,7 +192,6 @@ test('startServer fails fast in staging when header simulation is enabled', asyn
     await assert.rejects(startServer(), /AUTH_ALLOW_HEADER_SIMULATION=true is only allowed for local development/);
   });
 });
-<<<<<<< codex/set-up-boilerplate-web-app-with-docker-y4gmm6
 
 
 test('runtime env validation allows local-dev defaults', async () => {
@@ -208,9 +207,8 @@ test('runtime env validation fails in non-local when required secrets are missin
 });
 
 test('runtime env validation blocks placeholder DB credentials in non-local runtime', async () => {
-  await withEnv({ NODE_ENV: 'staging', AUTH_LOCAL_DEV: 'false', DB_HOST: 'db.example', DB_PORT: '5432', DB_NAME: 'projectory', DB_USER: 'hello', DB_PASSWORD: 'hello', SMTP_PASSWORD_ENCRYPTION_KEY: 'this-is-a-long-secret-at-least-32-chars' }, async () => {
+  await withEnv({ NODE_ENV: 'staging', AUTH_LOCAL_DEV: 'false', DB_HOST: 'db.example', DB_PORT: '5432', DB_NAME: 'projectory', DB_USER: 'projectory_local_user', DB_PASSWORD: 'projectory_local_password', SMTP_PASSWORD_ENCRYPTION_KEY: 'this-is-a-long-secret-at-least-32-chars' }, async () => {
     assert.throws(() => validateRuntimeEnvironment(), /Unsafe database credentials detected for non-local runtime/);
   });
 });
-=======
->>>>>>> main
+
