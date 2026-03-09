@@ -574,6 +574,14 @@ async function requestRateLimitMiddleware(req, res, next) {
 }
 
 
+
+const appWideDoSRateLimitMiddleware = rateLimit({
+  keyPrefix: 'app-dos-global',
+  max: Number(process.env.APP_DOS_RATE_LIMIT_MAX || 120),
+  windowMs: Number(process.env.APP_DOS_RATE_LIMIT_WINDOW_MS || 60000),
+  message: 'Too many requests.'
+});
+
 const forgotPasswordRouteRateLimitMiddleware = rateLimit({
   keyPrefix: 'auth-forgot-password',
   max: Number(process.env.AUTH_FORGOT_PASSWORD_RATE_LIMIT_MAX || 10),
@@ -602,6 +610,7 @@ const spaShellRouteRateLimitMiddleware = rateLimit({
 });
 
 app.use(requestRateLimitMiddleware);
+app.use(appWideDoSRateLimitMiddleware);
 
 app.use((req, res, next) => {
   req.setTimeout(REQUEST_TIMEOUT_MS, () => {
