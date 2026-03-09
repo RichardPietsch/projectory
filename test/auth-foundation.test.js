@@ -192,6 +192,7 @@ test('startServer fails fast in staging when header simulation is enabled', asyn
     await assert.rejects(startServer(), /AUTH_ALLOW_HEADER_SIMULATION=true is only allowed for local development/);
   });
 });
+<<<<<<< codex/set-up-boilerplate-web-app-with-docker-y4gmm6
 
 
 test('runtime env validation allows local-dev defaults', async () => {
@@ -211,3 +212,5 @@ test('runtime env validation blocks placeholder DB credentials in non-local runt
     assert.throws(() => validateRuntimeEnvironment(), /Unsafe database credentials detected for non-local runtime/);
   });
 });
+=======
+>>>>>>> main
