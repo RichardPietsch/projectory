@@ -692,6 +692,7 @@ app.use((req, res, next) => {
 });
 app.use(attachAuthContext);
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use('/api/admin/audit', adminAuditRouteRateLimitMiddleware);
 
 const AUTH_SESSION_COOKIE = 'projectory_session';
 const AUTH_SESSION_TTL_HOURS = Number(process.env.AUTH_SESSION_TTL_HOURS || 12);
