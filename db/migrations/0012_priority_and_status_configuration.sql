@@ -37,13 +37,6 @@ DO UPDATE SET
   sort_order = EXCLUDED.sort_order,
   updated_at = NOW();
 
-UPDATE projects
-SET status = CASE
-  WHEN lower(status) IN ('green', 'done') THEN 'done'
-  WHEN lower(status) IN ('red', 'rework_needed') THEN 'rework_needed'
-  ELSE 'in_progress'
-END;
-
 DO $$
 BEGIN
   IF EXISTS (
@@ -55,6 +48,13 @@ BEGIN
     ALTER TABLE projects DROP CONSTRAINT projects_status_check;
   END IF;
 END $$;
+
+UPDATE projects
+SET status = CASE
+  WHEN lower(status) IN ('green', 'done') THEN 'done'
+  WHEN lower(status) IN ('red', 'rework_needed') THEN 'rework_needed'
+  ELSE 'in_progress'
+END;
 
 ALTER TABLE projects
   ALTER COLUMN status SET DEFAULT 'in_progress';
