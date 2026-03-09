@@ -4,3 +4,6 @@ yarn-debug.log*
 yarn-error.log*
 .env
 .DS_Store
+.env.*
+!.env.local.example
+!.env.nonlocal.example

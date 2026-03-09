@@ -7,7 +7,7 @@ const { Pool } = require('pg');
 const { registerModuleRoutes } = require('./modules');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
 const { PERMISSIONS, getPermissionsForRole } = require('./auth/permissions');
-const { getAuthMode, validateAuthRuntimeSafety } = require('./auth/runtime');
+const { getAuthMode, isLocalDevRuntime, validateAuthRuntimeSafety } = require('./auth/runtime');
 const { validatePasswordStrength, hashPassword, verifyPassword } = require('./auth/passwords');
 const { createOpaqueToken, hashOpaqueToken } = require('./auth/tokens');
 
@@ -15,14 +15,19 @@ const { createOpaqueToken, hashOpaqueToken } = require('./auth/tokens');
 const app = express();
 const port = process.env.PORT || 3000;
 
+function resolveDatabaseConfig() {
+  const localDev = isLocalDevRuntime();
+  return {
+    host: process.env.DB_HOST || (localDev ? 'db' : ''),
+    port: Number(process.env.DB_PORT || (localDev ? 5432 : 0)),
+    database: process.env.DB_NAME || (localDev ? 'helloapp' : ''),
+    user: process.env.DB_USER || (localDev ? 'hello' : ''),
+    password: process.env.DB_PASSWORD || (localDev ? 'hello' : '')
+  };
+}
+
 // Shared Postgres connection pool used across modules/routes.
-const pool = new Pool({
-  host: process.env.DB_HOST || 'db',
-  port: Number(process.env.DB_PORT || 5432),
-  database: process.env.DB_NAME || 'helloapp',
-  user: process.env.DB_USER || 'hello',
-  password: process.env.DB_PASSWORD || 'hello'
-});
+const pool = new Pool(resolveDatabaseConfig());
 
 const MONTH_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -564,6 +569,26 @@ const AUTH_SESSION_COOKIE = 'projectory_session';
 const AUTH_SESSION_TTL_HOURS = Number(process.env.AUTH_SESSION_TTL_HOURS || 12);
 const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES || 30);
 const AUDIT_LOG_RETENTION_MONTHS = Number(process.env.AUDIT_LOG_RETENTION_MONTHS || 6);
+
+function validateRuntimeEnvironment() {
+  if (isLocalDevRuntime()) {
+    return;
+  }
+
+  const requiredNames = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'SMTP_PASSWORD_ENCRYPTION_KEY'];
+  const missing = requiredNames.filter((name) => !String(process.env[name] || '').trim());
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables for non-local runtime: ${missing.join(', ')}.`);
+  }
+
+  if (String(process.env.DB_USER).trim() === 'hello' || String(process.env.DB_PASSWORD).trim() === 'hello') {
+    throw new Error('Unsafe database credentials detected for non-local runtime. Replace DB_USER/DB_PASSWORD defaults.');
+  }
+
+  if (String(process.env.SMTP_PASSWORD_ENCRYPTION_KEY || '').trim().length < 32) {
+    throw new Error('SMTP_PASSWORD_ENCRYPTION_KEY must be set to a strong secret (minimum 32 characters) in non-local runtime.');
+  }
+}
 
 function buildSessionOnlyFallbackAuth(previousAuth = {}) {
   // Rollout safety: in strict session mode we never trust header role simulation.
@@ -3297,6 +3322,7 @@ app.use((error, _req, res, next) => {
 
 async function startServer() {
   validateAuthRuntimeSafety();
+  validateRuntimeEnvironment();
 
   try {
     await ensureProjectStatusColumn();
@@ -3321,6 +3347,7 @@ module.exports = {
   pool,
   getAuthMode,
   validateAuthRuntimeSafety,
+  validateRuntimeEnvironment,
   clearRequestRateLimitBuckets,
   clearAuthAttemptBuckets,
   clearMetrics

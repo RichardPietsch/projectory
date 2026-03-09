@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { app, startServer, validateAuthRuntimeSafety } = require('../src/app');
+const { app, startServer, validateAuthRuntimeSafety, validateRuntimeEnvironment } = require('../src/app');
 const { getPermissionsForRole, PERMISSIONS, hasPermission } = require('../src/auth/permissions');
 
 function withEnv(overrides, run) {
@@ -192,3 +192,25 @@ test('startServer fails fast in staging when header simulation is enabled', asyn
     await assert.rejects(startServer(), /AUTH_ALLOW_HEADER_SIMULATION=true is only allowed for local development/);
   });
 });
+<<<<<<< codex/set-up-boilerplate-web-app-with-docker-y4gmm6
+
+
+test('runtime env validation allows local-dev defaults', async () => {
+  await withEnv({ NODE_ENV: 'development', AUTH_LOCAL_DEV: 'true', DB_USER: undefined, DB_PASSWORD: undefined, SMTP_PASSWORD_ENCRYPTION_KEY: undefined }, async () => {
+    assert.doesNotThrow(() => validateRuntimeEnvironment());
+  });
+});
+
+test('runtime env validation fails in non-local when required secrets are missing', async () => {
+  await withEnv({ NODE_ENV: 'production', AUTH_LOCAL_DEV: 'false', DB_HOST: 'db.example', DB_PORT: '5432', DB_NAME: 'projectory', DB_USER: 'appuser', DB_PASSWORD: '', SMTP_PASSWORD_ENCRYPTION_KEY: '' }, async () => {
+    assert.throws(() => validateRuntimeEnvironment(), /Missing required environment variables for non-local runtime/);
+  });
+});
+
+test('runtime env validation blocks placeholder DB credentials in non-local runtime', async () => {
+  await withEnv({ NODE_ENV: 'staging', AUTH_LOCAL_DEV: 'false', DB_HOST: 'db.example', DB_PORT: '5432', DB_NAME: 'projectory', DB_USER: 'hello', DB_PASSWORD: 'hello', SMTP_PASSWORD_ENCRYPTION_KEY: 'this-is-a-long-secret-at-least-32-chars' }, async () => {
+    assert.throws(() => validateRuntimeEnvironment(), /Unsafe database credentials detected for non-local runtime/);
+  });
+});
+=======
+>>>>>>> main

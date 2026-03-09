@@ -13,7 +13,7 @@ const AUTH_HEADERS = {
 // Derive a lightweight auth context on every request.
 function attachAuthContext(req, _res, next) {
   const headerSimulationEnabled = isHeaderSimulationEnabled();
-  const defaultRole = String(process.env.AUTH_DEFAULT_ROLE || 'admin').trim().toLowerCase();
+  const defaultRole = String(process.env.AUTH_DEFAULT_ROLE || 'viewer').trim().toLowerCase();
   const resolvedDefaultRole = headerSimulationEnabled ? defaultRole : 'viewer';
   const roleHeader = headerSimulationEnabled ? req.header(AUTH_HEADERS.USER_ROLE) : null;
   const role = String(roleHeader || resolvedDefaultRole).trim().toLowerCase();
