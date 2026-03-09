@@ -862,6 +862,63 @@
         }
       }
 
+      let configurationPanelEventsBound = false;
+      function bindConfigurationPanelEvents() {
+        if (configurationPanelEventsBound) return;
+        configurationPanelEventsBound = true;
+
+        document.addEventListener('click', (event) => {
+          const addButton = event.target.closest('[data-config-action="add-item"]');
+          if (addButton) {
+            addConfigurationItem(addButton.dataset.kind);
+            return;
+          }
+
+          const removeButton = event.target.closest('[data-config-action="remove-item"]');
+          if (removeButton) {
+            removeConfigurationItem(removeButton.dataset.kind, removeButton.dataset.itemKey);
+          }
+        });
+
+        document.addEventListener('change', (event) => {
+          const colorInput = event.target.closest('[data-config-action="set-color"]');
+          if (colorInput) {
+            updateConfigurationItemField(colorInput.dataset.kind, colorInput.dataset.itemKey, 'colorHex', colorInput.value);
+            return;
+          }
+
+          const presetSelect = event.target.closest('[data-config-action="set-priority-preset"]');
+          if (presetSelect && presetSelect.value !== 'custom') {
+            updateConfigurationPriorityPreset(presetSelect.dataset.itemKey, presetSelect.value);
+          }
+        });
+
+        document.addEventListener('focusout', (event) => {
+          const nameInput = event.target.closest('[data-config-action="set-name"]');
+          if (nameInput) {
+            updateConfigurationItemField(nameInput.dataset.kind, nameInput.dataset.itemKey, 'name', nameInput.value);
+          }
+        });
+
+        document.addEventListener('dragstart', (event) => {
+          const row = event.target.closest('[data-config-action="drag-row"]');
+          if (!row) return;
+          dragConfigurationRowStart(row.dataset.kind, row.dataset.itemKey);
+        });
+
+        document.addEventListener('dragover', (event) => {
+          const row = event.target.closest('[data-config-action="drag-row"]');
+          if (!row) return;
+          dragConfigurationRowOver(event);
+        });
+
+        document.addEventListener('drop', (event) => {
+          const row = event.target.closest('[data-config-action="drag-row"]');
+          if (!row) return;
+          dropConfigurationRow(row.dataset.kind, row.dataset.itemKey);
+        });
+      }
+
       function optionList(items, selected) {
         return items
           .map((item) => `<option value="${item.id}" ${String(selected) === String(item.id) ? 'selected' : ''}>${item.name}</option>`)
@@ -1091,27 +1148,28 @@ function clientsView() {
               const usageClass = 'text-[#7cecff] border-[#00d8ff]/50';
               const removeDisabled = usage > 0 ? 'disabled title="In use"' : '';
               const itemKey = item.id || item.key || item.name;
-              const nameInput = `<input class="w-full rounded bg-slate-900 p-1 text-sm" value="${String(item.name || '').replace(/"/g, '&quot;')}" onblur="updateConfigurationItemField('${kind}', '${itemKey}', 'name', this.value)" />`;
+              const escapedItemKey = String(itemKey).replace(/"/g, '&quot;');
+              const nameInput = `<input class="w-full rounded bg-slate-900 p-1 text-sm" data-config-action="set-name" data-kind="${kind}" data-item-key="${escapedItemKey}" value="${String(item.name || '').replace(/"/g, '&quot;')}" />`;
               const colorCell = supportsColor
                 ? (kind === 'priorities'
                     ? (() => {
                         const selectedPreset = getPriorityPresetFromHex(item.colorHex || '#64748B');
                         const presetPreview = selectedPreset === 'custom'
-                          ? `<input type="color" value="${String(item.colorHex || '#64748B')}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'colorHex', this.value)" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />`
+                          ? `<input type="color" data-config-action="set-color" data-kind="${kind}" data-item-key="${escapedItemKey}" value="${String(item.colorHex || '#64748B')}" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />`
                           : `<span class="inline-flex h-8 w-10 rounded border border-slate-700" style="${PRIORITY_PRESET_MAP[selectedPreset].style}" title="${selectedPreset}"></span>`;
-                        return `<div class="flex items-center gap-2"><select class="rounded bg-slate-900 p-1 text-xs" onchange="if (this.value !== 'custom') updateConfigurationPriorityPreset('${itemKey}', this.value)"><option value="gold" ${selectedPreset === 'gold' ? 'selected' : ''}>Gold</option><option value="silver" ${selectedPreset === 'silver' ? 'selected' : ''}>Silver</option><option value="bronze" ${selectedPreset === 'bronze' ? 'selected' : ''}>Bronze</option><option value="black" ${selectedPreset === 'black' ? 'selected' : ''}>Black</option><option value="custom" ${selectedPreset === 'custom' ? 'selected' : ''}>Custom hex</option></select>${presetPreview}</div>`;
+                        return `<div class="flex items-center gap-2"><select class="rounded bg-slate-900 p-1 text-xs" data-config-action="set-priority-preset" data-item-key="${escapedItemKey}"><option value="gold" ${selectedPreset === 'gold' ? 'selected' : ''}>Gold</option><option value="silver" ${selectedPreset === 'silver' ? 'selected' : ''}>Silver</option><option value="bronze" ${selectedPreset === 'bronze' ? 'selected' : ''}>Bronze</option><option value="black" ${selectedPreset === 'black' ? 'selected' : ''}>Black</option><option value="custom" ${selectedPreset === 'custom' ? 'selected' : ''}>Custom hex</option></select>${presetPreview}</div>`;
                       })()
-                    : `<input type="color" value="${String(item.colorHex || '#64748B')}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'colorHex', this.value)" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />`)
+                    : `<input type="color" data-config-action="set-color" data-kind="${kind}" data-item-key="${escapedItemKey}" value="${String(item.colorHex || '#64748B')}" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />`)
                 : '—';
               const sortCell = supportsSort ? '<span class="inline-flex items-center rounded border border-slate-700 px-2 py-1 text-xs text-slate-300">↕ Drag</span>' : '—';
               const rowAttrs = supportsSort
-                ? `class="border-t border-slate-800 cursor-move hover:bg-slate-900/40" draggable="true" ondragstart="dragConfigurationRowStart('${kind}', '${itemKey}')" ondragover="dragConfigurationRowOver(event)" ondrop="dropConfigurationRow('${kind}', '${itemKey}')"`
+                ? `class="border-t border-slate-800 cursor-move hover:bg-slate-900/40" draggable="true" data-config-action="drag-row" data-kind="${kind}" data-item-key="${escapedItemKey}"`
                 : 'class="border-t border-slate-800"';
-              return `<tr ${rowAttrs}><td class="p-2 text-slate-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2">${sortCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" ${removeDisabled} onclick="removeConfigurationItem('${kind}', '${itemKey}')">${i18n.t('common.delete')}</button></td></tr>`;
+              return `<tr ${rowAttrs}><td class="p-2 text-slate-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2">${sortCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" data-config-action="remove-item" data-kind="${kind}" data-item-key="${escapedItemKey}" ${removeDisabled}>${i18n.t('common.delete')}</button></td></tr>`;
             })
             .join('');
 
-          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="addConfigurationItem('${kind}')">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">Color</th><th class="p-2">Sort</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
+          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-config-action="add-item" data-kind="${kind}">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">Color</th><th class="p-2">Sort</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
         }
 
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">Manage static catalogs, client priorities and project statuses.</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'), { sort: true })}${renderCard('priorities', 'Priorities', { color: true, sort: true })}${renderCard('projectStatuses', 'Project Statuses', { color: true, sort: true })}</div></div>`;
@@ -1124,6 +1182,7 @@ function clientsView() {
       window.dragConfigurationRowStart = dragConfigurationRowStart;
       window.dragConfigurationRowOver = dragConfigurationRowOver;
       window.dropConfigurationRow = dropConfigurationRow;
+      bindConfigurationPanelEvents();
 
       function accessManagementView() {
         const userRows = (state.adminUsers || []).map((user) => {
