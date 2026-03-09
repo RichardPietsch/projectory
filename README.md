@@ -177,6 +177,17 @@ Operational semantics, baseline alerts, and dashboard guidance are documented in
 - This reduces browser-time supply-chain exposure compared with multiple script CDNs while preserving current UI behavior.
 - Recommended next step: self-host a pinned frontend build artifact and remove Tailwind CDN entirely.
 
+### Distributed rate limiting
+
+Rate limiting now uses a shared Postgres-backed bucket table (`rate_limit_buckets`) to keep throttling behavior consistent across multiple app instances.
+
+Operational tuning:
+- `REQUEST_RATE_LIMIT_MAX` and `REQUEST_RATE_LIMIT_WINDOW_MS` control global request throttling.
+- Route-specific windows remain configurable (for example `AUTH_FORGOT_PASSWORD_RATE_LIMIT_*`, `SPA_SHELL_RATE_LIMIT_*`).
+- `RATE_LIMIT_DISTRIBUTED_RETENTION_MS` controls bucket retention/cleanup horizon for shared buckets.
+
+If shared bucket writes are temporarily unavailable, the app falls back to process-local buckets to preserve protection and retry headers.
+
 ## Localization parity checks
 
 To prevent locale drift between supported languages, run:

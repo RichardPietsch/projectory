@@ -44,13 +44,16 @@ const REQUEST_BODY_LIMIT = process.env.REQUEST_BODY_LIMIT || '100kb';
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 15000);
 const CORRELATION_ID_HEADER = 'x-correlation-id';
 const requestRateBuckets = new Map();
+const routeRateLimitBuckets = new Map();
 const RATE_LIMIT_BUCKET_SWEEP_INTERVAL_MS = 30000;
+const RATE_LIMIT_DISTRIBUTED_CLEANUP_INTERVAL_MS = 60000;
+const RATE_LIMIT_DISTRIBUTED_RETENTION_MS = Number(process.env.RATE_LIMIT_DISTRIBUTED_RETENTION_MS || 15 * 60 * 1000);
 const AUTH_ATTEMPT_SWEEP_INTERVAL_MS = 30000;
 const SMTP_PASSWORD_PREFIX = 'enc:v1:';
 const METRIC_DURATION_BUCKETS_MS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000];
 let lastRateLimitBucketSweepAt = 0;
+let lastDistributedRateLimitCleanupAt = 0;
 const authAttemptBuckets = new Map();
-const routeRateLimitBuckets = new Map();
 let lastAuthAttemptSweepAt = 0;
 
 const metricsState = {
@@ -103,6 +106,81 @@ function sweepExpiredRateLimitBuckets(now, windowMs) {
   }
 
   lastRateLimitBucketSweepAt = now;
+}
+
+function consumeLocalRateLimitBucket(buckets, bucketKey, windowMs, max) {
+  const now = Date.now();
+  const bucket = buckets.get(bucketKey);
+  if (!bucket || now - bucket.windowStart >= windowMs) {
+    buckets.set(bucketKey, { windowStart: now, count: 1 });
+    return { allowed: true, retryAfterMs: 0 };
+  }
+
+  bucket.count += 1;
+  if (bucket.count > max) {
+    return { allowed: false, retryAfterMs: Math.max(1, windowMs - (now - bucket.windowStart)) };
+  }
+
+  return { allowed: true, retryAfterMs: 0 };
+}
+
+async function maybeCleanupDistributedRateLimitBuckets(nowMs) {
+  if (nowMs - lastDistributedRateLimitCleanupAt < RATE_LIMIT_DISTRIBUTED_CLEANUP_INTERVAL_MS) {
+    return;
+  }
+
+  lastDistributedRateLimitCleanupAt = nowMs;
+  const retentionMs = Math.max(RATE_LIMIT_DISTRIBUTED_RETENTION_MS, RATE_LIMIT_BUCKET_SWEEP_INTERVAL_MS);
+  await pool.query(
+    `DELETE FROM rate_limit_buckets
+     WHERE updated_at < NOW() - (($1::numeric / 1000.0) * INTERVAL '1 second')`,
+    [retentionMs]
+  );
+}
+
+async function consumeDistributedRateLimitBucket(scope, actorKey, windowMs, max, fallbackBuckets) {
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO rate_limit_buckets (scope, actor_key, window_start, count, updated_at)
+       VALUES ($1, $2, $3::timestamptz, 1, NOW())
+       ON CONFLICT (scope, actor_key)
+       DO UPDATE SET
+         count = CASE
+           WHEN (($3::timestamptz - rate_limit_buckets.window_start) >= (($4::numeric / 1000.0) * INTERVAL '1 second')) THEN 1
+           ELSE rate_limit_buckets.count + 1
+         END,
+         window_start = CASE
+           WHEN (($3::timestamptz - rate_limit_buckets.window_start) >= (($4::numeric / 1000.0) * INTERVAL '1 second')) THEN $3::timestamptz
+           ELSE rate_limit_buckets.window_start
+         END,
+         updated_at = NOW()
+       RETURNING count, EXTRACT(EPOCH FROM window_start) * 1000 AS window_start_ms`,
+      [scope, actorKey, nowIso, windowMs]
+    );
+
+    const row = result?.rows?.[0];
+    if (!row) {
+      return consumeLocalRateLimitBucket(fallbackBuckets, `${scope}|${actorKey}`, windowMs, max);
+    }
+
+    await maybeCleanupDistributedRateLimitBuckets(nowMs);
+
+    const count = Number(row.count);
+    const windowStartMs = Number(row.window_start_ms);
+    if (!Number.isFinite(count) || !Number.isFinite(windowStartMs)) {
+      return consumeLocalRateLimitBucket(fallbackBuckets, `${scope}|${actorKey}`, windowMs, max);
+    }
+    if (count > max) {
+      return { allowed: false, retryAfterMs: Math.max(1, windowMs - (nowMs - windowStartMs)) };
+    }
+
+    return { allowed: true, retryAfterMs: 0 };
+  } catch (_error) {
+    return consumeLocalRateLimitBucket(fallbackBuckets, `${scope}|${actorKey}`, windowMs, max);
+  }
 }
 
 function clearAuthAttemptBuckets() {
@@ -432,25 +510,26 @@ function rateLimit(config = {}) {
     ? config.keyGenerator
     : (req) => String(req.ip || req.socket?.remoteAddress || 'unknown');
 
-  return (req, res, next) => {
-    const now = Date.now();
-    const actorKey = String(keyGenerator(req) || 'unknown');
-    const bucketKey = `${keyPrefix}|${actorKey}`;
-    const bucket = routeRateLimitBuckets.get(bucketKey);
+  return async (req, res, next) => {
+    try {
+      const actorKey = String(keyGenerator(req) || 'unknown');
+      const rateState = await consumeDistributedRateLimitBucket(
+        keyPrefix,
+        actorKey,
+        windowMs,
+        max,
+        routeRateLimitBuckets
+      );
 
-    if (!bucket || now - bucket.windowStart >= windowMs) {
-      routeRateLimitBuckets.set(bucketKey, { windowStart: now, count: 1 });
+      if (!rateState.allowed) {
+        res.setHeader('Retry-After', String(toRetryAfterSeconds(rateState.retryAfterMs)));
+        return res.status(429).json({ error: message });
+      }
+
       return next();
+    } catch (error) {
+      return next(error);
     }
-
-    bucket.count += 1;
-    if (bucket.count > max) {
-      const retryAfterMs = Math.max(1, windowMs - (now - bucket.windowStart));
-      res.setHeader('Retry-After', String(toRetryAfterSeconds(retryAfterMs)));
-      return res.status(429).json({ error: message });
-    }
-
-    return next();
   };
 }
 
@@ -470,24 +549,28 @@ app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://cdn.tailwindcss.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
   next();
 });
-function requestRateLimitMiddleware(req, res, next) {
+async function requestRateLimitMiddleware(req, res, next) {
   const { max, windowMs } = getRateLimitConfig();
-  const now = Date.now();
-  sweepExpiredRateLimitBuckets(now, windowMs);
   const ipKey = String(req.ip || req.socket?.remoteAddress || 'unknown');
-  const bucket = requestRateBuckets.get(ipKey);
 
-  if (!bucket || now - bucket.windowStart >= windowMs) {
-    requestRateBuckets.set(ipKey, { windowStart: now, count: 1 });
+  try {
+    const rateState = await consumeDistributedRateLimitBucket(
+      'request-global',
+      ipKey,
+      windowMs,
+      max,
+      requestRateBuckets
+    );
+
+    if (!rateState.allowed) {
+      res.setHeader('Retry-After', String(toRetryAfterSeconds(rateState.retryAfterMs)));
+      return res.status(429).json({ error: 'Too many requests.' });
+    }
+
     return next();
+  } catch (error) {
+    return next(error);
   }
-
-  bucket.count += 1;
-  if (bucket.count > max) {
-    return res.status(429).json({ error: 'Too many requests.' });
-  }
-
-  return next();
 }
 
 

@@ -302,6 +302,45 @@ test('GET /health returns 429 after per-IP request limit is exceeded', async () 
   }
 });
 
+
+test('GET /health rate limiting falls back to local buckets when shared backend is unavailable', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    const text = String(sql || '');
+    if (text.includes('rate_limit_buckets')) {
+      throw new Error('distributed backend unavailable');
+    }
+    return { rows: [{ ok: 1 }] };
+  };
+
+  const previousMax = process.env.REQUEST_RATE_LIMIT_MAX;
+  const previousWindow = process.env.REQUEST_RATE_LIMIT_WINDOW_MS;
+  process.env.REQUEST_RATE_LIMIT_MAX = '1';
+  process.env.REQUEST_RATE_LIMIT_WINDOW_MS = '60000';
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    clearRequestRateLimitBuckets();
+
+    const first = await fetch(`http://127.0.0.1:${port}/health`);
+    assert.equal(first.status, 200);
+
+    const blocked = await fetch(`http://127.0.0.1:${port}/health`);
+    assert.equal(blocked.status, 429);
+    assert.equal(Boolean(blocked.headers.get('retry-after')), true);
+
+    const body = await blocked.json();
+    assert.equal(body.error, 'Too many requests.');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    if (previousMax === undefined) delete process.env.REQUEST_RATE_LIMIT_MAX; else process.env.REQUEST_RATE_LIMIT_MAX = previousMax;
+    if (previousWindow === undefined) delete process.env.REQUEST_RATE_LIMIT_WINDOW_MS; else process.env.REQUEST_RATE_LIMIT_WINDOW_MS = previousWindow;
+  }
+});
+
 test('GET /health rate limit window resets after configured interval', async () => {
   const originalQuery = pool.query;
   pool.query = async () => ({ rows: [{ ok: 1 }] });
