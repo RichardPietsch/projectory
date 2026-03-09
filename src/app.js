@@ -586,6 +586,14 @@ const forgotPasswordRouteRateLimitMiddleware = rateLimit({
   }
 });
 
+
+const configurationRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'admin-configuration',
+  max: Number(process.env.ADMIN_CONFIGURATION_RATE_LIMIT_MAX || 60),
+  windowMs: Number(process.env.ADMIN_CONFIGURATION_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+  message: 'Too many configuration requests. Please wait before trying again.'
+});
+
 const spaShellRouteRateLimitMiddleware = rateLimit({
   keyPrefix: 'spa-shell',
   max: Number(process.env.SPA_SHELL_RATE_LIMIT_MAX || 240),
@@ -2482,7 +2490,7 @@ function normalizeConfigurationItems(list, label) {
   return normalized;
 }
 
-app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
+app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), configurationRouteRateLimitMiddleware, async (_req, res) => {
   try {
     const [trades, levels, priorities, projectStatuses] = await Promise.all([
       pool.query(
@@ -2681,7 +2689,7 @@ async function applyConfigurationCatalog({ trades, levels, priorities, projectSt
   }
 }
 
-app.put('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.put('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), configurationRouteRateLimitMiddleware, async (req, res) => {
   try {
     await applyConfigurationCatalog({ trades: req.body?.trades, levels: req.body?.levels, priorities: req.body?.priorities, projectStatuses: req.body?.projectStatuses });
     return res.json({ ok: true });
