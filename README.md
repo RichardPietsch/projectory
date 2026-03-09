@@ -155,6 +155,14 @@ Password reset journey is available via `POST /api/auth/forgot-password` (reques
 Operational semantics, baseline alerts, and dashboard guidance are documented in `docs/observability.md`.
 
 
+
+### Frontend CDN hardening note
+
+- Runtime third-party script usage was reduced by removing the Iconify CDN dependency and replacing it with a local inline icon in the onboarding trigger.
+- Tailwind Play CDN is still used for now; CSP only allows `self` plus `https://cdn.tailwindcss.com` for scripts.
+- This reduces browser-time supply-chain exposure compared with multiple script CDNs while preserving current UI behavior.
+- Recommended next step: self-host a pinned frontend build artifact and remove Tailwind CDN entirely.
+
 ## Localization parity checks
 
 To prevent locale drift between supported languages, run:
