@@ -37,7 +37,7 @@ Purpose:
 - validate payload normalization and schema logic in isolation
 - ensure auth/password helper behavior remains stable
 
-### C) Real-DB contract integration tests (opt-in)
+### C) Real-DB contract integration tests (required for release branches)
 
 Primary files:
 - `test/api-contract.db.test.js`
@@ -88,8 +88,12 @@ This keeps tests repeatable and makes failures actionable (API or schema regress
 
 ## 5) CI expectations
 
-- Default CI path keeps fast checks enabled (`npm run lint:ci`, `npm run format:check`, `npm test`).
-- Real-DB contract tests are opt-in and should run in DB-capable environments (pre-release gates/nightly/local validation).
+- Pull request CI keeps fast checks enabled (`npm run lint:ci`, `npm run format:check`, `npm test`) for rapid feedback.
+- Pushes to `main` and `release/*` have an additional **mandatory** `release-db-contract-gate` job that runs:
+  - `npm run migrate`
+  - `node --test test/api-contract.db.test.js test/db-integration.test.js`
+- This release gate fails the pipeline on any migration/contract regression and is required before release promotion.
+- Developers can still run the same gate locally with `RUN_DB_INTEGRATION=1 npm test` when validating DB-backed changes ahead of CI.
 - Any new high-risk auth/admin/import-export endpoint should be added to both:
   - the real-DB contract suite, and
   - this strategy document.

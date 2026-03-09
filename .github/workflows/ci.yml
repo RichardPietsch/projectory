@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'release/**'
       - work
   pull_request:
 
@@ -269,5 +270,84 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-test-artifacts
+          path: ci-artifacts/
+          if-no-files-found: warn
+
+  release-db-contract-gate:
+    runs-on: ubuntu-latest
+    needs:
+      - quality-and-security
+      - static-analysis
+      - container-image-security
+      - build-and-test
+    if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'release/'))
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: helloapp
+          POSTGRES_USER: hello
+          POSTGRES_PASSWORD: hello
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hello -d helloapp"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: helloapp
+      DB_USER: hello
+      DB_PASSWORD: hello
+      AUTH_DEFAULT_ROLE: admin
+      RUN_DB_INTEGRATION: '1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare release DB gate artifact directory
+        run: mkdir -p ci-artifacts
+
+      - name: Run DB migrations
+        run: |
+          npm run migrate | tee ci-artifacts/release-db-migrate.txt
+
+      - name: Run real-DB contract suites (mandatory on release branches)
+        run: |
+          node --test test/api-contract.db.test.js test/db-integration.test.js | tee ci-artifacts/release-db-contract-tests.txt
+
+      - name: Build release DB gate summary
+        if: always()
+        run: |
+          {
+            echo "# Release DB Contract Gate Summary"
+            echo ""
+            echo "- Migrations: see release-db-migrate.txt"
+            echo "- Real-DB contract suites: see release-db-contract-tests.txt"
+            echo ""
+            echo "This gate is mandatory on pushes to main/release/* branches."
+          } > ci-artifacts/release-db-contract-summary.md
+          cat ci-artifacts/release-db-contract-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release DB gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-db-contract-artifacts
           path: ci-artifacts/
           if-no-files-found: warn

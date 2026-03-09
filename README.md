@@ -269,6 +269,10 @@ npm test
 
 CI (`.github/workflows/ci.yml`) runs migrations + syntax + tests on push/PR.
 
+Release-grade CI behavior:
+- Pull requests use fast gates for feedback speed (`quality-and-security`, `static-analysis`, `container-image-security`, `build-and-test`).
+- Pushes to `main` and `release/*` also require `release-db-contract-gate`, which runs migrations plus real-DB contract suites (`test/api-contract.db.test.js`, `test/db-integration.test.js`) against Postgres.
+
 ---
 
 ## Documentation
@@ -278,4 +282,3 @@ CI (`.github/workflows/ci.yml`) runs migrations + syntax + tests on push/PR.
 - `docs/module-template.md`
 - `docs/testing-strategy.md`
 - `docs/localization.md`
-
