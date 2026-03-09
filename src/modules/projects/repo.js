@@ -2,10 +2,12 @@ async function listProjects(pool) {
   return pool.query(
     `SELECT p.id, p.name, p.status, p.start_month, p.end_month, p.budget_cents,
             c.id AS client_id, c.name AS client_name,
-            pr.id AS priority_id, pr.name AS priority_name
+            pr.id AS priority_id, pr.name AS priority_name, pr.color_hex AS priority_color_hex, pr.sort_order AS priority_sort_order,
+            ps.label AS status_label, ps.color_hex AS status_color_hex, ps.sort_order AS status_sort_order
      FROM projects p
      JOIN clients c ON p.client_id = c.id
      JOIN priorities pr ON c.priority_id = pr.id
+     LEFT JOIN project_statuses ps ON ps.status_key = p.status
      ORDER BY p.created_at DESC`
   );
 }

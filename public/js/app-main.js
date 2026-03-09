@@ -312,12 +312,13 @@
       }
 
       function getProjectStatusPresentation(status) {
-        const normalized = String(status || 'white').toLowerCase();
-        if (normalized === 'green') return { key: 'green', rank: 5, label: 'Formed Team', classes: 'border-emerald-300/80 bg-emerald-500' };
-        if (normalized === 'blue') return { key: 'blue', rank: 4, label: 'In Progress', classes: 'border-sky-300/80 bg-sky-500' };
-        if (normalized === 'yellow') return { key: 'yellow', rank: 3, label: 'Needs Attention', classes: 'border-amber-300/90 bg-amber-400' };
-        if (normalized === 'red') return { key: 'red', rank: 2, label: 'Needs Problem-Solving', classes: 'border-rose-300/80 bg-rose-500' };
-        return { key: 'white', rank: 1, label: 'New', classes: 'border-slate-300 bg-white' };
+        const normalized = String(status || 'in_progress').toLowerCase();
+        const configured = (state.meta.projectStatuses || []).find((item) => String(item.key) === normalized);
+        if (configured) {
+          return { key: configured.key, rank: Number(configured.sortOrder || 999), label: configured.label || configured.key, colorHex: configured.colorHex || '#64748B' };
+        }
+        const legacyMap = { green: { key: 'done', rank: 1, label: 'Done', colorHex: '#22C55E' }, yellow: { key: 'in_progress', rank: 2, label: 'In Progress', colorHex: '#EAB308' }, blue: { key: 'in_progress', rank: 2, label: 'In Progress', colorHex: '#EAB308' }, red: { key: 'rework_needed', rank: 3, label: 'Rework needed', colorHex: '#EF4444' }, white: { key: 'in_progress', rank: 2, label: 'In Progress', colorHex: '#EAB308' } };
+        return legacyMap[normalized] || { key: normalized, rank: 999, label: normalized, colorHex: '#64748B' };
       }
 
       function renderProjectStatusPill(status, projectId = null) {
@@ -325,59 +326,22 @@
         const canOpenStatus = projectId && !isViewerMode();
         const clickAttr = canOpenStatus ? ` onclick="openProjectStatusPicker(${projectId}, event)"` : '';
         const interactiveClass = canOpenStatus ? ' cursor-pointer hover:scale-110' : '';
-        return `<span class="inline-flex h-3 w-3 rounded-full border ${presentation.classes}${interactiveClass}" title="${presentation.label}" aria-label="${presentation.label}"${clickAttr}></span>`;
+        return `<span class="inline-flex h-3 w-3 rounded-full border border-white/40${interactiveClass}" style="background:${presentation.colorHex};" title="${presentation.label}" aria-label="${presentation.label}"${clickAttr}></span>`;
       }
 
 
-      function getPriorityPresentation(priorityName) {
-        const normalized = String(priorityName || '').toLowerCase();
-        if (normalized.includes('hero')) {
-          return {
-            rank: 0,
-            classes: 'border-yellow-200 text-slate-900',
-            style:
-              'background: linear-gradient(145deg, rgba(250, 231, 135, 1) 0%, rgba(255, 162, 0, 1) 48%, rgba(255, 182, 87, 1) 49%, rgba(255, 237, 145, 1) 77%, rgba(255, 246, 219, 1) 78%, rgba(255, 175, 15, 1) 100%);',
-            icon: 'mdi:star',
-            label: 'Hero'
-          };
-        }
-        if (normalized.includes('rising star')) {
-          return {
-            rank: 1,
-            classes: 'border-slate-300 text-slate-900',
-            style:
-              'background: linear-gradient(145deg, rgba(213, 225, 235, 1) 0%, rgba(224, 224, 224, 1) 47%, rgba(242, 242, 242, 1) 49%, rgba(225, 230, 230, 1) 77%, rgba(255, 255, 255, 1) 78%, rgba(227, 227, 227, 1) 100%);',
-            icon: 'mdi:star-shooting-outline',
-            label: 'Rising Star'
-          };
-        }
-        if (normalized.includes('solid')) {
-          return {
-            rank: 2,
-            classes: 'border-amber-100 text-slate-900',
-            style:
-              'background: linear-gradient(145deg, rgba(199, 162, 111, 1) 0%, rgba(230, 214, 188, 1) 47%, rgba(242, 228, 201, 1) 49%, rgba(247, 214, 148, 1) 77%, rgba(247, 231, 178, 1) 78%, rgba(245, 219, 174, 1) 100%);',
-            icon: 'mdi:check-bold',
-            label: 'Solid'
-          };
-        }
-        if (normalized.includes('maintenance')) {
-          return { rank: 3, classes: 'border-slate-500/70 bg-gradient-to-r from-slate-600 to-slate-500 text-slate-100', style: '', icon: 'mdi:tools', label: 'Maintenance' };
-        }
-        if (normalized.includes('small client')) {
-          return { rank: 4, classes: 'border-slate-700/70 bg-gradient-to-r from-slate-800 to-slate-700 text-slate-100', style: '', icon: 'mdi:tea', label: 'Small Client' };
-        }
-        if (normalized.includes('outphasing')) {
-          return { rank: 5, classes: 'border-rose-400/70 bg-gradient-to-r from-rose-700 to-rose-500 text-rose-50', style: '', icon: 'mdi:exit-run', label: 'Outphasing' };
-        }
-
-        return { rank: 99, classes: 'border-slate-500/70 bg-slate-700 text-slate-100', style: '', icon: 'mdi:help-circle-outline', label: String(priorityName || 'Unknown') };
+      function getPriorityPresentation(priorityName, colorHex = '#64748B') {
+        const normalized = String(priorityName || '').trim() || 'Unknown';
+        return {
+          rank: 99,
+          label: normalized,
+          colorHex: String(colorHex || '#64748B')
+        };
       }
 
-      function renderPriorityPill(priorityName) {
-        const priority = getPriorityPresentation(priorityName);
-        const styleAttribute = priority.style ? ` style="${priority.style}"` : '';
-        return `<span class="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold ${priority.classes}"${styleAttribute}><span class="iconify" data-icon="${priority.icon}" aria-hidden="true"></span><span>${priority.label}</span></span>`;
+      function renderPriorityPill(priorityName, colorHex = '#64748B') {
+        const priority = getPriorityPresentation(priorityName, colorHex);
+        return `<span class="inline-flex items-center gap-1 rounded-full border border-white/30 px-2 py-1 text-xs font-semibold text-white" style="background:${priority.colorHex};"><span>${priority.label}</span></span>`;
       }
 
       const { api } = window.ProjectoryApi;
@@ -662,12 +626,12 @@
         state.authRequired = state.auth?.authSource !== 'session';
 
         if (state.authRequired && !forceAppData) {
-          state.meta = { priorities: [], trades: [], levels: [] };
+          state.meta = { priorities: [], trades: [], levels: [], projectStatuses: [] };
           state.people = [];
           state.clients = [];
           state.projectsPayload = { projects: [], challenges: [], assignments: [] };
-          state.configuration = { trades: [], levels: [] };
-          state.configurationDraft = { trades: [], levels: [] };
+          state.configuration = { trades: [], levels: [], priorities: [], projectStatuses: [] };
+          state.configurationDraft = { trades: [], levels: [], priorities: [], projectStatuses: [] };
           state.adminUsers = [];
           state.auditEntries = [];
           return;
@@ -681,13 +645,15 @@
           try {
             state.configuration = await api('/api/configuration');
           } catch (_error) {
-            state.configuration = { trades: [], levels: [] };
+            state.configuration = { trades: [], levels: [], priorities: [], projectStatuses: [] };
           }
           await loadAdminAccessData();
         }
         state.configurationDraft = {
           trades: (state.configuration.trades || []).map((row) => ({ ...row })),
-          levels: (state.configuration.levels || []).map((row) => ({ ...row }))
+          levels: (state.configuration.levels || []).map((row) => ({ ...row })),
+          priorities: (state.configuration.priorities || []).map((row) => ({ ...row, colorHex: row.colorHex || row.color_hex, sortOrder: Number(row.sortOrder ?? row.sort_order ?? 0) })),
+          projectStatuses: (state.configuration.projectStatuses || []).map((row) => ({ ...row, name: row.label || row.name, colorHex: row.colorHex || row.color_hex, sortOrder: Number(row.sortOrder ?? row.sort_order ?? 0) }))
         };
 
       }
@@ -709,13 +675,17 @@
       async function applyConfigurationDraft(nextDraft, successMessage) {
         const previousDraft = {
           trades: (state.configurationDraft.trades || []).map((item) => ({ ...item })),
-          levels: (state.configurationDraft.levels || []).map((item) => ({ ...item }))
+          levels: (state.configurationDraft.levels || []).map((item) => ({ ...item })),
+          priorities: (state.configurationDraft.priorities || []).map((item) => ({ ...item })),
+          projectStatuses: (state.configurationDraft.projectStatuses || []).map((item) => ({ ...item }))
         };
 
         const trades = normalizeConfigurationDraftNames(nextDraft.trades).map((item) => ({ id: item.id || null, name: item.name }));
         const levels = normalizeConfigurationDraftNames(nextDraft.levels).map((item) => ({ id: item.id || null, name: item.name }));
+        const priorities = normalizeConfigurationDraftNames(nextDraft.priorities).map((item, index) => ({ id: item.id || null, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
+        const projectStatuses = normalizeConfigurationDraftNames(nextDraft.projectStatuses).map((item, index) => ({ id: item.id || null, key: String(item.key || '').trim().toLowerCase() || `status_${index + 1}`, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
 
-        await api('/api/configuration', { method: 'PUT', body: JSON.stringify({ trades, levels }) });
+        await api('/api/configuration', { method: 'PUT', body: JSON.stringify({ trades, levels, priorities, projectStatuses }) });
         await loadData();
         render();
 
@@ -724,8 +694,10 @@
           onAction: async () => {
             const undoTrades = normalizeConfigurationDraftNames(previousDraft.trades).map((item) => ({ id: item.id || null, name: item.name }));
             const undoLevels = normalizeConfigurationDraftNames(previousDraft.levels).map((item) => ({ id: item.id || null, name: item.name }));
+            const undoPriorities = normalizeConfigurationDraftNames(previousDraft.priorities).map((item, index) => ({ id: item.id || null, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
+            const undoProjectStatuses = normalizeConfigurationDraftNames(previousDraft.projectStatuses).map((item, index) => ({ id: item.id || null, key: String(item.key || '').trim().toLowerCase() || `status_${index + 1}`, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
             try {
-              await api('/api/configuration', { method: 'PUT', body: JSON.stringify({ trades: undoTrades, levels: undoLevels }) });
+              await api('/api/configuration', { method: 'PUT', body: JSON.stringify({ trades: undoTrades, levels: undoLevels, priorities: undoPriorities, projectStatuses: undoProjectStatuses }) });
               await loadData();
               render();
               showMessage('Configuration change reverted.');
@@ -747,10 +719,12 @@
           return;
         }
 
-        list.push({ id: null, name: value, usage_count: 0, isNew: true });
+        list.push({ id: null, name: value, usage_count: 0, isNew: true, colorHex: '#64748B', sortOrder: list.length + 1, key: kind === 'projectStatuses' ? value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') : null });
         const nextDraft = {
           trades: kind === 'trades' ? list : [...(state.configurationDraft.trades || [])],
-          levels: kind === 'levels' ? list : [...(state.configurationDraft.levels || [])]
+          levels: kind === 'levels' ? list : [...(state.configurationDraft.levels || [])],
+          priorities: kind === 'priorities' ? list : [...(state.configurationDraft.priorities || [])],
+          projectStatuses: kind === 'projectStatuses' ? list : [...(state.configurationDraft.projectStatuses || [])]
         };
         if (input) input.value = '';
         try {
@@ -776,10 +750,29 @@
           : list.filter((item) => String(item.name || '').toLowerCase() !== String(idOrName || '').toLowerCase());
         const nextDraft = {
           trades: kind === 'trades' ? updatedList : [...(state.configurationDraft.trades || [])],
-          levels: kind === 'levels' ? updatedList : [...(state.configurationDraft.levels || [])]
+          levels: kind === 'levels' ? updatedList : [...(state.configurationDraft.levels || [])],
+          priorities: kind === 'priorities' ? updatedList : [...(state.configurationDraft.priorities || [])],
+          projectStatuses: kind === 'projectStatuses' ? updatedList : [...(state.configurationDraft.projectStatuses || [])]
         };
         try {
           await applyConfigurationDraft(nextDraft, `${entry.name} removed from ${kind}.`);
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+      }
+
+
+      async function updateConfigurationItemField(kind, idOrName, field, value) {
+        const list = [...(state.configurationDraft[kind] || [])];
+        const entry = list.find((item) => String(item.id || item.key || item.name) === String(idOrName));
+        if (!entry) return;
+        if (field === 'name') entry.name = String(value || '').trim();
+        if (field === 'colorHex') entry.colorHex = String(value || '#64748B');
+        if (field === 'sortOrder') entry.sortOrder = Number(value || 0);
+        if (!entry.name) return;
+        const nextDraft = { ...state.configurationDraft, [kind]: list };
+        try {
+          await applyConfigurationDraft(nextDraft, `${entry.name} updated.`);
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -1003,26 +996,33 @@ function clientsView() {
       }
 
       function configurationView() {
-        function renderCard(kind, label) {
+        function renderCard(kind, label, options = {}) {
           const items = state.configurationDraft[kind] || [];
+          const supportsColor = Boolean(options.color);
+          const supportsSort = Boolean(options.sort);
           const rows = items
-            .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+            .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.name || '').localeCompare(String(b.name || '')))
             .map((item) => {
               const usage = Number(item.usage_count || 0);
               const usageClass = 'text-[#7cecff] border-[#00d8ff]/50';
               const removeDisabled = usage > 0 ? 'disabled title="In use"' : '';
-              return `<tr class="border-t border-slate-800"><td class="p-2 font-medium text-slate-100">${item.name}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" ${removeDisabled} onclick="removeConfigurationItem('${kind}', ${item.id ? Number(item.id) : `'${String(item.name).replace(/'/g, "\\'")}'`})">${i18n.t('common.delete')}</button></td></tr>`;
+              const itemKey = item.id || item.key || item.name;
+              const nameInput = `<input class="w-full rounded bg-slate-900 p-1 text-sm" value="${String(item.name || '').replace(/"/g, '&quot;')}" onblur="updateConfigurationItemField('${kind}', '${itemKey}', 'name', this.value)" />`;
+              const colorCell = supportsColor ? `<input type="color" value="${String(item.colorHex || '#64748B')}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'colorHex', this.value)" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />` : '—';
+              const sortCell = supportsSort ? `<input type="number" min="1" class="w-14 rounded bg-slate-900 p-1 text-xs" value="${Number(item.sortOrder || 0)}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'sortOrder', this.value)" />` : '—';
+              return `<tr class="border-t border-slate-800"><td class="p-2 text-slate-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2">${sortCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" ${removeDisabled} onclick="removeConfigurationItem('${kind}', '${itemKey}')">${i18n.t('common.delete')}</button></td></tr>`;
             })
             .join('');
 
-          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="addConfigurationItem('${kind}')">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="w-[70%] p-2">${i18n.t('admin.configuration.value')}</th><th class="w-[15%] p-2">${i18n.t('admin.configuration.usage')}</th><th class="w-[15%] p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="3">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
+          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="addConfigurationItem('${kind}')">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">Color</th><th class="p-2">Sort</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
         }
 
-        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">${i18n.t('admin.configuration.subtitle')}</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'))}</div></div>`;
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">Manage static catalogs, client priorities and project statuses.</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'))}${renderCard('priorities', 'Priorities', { color: true, sort: true })}${renderCard('projectStatuses', 'Project Statuses', { color: true, sort: true })}</div></div>`;
       }
 
       window.addConfigurationItem = addConfigurationItem;
       window.removeConfigurationItem = removeConfigurationItem;
+      window.updateConfigurationItemField = updateConfigurationItemField;
 
       function accessManagementView() {
         const userRows = (state.adminUsers || []).map((user) => {
@@ -1454,7 +1454,7 @@ function clientsView() {
                 </td>
                 <td class="p-2 text-slate-300">${project.client_name}</td>
                 <td class="p-2 text-slate-300">${formatEuroWhole(project.budget_cents)}</td>
-                <td class="p-2 text-slate-300">${renderPriorityPill(project.priority_name)}</td>
+                <td class="p-2 text-slate-300">${renderPriorityPill(project.priority_name, project.priority_color_hex)}</td>
                 <td class="p-2 text-slate-300">${ownerPills}</td>
                 <td class="p-2 text-slate-300">${leaderPills}</td>
               </tr>`;
@@ -1703,8 +1703,8 @@ function clientsView() {
           : `<button class="inline-flex h-9 items-center gap-2 rounded-md border border-slate-600 bg-slate-950 px-3 hover:bg-slate-800" onclick="openProjectStatusModal(${selectedProject.id}, '${String(selectedProject.status || 'white').toLowerCase()}')"><span class="h-2.5 w-2.5 rounded-full ${statusPresentation.classes}"></span><span class="text-xs font-semibold text-slate-100">${statusPresentation.label}</span></button>`;
 
         const priorityControl = viewerMode || isTeammateMode()
-          ? `<div class="inline-flex h-9 items-center">${renderPriorityPill(selectedProject.priority_name)}</div>`
-          : `<button class="inline-flex h-9 items-center" onclick="openProjectPriorityModal(${selectedProject.client_id}, ${selectedProject.priority_id})">${renderPriorityPill(selectedProject.priority_name)}</button>`;
+          ? `<div class="inline-flex h-9 items-center">${renderPriorityPill(selectedProject.priority_name, selectedProject.priority_color_hex)}</div>`
+          : `<button class="inline-flex h-9 items-center" onclick="openProjectPriorityModal(${selectedProject.client_id}, ${selectedProject.priority_id})">${renderPriorityPill(selectedProject.priority_name, selectedProject.priority_color_hex)}</button>`;
 
         return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="grid grid-cols-1 gap-3 text-sm text-slate-300 lg:grid-cols-6 lg:items-center">
@@ -1834,10 +1834,11 @@ function filteredPeople() {
         const modal = document.getElementById('admin-project-modal');
         document.getElementById('admin-project-modal-title').textContent = project ? i18n.t('projects.edit') : i18n.t('projects.add');
         document.getElementById('admin-project-client').innerHTML = optionList(state.clients, project?.client_id);
+        document.getElementById('admin-project-status').innerHTML = (state.meta.projectStatuses || []).map((item) => `<option value="${item.key}">${item.label}</option>`).join('');
         const form = document.getElementById('admin-project-form');
         form.id.value = project?.id || '';
         form.name.value = project?.name || '';
-        form.status.value = project?.status || 'white';
+        form.status.value = project?.status || (state.meta.projectStatuses?.[0]?.key || 'in_progress');
         form.startMonth.value = project?.start_month || '';
         form.endMonth.value = project?.end_month || '';
         form.budgetEuros.value = project ? (Number(project.budget_cents)/100).toFixed(2) : '';
@@ -2054,13 +2055,17 @@ function filteredPeople() {
         modal.classList.toggle('flex', state.projectStatusModal.open);
         if (!state.projectStatusModal.open) return;
         const select = document.getElementById('project-status-select');
-        if (select) select.value = state.projectStatusModal.status || 'white';
+        if (select) {
+          const statusOptions = state.meta.projectStatuses || [];
+          select.innerHTML = statusOptions.map((item) => `<option value="${item.key}">${item.label}</option>`).join('');
+          select.value = state.projectStatusModal.status || (statusOptions[0]?.key || 'in_progress');
+        }
       }
 
       function closeProjectStatusModal() {
         state.projectStatusModal.open = false;
         state.projectStatusModal.projectId = null;
-        state.projectStatusModal.status = 'white';
+        state.projectStatusModal.status = 'in_progress';
         renderProjectStatusModal();
       }
 
@@ -2099,19 +2104,11 @@ function filteredPeople() {
         if (!project) return;
 
         const nextStatus = String(document.getElementById('project-status-select')?.value || '').toLowerCase();
-        const options = ['green', 'blue', 'yellow', 'red', 'white'];
-        if (!options.includes(nextStatus)) {
+        const statusItem = (state.meta.projectStatuses || []).find((item) => String(item.key) === nextStatus);
+        if (!statusItem) {
           showMessage('Invalid status selected.', 'error');
           return;
         }
-
-        const labels = {
-          green: 'Formed Team',
-          blue: 'In Progress',
-          yellow: 'Needs Attention',
-          red: 'Needs Problem-Solving',
-          white: 'New'
-        };
 
         await handleMutation(
           () =>
@@ -2126,7 +2123,7 @@ function filteredPeople() {
                 budgetCents: Number(project.budget_cents || 0)
               })
             }),
-          `Project status set to ${labels[nextStatus]}.`
+          `Project status set to ${statusItem.label}.`
         );
 
         closeProjectStatusModal();

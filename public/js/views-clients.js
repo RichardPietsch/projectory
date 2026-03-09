@@ -8,8 +8,10 @@
       const locationB = String(b.location || '').toLowerCase();
       const sinceA = String(a.since_month || '');
       const sinceB = String(b.since_month || '');
-      const priorityA = String(a.priority_name || '').toLowerCase();
-      const priorityB = String(b.priority_name || '').toLowerCase();
+      const priorityA = Number(a.priority_sort_order || 9999);
+      const priorityB = Number(b.priority_sort_order || 9999);
+      const priorityNameA = String(a.priority_name || '').toLowerCase();
+      const priorityNameB = String(b.priority_name || '').toLowerCase();
       const projectsA = Number(a.project_count || 0);
       const projectsB = Number(b.project_count || 0);
 
@@ -25,9 +27,9 @@
         case 'since_desc':
           return sinceB.localeCompare(sinceA) || nameA.localeCompare(nameB);
         case 'priority_asc':
-          return priorityA.localeCompare(priorityB) || nameA.localeCompare(nameB);
+          return priorityA - priorityB || priorityNameA.localeCompare(priorityNameB) || nameA.localeCompare(nameB);
         case 'priority_desc':
-          return priorityB.localeCompare(priorityA) || nameA.localeCompare(nameB);
+          return priorityB - priorityA || priorityNameB.localeCompare(priorityNameA) || nameA.localeCompare(nameB);
         case 'projects_asc':
           return projectsA - projectsB || nameA.localeCompare(nameB);
         case 'projects_desc':
@@ -44,7 +46,7 @@
               <td class="p-2">${client.name}</td>
               <td class="p-2">${client.location}</td>
               <td class="p-2">${client.since_month}</td>
-              <td class="p-2">${renderPriorityPill(client.priority_name)}</td>
+              <td class="p-2">${renderPriorityPill(client.priority_name, client.priority_color_hex)}</td>
               <td class="p-2">${client.project_count}</td>
               <td class="p-2">
                 <button class="rounded border border-slate-600 px-2 py-1 text-xs" onclick='openAdminClientModal(${JSON.stringify(client)})'>${t('common.edit')}</button>

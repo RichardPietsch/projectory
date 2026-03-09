@@ -38,7 +38,7 @@ const TRADE_CATALOG = [
 ];
 
 const LEVEL_CATALOG = ['—', 'JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LEVEL'];
-const PROJECT_STATUS_VALUES = ['green', 'blue', 'yellow', 'red', 'white'];
+const PROJECT_STATUS_VALUES = ['done', 'in_progress', 'rework_needed'];
 const PEOPLE_STATUS_VALUES = ['active', 'paused', 'leaver'];
 const REQUEST_BODY_LIMIT = process.env.REQUEST_BODY_LIMIT || '100kb';
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 15000);
@@ -1481,9 +1481,11 @@ function requireMonth(value, fieldName) {
   return null;
 }
 
-function normalizeProjectStatus(status, fallback = 'white') {
+function normalizeProjectStatus(status, fallback = 'in_progress') {
   const normalized = String(status || '').trim().toLowerCase();
-  if (PROJECT_STATUS_VALUES.includes(normalized)) return normalized;
+  const legacyMap = { green: 'done', blue: 'in_progress', yellow: 'in_progress', red: 'rework_needed', white: 'in_progress' };
+  const mapped = legacyMap[normalized] || normalized;
+  if (PROJECT_STATUS_VALUES.includes(mapped)) return mapped;
   return fallback;
 }
 
@@ -2335,16 +2337,18 @@ app.get('/api/admin/audit', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (
 
 app.get('/api/meta', async (_req, res) => {
   try {
-    const [priorities, trades, levels] = await Promise.all([
-      pool.query('SELECT id, name FROM priorities ORDER BY id'),
+    const [priorities, trades, levels, statuses] = await Promise.all([
+      pool.query('SELECT id, name, color_hex, sort_order FROM priorities ORDER BY sort_order, id'),
       pool.query('SELECT id, name FROM trades ORDER BY name'),
-      pool.query('SELECT id, name FROM levels ORDER BY name')
+      pool.query('SELECT id, name FROM levels ORDER BY name'),
+      pool.query('SELECT status_key, label, color_hex, sort_order FROM project_statuses ORDER BY sort_order, status_key')
     ]);
 
     res.json({
       priorities: priorities.rows,
       trades: trades.rows,
-      levels: levels.rows
+      levels: levels.rows,
+      projectStatuses: (statuses?.rows || []).map((row) => ({ key: row.status_key, label: row.label, colorHex: row.color_hex, sortOrder: Number(row.sort_order || 0) }))
     });
   } catch (error) {
     handleDbError(res, error);
@@ -2480,7 +2484,7 @@ function normalizeConfigurationItems(list, label) {
 
 app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
   try {
-    const [trades, levels] = await Promise.all([
+    const [trades, levels, priorities, projectStatuses] = await Promise.all([
       pool.query(
         `SELECT t.id, t.name, COUNT(p.id)::int AS usage_count
          FROM trades t
@@ -2494,24 +2498,51 @@ app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), async
          LEFT JOIN people p ON p.level_id = l.id
          GROUP BY l.id, l.name
          ORDER BY l.name`
+      ),
+      pool.query(
+        `SELECT pr.id, pr.name, pr.color_hex, pr.sort_order, COUNT(c.id)::int AS usage_count
+         FROM priorities pr
+         LEFT JOIN clients c ON c.priority_id = pr.id
+         GROUP BY pr.id, pr.name, pr.color_hex, pr.sort_order
+         ORDER BY pr.sort_order, pr.id`
+      ),
+      pool.query(
+        `SELECT ps.status_key, ps.label, ps.color_hex, ps.sort_order, COUNT(p.id)::int AS usage_count
+         FROM project_statuses ps
+         LEFT JOIN projects p ON p.status = ps.status_key
+         GROUP BY ps.status_key, ps.label, ps.color_hex, ps.sort_order
+         ORDER BY ps.sort_order, ps.status_key`
       )
     ]);
 
-    return res.json({ trades: trades.rows, levels: levels.rows });
+    return res.json({
+      trades: trades.rows,
+      levels: levels.rows,
+      priorities: priorities.rows,
+      projectStatuses: projectStatuses.rows.map((row) => ({
+        key: row.status_key,
+        label: row.label,
+        colorHex: row.color_hex,
+        sortOrder: Number(row.sort_order || 0),
+        usage_count: Number(row.usage_count || 0)
+      }))
+    });
   } catch (error) {
     return handleDbError(res, error);
   }
 });
 
-async function applyConfigurationCatalog({ trades, levels }) {
+async function applyConfigurationCatalog({ trades, levels, priorities, projectStatuses }) {
   const nextTrades = normalizeConfigurationItems(trades, 'trades');
   const nextLevels = normalizeConfigurationItems(levels, 'levels');
+  const nextPriorities = normalizeConfigurationItems(priorities, 'priorities').map((item, index) => ({ ...item, colorHex: String(item.colorHex || item.color_hex || '#64748B').trim() || '#64748B', sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : index + 1 }));
+  const nextProjectStatuses = normalizeConfigurationItems(projectStatuses, 'projectStatuses').map((item, index) => ({ key: String(item.key || '').trim().toLowerCase() || `status_${Date.now()}_${index}`, label: item.name, colorHex: String(item.colorHex || '#64748B').trim() || '#64748B', sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : index + 1 }));
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    const [existingTrades, existingLevels] = await Promise.all([
+    const [existingTrades, existingLevels, existingPriorities, existingStatuses] = await Promise.all([
       client.query(
         `SELECT t.id, t.name, COUNT(p.id)::int AS usage_count
          FROM trades t
@@ -2595,8 +2626,53 @@ async function applyConfigurationCatalog({ trades, levels }) {
       );
     }
 
+
+    const priorityById = new Map(existingPriorities.rows.map((row) => [Number(row.id), row]));
+    for (const item of nextPriorities) {
+      if (item.id && !priorityById.has(item.id)) {
+        throw new Error(`Priority id '${item.id}' does not exist.`);
+      }
+    }
+    const nextPriorityIds = new Set(nextPriorities.filter((item) => item.id).map((item) => item.id));
+    for (const row of existingPriorities.rows) {
+      const rowId = Number(row.id);
+      if (!nextPriorityIds.has(rowId) && Number(row.usage_count || 0) > 0) {
+        throw new Error(`Priority '${row.name}' is in use and cannot be removed.`);
+      }
+    }
+    for (const item of nextPriorities.filter((item) => item.id)) {
+      await client.query('UPDATE priorities SET name = $1, color_hex = $2, sort_order = $3 WHERE id = $4', [item.name, item.colorHex, item.sortOrder, item.id]);
+    }
+    const deletePriorityIds = existingPriorities.rows.map((row) => Number(row.id)).filter((id) => !nextPriorityIds.has(id));
+    if (deletePriorityIds.length > 0) {
+      await client.query('DELETE FROM priorities WHERE id = ANY($1::int[])', [deletePriorityIds]);
+    }
+    for (const item of nextPriorities.filter((item) => !item.id)) {
+      await client.query('INSERT INTO priorities (name, color_hex, sort_order) VALUES ($1, $2, $3)', [item.name, item.colorHex, item.sortOrder]);
+    }
+
+    const statusByKey = new Map(existingStatuses.rows.map((row) => [String(row.status_key), row]));
+    const nextStatusKeys = new Set(nextProjectStatuses.map((item) => item.key));
+    for (const row of existingStatuses.rows) {
+      const key = String(row.status_key);
+      if (!nextStatusKeys.has(key) && Number(row.usage_count || 0) > 0) {
+        throw new Error(`Status '${row.label}' is in use and cannot be removed.`);
+      }
+    }
+    for (const item of nextProjectStatuses) {
+      if (statusByKey.has(item.key)) {
+        await client.query('UPDATE project_statuses SET label = $1, color_hex = $2, sort_order = $3, updated_at = NOW() WHERE status_key = $4', [item.label, item.colorHex, item.sortOrder, item.key]);
+      } else {
+        await client.query('INSERT INTO project_statuses (status_key, label, color_hex, sort_order) VALUES ($1, $2, $3, $4)', [item.key, item.label, item.colorHex, item.sortOrder]);
+      }
+    }
+    const deleteStatusKeys = existingStatuses.rows.map((row) => String(row.status_key)).filter((key) => !nextStatusKeys.has(key));
+    if (deleteStatusKeys.length > 0) {
+      await client.query('DELETE FROM project_statuses WHERE status_key = ANY($1::text[])', [deleteStatusKeys]);
+    }
+
     await client.query('COMMIT');
-    return { trades: nextTrades.length, levels: nextLevels.length };
+    return { trades: nextTrades.length, levels: nextLevels.length, priorities: nextPriorities.length, projectStatuses: nextProjectStatuses.length };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -2607,7 +2683,7 @@ async function applyConfigurationCatalog({ trades, levels }) {
 
 app.put('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
-    await applyConfigurationCatalog({ trades: req.body?.trades, levels: req.body?.levels });
+    await applyConfigurationCatalog({ trades: req.body?.trades, levels: req.body?.levels, priorities: req.body?.priorities, projectStatuses: req.body?.projectStatuses });
     return res.json({ ok: true });
   } catch (error) {
     return badRequest(res, error.message || 'Invalid configuration payload.');
@@ -2669,7 +2745,7 @@ function validateImportPayload(payload) {
       return `Invalid project row with id ${row.id}.`;
     }
 
-    if (!PROJECT_STATUS_VALUES.includes(String(row.status || '').toLowerCase())) {
+    if (!String(row.status || '').trim()) {
       return `Invalid project status in project id ${row.id}.`;
     }
 

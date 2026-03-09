@@ -303,13 +303,7 @@
           <label class="mb-2 block text-sm"><span data-i18n="projects.form.client">Client</span><select required name="clientId" id="admin-project-client" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
           <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">Status
-            <select required name="status" class="mt-1 w-full rounded bg-slate-950 p-2">
-              <option value="green" data-i18n="projectStatus.green">Formed Team</option>
-              <option value="blue" data-i18n="projectStatus.blue">In Progress</option>
-              <option value="yellow" data-i18n="projectStatus.yellow">Needs Attention</option>
-              <option value="red" data-i18n="projectStatus.red">Needs Problem-Solving</option>
-              <option value="white" data-i18n="projectStatus.white">New</option>
-            </select>
+            <select required name="status" id="admin-project-status" class="mt-1 w-full rounded bg-slate-950 p-2"></select>
           </label>
           <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">End (yyyy-mm)<input name="endMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
