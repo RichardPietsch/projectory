@@ -616,6 +616,20 @@ const exportConfigRouteRateLimitMiddleware = rateLimit({
   message: 'Too many configuration export requests. Please wait before trying again.'
 });
 
+const exportRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'export',
+  max: Number(process.env.EXPORT_RATE_LIMIT_MAX || 20),
+  windowMs: Number(process.env.EXPORT_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000),
+  message: 'Too many export requests. Please wait before trying again.'
+});
+
+const adminAuditRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'admin-audit',
+  max: Number(process.env.ADMIN_AUDIT_RATE_LIMIT_MAX || 30),
+  windowMs: Number(process.env.ADMIN_AUDIT_RATE_LIMIT_WINDOW_MS || 60 * 1000),
+  message: 'Too many audit log requests. Please wait before trying again.'
+});
+
 const spaShellRouteRateLimitMiddleware = rateLimit({
   keyPrefix: 'spa-shell',
   max: Number(process.env.SPA_SHELL_RATE_LIMIT_MAX || 240),
@@ -2342,7 +2356,7 @@ app.post('/api/admin/smtp-settings/test-email', requirePermission(PERMISSIONS.AD
   }
 });
 
-app.get('/api/admin/audit', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.get('/api/admin/audit', requirePermission(PERMISSIONS.ADMIN_ACCESS), adminAuditRouteRateLimitMiddleware, async (req, res) => {
   const limit = Math.max(1, Math.min(Number.parseInt(req.query.limit || '100', 10) || 100, 500));
   const actorUserId = req.query.actorUserId ? Number.parseInt(req.query.actorUserId, 10) : null;
   const entityType = String(req.query.entityType || '').trim();
@@ -2408,7 +2422,7 @@ registerModuleRoutes(app, {
 // Legacy project/challenge/assignment endpoints are registered via src/modules/projects.
 
 // Data portability endpoints (export/import) use stricter permissions.
-app.get('/api/export', requirePermission(PERMISSIONS.EXPORT_RUN), async (req, res) => {
+app.get('/api/export', requirePermission(PERMISSIONS.EXPORT_RUN), exportRouteRateLimitMiddleware, async (req, res) => {
   try {
     const [clients, projects, people, challenges, assignments] = await Promise.all([
       pool.query('SELECT id, name, location, since_month, priority_id FROM clients ORDER BY id'),
