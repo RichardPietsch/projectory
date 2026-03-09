@@ -602,6 +602,20 @@ const configurationRouteRateLimitMiddleware = rateLimit({
   message: 'Too many configuration requests. Please wait before trying again.'
 });
 
+const metaRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'meta',
+  max: Number(process.env.META_RATE_LIMIT_MAX || 120),
+  windowMs: Number(process.env.META_RATE_LIMIT_WINDOW_MS || 60000),
+  message: 'Too many metadata requests. Please wait before trying again.'
+});
+
+const exportConfigRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'export-config',
+  max: Number(process.env.EXPORT_CONFIG_RATE_LIMIT_MAX || 30),
+  windowMs: Number(process.env.EXPORT_CONFIG_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000),
+  message: 'Too many configuration export requests. Please wait before trying again.'
+});
+
 const spaShellRouteRateLimitMiddleware = rateLimit({
   keyPrefix: 'spa-shell',
   max: Number(process.env.SPA_SHELL_RATE_LIMIT_MAX || 240),
@@ -2352,7 +2366,7 @@ app.get('/api/admin/audit', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (
   }
 });
 
-app.get('/api/meta', async (_req, res) => {
+app.get('/api/meta', metaRouteRateLimitMiddleware, async (_req, res) => {
   try {
     const [priorities, trades, levels, statuses] = await Promise.all([
       pool.query('SELECT id, name, color_hex, sort_order FROM priorities ORDER BY sort_order, id'),
@@ -2436,7 +2450,7 @@ app.get('/api/export', requirePermission(PERMISSIONS.EXPORT_RUN), async (req, re
   }
 });
 
-app.get('/api/export/config', requirePermission(PERMISSIONS.EXPORT_RUN), async (req, res) => {
+app.get('/api/export/config', requirePermission(PERMISSIONS.EXPORT_RUN), exportConfigRouteRateLimitMiddleware, async (req, res) => {
   try {
     const [trades, levels] = await Promise.all([
       pool.query('SELECT id, name FROM trades ORDER BY name'),
