@@ -216,6 +216,11 @@ npm run migrate
 
 Migration state is tracked in `schema_migrations`.
 
+Operational expectations:
+- Migrations are applied in lexical filename order (`0001_...sql` -> latest).
+- Application startup validates runtime/readiness only; schema/catalog changes must be shipped as migrations (for example `0011_startup_schema_catalog_backfill.sql`).
+- Rollback is a forward-fix process: restore from DB backup or ship a new corrective migration (down-migrations are not executed automatically by `scripts/run-migrations.js`).
+
 ---
 
 

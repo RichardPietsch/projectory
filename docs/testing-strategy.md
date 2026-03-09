@@ -93,6 +93,7 @@ This keeps tests repeatable and makes failures actionable (API or schema regress
   - `npm run migrate`
   - `node --test test/api-contract.db.test.js test/db-integration.test.js`
 - This release gate fails the pipeline on any migration/contract regression and is required before release promotion.
+- Migration runner behavior for CI is deterministic (lexical SQL order via `scripts/run-migrations.js`); rollback expectation is restore-from-backup or follow-up corrective migration.
 - Developers can still run the same gate locally with `RUN_DB_INTEGRATION=1 npm test` when validating DB-backed changes ahead of CI.
 - Any new high-risk auth/admin/import-export endpoint should be added to both:
   - the real-DB contract suite, and

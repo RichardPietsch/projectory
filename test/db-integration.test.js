@@ -78,6 +78,32 @@ function assertPgErrorCode(error, expectedCode, message) {
     );
     assert.equal(smtpIdCheckConstraint.rowCount, 1, 'Invariant 7 failed: smtp_settings id=1 CHECK constraint must exist.');
 
+
+    // Invariant 8: migration-only bootstrap catalog/schema state is present.
+    const startupBackfillMigration = await pool.query(
+      `SELECT 1
+       FROM schema_migrations
+       WHERE version = '0011_startup_schema_catalog_backfill.sql'
+       LIMIT 1`
+    );
+    assert.equal(startupBackfillMigration.rowCount, 1, 'Invariant 8 failed: 0011_startup_schema_catalog_backfill.sql must be applied.');
+
+    const peopleStatusConstraint = await pool.query(
+      `SELECT 1
+       FROM pg_constraint
+       WHERE conname = 'people_status_allowed'
+       LIMIT 1`
+    );
+    assert.equal(peopleStatusConstraint.rowCount, 1, 'Invariant 8 failed: people_status_allowed constraint must exist.');
+
+    const expectedPriorityCatalog = ['⭐️ Hero', '✨ Rising Star', '☑️ Solid', '🛠️ Maintenance', '🔬 Small Client', '❌ Outphasing'];
+    const priorityRows = await pool.query('SELECT name FROM priorities WHERE name = ANY($1::text[])', [expectedPriorityCatalog]);
+    assert.equal(priorityRows.rowCount, expectedPriorityCatalog.length, 'Invariant 8 failed: priority catalog entries must exist.');
+
+    const expectedLevels = ['—', 'JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LEVEL'];
+    const levelRows = await pool.query('SELECT name FROM levels WHERE name = ANY($1::text[])', [expectedLevels]);
+    assert.equal(levelRows.rowCount, expectedLevels.length, 'Invariant 8 failed: level catalog entries must exist.');
+
     // Create deterministic fixture graph once for FK/constraint lifecycle checks.
     const priorityId = Number((await pool.query("SELECT id FROM priorities ORDER BY id LIMIT 1")).rows[0].id);
     const tradeId = Number((await pool.query("SELECT id FROM trades ORDER BY id LIMIT 1")).rows[0].id);
@@ -123,7 +149,7 @@ function assertPgErrorCode(error, expectedCode, message) {
     );
     const assignmentId = Number(createdAssignment.rows[0].id);
 
-    // Invariant 8: duplicate challenge/person assignment is blocked by uniqueness.
+    // Invariant 9: duplicate challenge/person assignment is blocked by uniqueness.
     await assert.rejects(
       () => pool.query(
         `INSERT INTO assignments (project_id, challenge_id, person_id, quantity)
@@ -131,12 +157,12 @@ function assertPgErrorCode(error, expectedCode, message) {
         [projectId, challengeId, personId, '20.00']
       ),
       (error) => {
-        assertPgErrorCode(error, '23505', 'Invariant 8 failed: duplicate assignment must violate unique constraint.');
+        assertPgErrorCode(error, '23505', 'Invariant 9 failed: duplicate assignment must violate unique constraint.');
         return true;
       }
     );
 
-    // Invariant 9: owner and leader cannot both be true.
+    // Invariant 10: owner and leader cannot both be true.
     await assert.rejects(
       () => pool.query(
         `INSERT INTO assignments (project_id, challenge_id, person_id, quantity, is_owner, is_leader)
@@ -144,7 +170,7 @@ function assertPgErrorCode(error, expectedCode, message) {
         [projectId, challengeId, personId + 999999, '10.00']
       ),
       (error) => {
-        assertPgErrorCode(error, '23503', 'Invariant 9 pre-check failed: invalid person id should fail FK before check constraint.');
+        assertPgErrorCode(error, '23503', 'Invariant 10 pre-check failed: invalid person id should fail FK before check constraint.');
         return true;
       }
     );
@@ -164,16 +190,16 @@ function assertPgErrorCode(error, expectedCode, message) {
         [projectId, challengeId, personTwoId, '10.00']
       ),
       (error) => {
-        assertPgErrorCode(error, '23514', 'Invariant 9 failed: owner_leader_not_both check must reject dual true flags.');
+        assertPgErrorCode(error, '23514', 'Invariant 10 failed: owner_leader_not_both check must reject dual true flags.');
         return true;
       }
     );
 
-    // Invariant 10: FK integrity blocks deleting referenced client/project.
+    // Invariant 11: FK integrity blocks deleting referenced client/project.
     await assert.rejects(
       () => pool.query('DELETE FROM clients WHERE id = $1', [clientId]),
       (error) => {
-        assertPgErrorCode(error, '23503', 'Invariant 10 failed: deleting referenced client must violate FK constraints.');
+        assertPgErrorCode(error, '23503', 'Invariant 11 failed: deleting referenced client must violate FK constraints.');
         return true;
       }
     );
@@ -181,12 +207,12 @@ function assertPgErrorCode(error, expectedCode, message) {
     await assert.rejects(
       () => pool.query('DELETE FROM projects WHERE id = $1', [projectId]),
       (error) => {
-        assertPgErrorCode(error, '23503', 'Invariant 10 failed: deleting referenced project must violate FK constraints.');
+        assertPgErrorCode(error, '23503', 'Invariant 11 failed: deleting referenced project must violate FK constraints.');
         return true;
       }
     );
 
-    // Invariant 11: auth session lifecycle - deleting user cascades sessions and invites.
+    // Invariant 12: auth session lifecycle - deleting user cascades sessions and invites.
     const userResult = await pool.query(
       `INSERT INTO users (email, display_name, is_active)
        VALUES ($1, $2, TRUE)
@@ -210,12 +236,12 @@ function assertPgErrorCode(error, expectedCode, message) {
     await pool.query('DELETE FROM users WHERE id = $1', [userId]);
 
     const remainingSessions = await pool.query('SELECT 1 FROM auth_sessions WHERE user_id = $1 LIMIT 1', [userId]);
-    assert.equal(remainingSessions.rowCount, 0, 'Invariant 11 failed: deleting user must cascade auth_sessions rows.');
+    assert.equal(remainingSessions.rowCount, 0, 'Invariant 12 failed: deleting user must cascade auth_sessions rows.');
 
     const remainingInvites = await pool.query('SELECT 1 FROM user_invites WHERE user_id = $1 LIMIT 1', [userId]);
-    assert.equal(remainingInvites.rowCount, 0, 'Invariant 11 failed: deleting user must cascade user_invites rows.');
+    assert.equal(remainingInvites.rowCount, 0, 'Invariant 12 failed: deleting user must cascade user_invites rows.');
 
-    // Invariant 12: user_project_access composite PK prevents duplicates.
+    // Invariant 13: user_project_access composite PK prevents duplicates.
     const userAccessUser = await pool.query(
       `INSERT INTO users (email, display_name, is_active)
        VALUES ($1, $2, TRUE)
@@ -237,7 +263,7 @@ function assertPgErrorCode(error, expectedCode, message) {
         [accessUserId, projectId]
       ),
       (error) => {
-        assertPgErrorCode(error, '23505', 'Invariant 12 failed: duplicate user_project_access rows must violate composite PK.');
+        assertPgErrorCode(error, '23505', 'Invariant 13 failed: duplicate user_project_access rows must violate composite PK.');
         return true;
       }
     );
