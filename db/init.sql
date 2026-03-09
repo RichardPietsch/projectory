@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS trades (
 
 CREATE TABLE IF NOT EXISTS levels (
   id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE
+  name TEXT NOT NULL UNIQUE,
+  sort_order INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS clients (
@@ -130,12 +131,12 @@ VALUES
   ('STUDENT')
 ON CONFLICT (name) DO NOTHING;
 
-INSERT INTO levels (name)
+INSERT INTO levels (name, sort_order)
 VALUES
-  ('—'),
-  ('JUNIOR'),
-  ('MIDWEIGHT'),
-  ('SENIOR'),
-  ('DIRECTOR'),
-  ('C-LEVEL')
+  ('—', 1),
+  ('JUNIOR', 2),
+  ('MIDWEIGHT', 3),
+  ('SENIOR', 4),
+  ('DIRECTOR', 5),
+  ('C-LEVEL', 6)
 ON CONFLICT (name) DO NOTHING;

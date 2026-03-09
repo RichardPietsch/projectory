@@ -352,6 +352,7 @@
           style: 'background: linear-gradient(145deg, rgba(17, 17, 17, 1) 0%, rgba(31, 41, 55, 1) 60%, rgba(17, 24, 39, 1) 100%);'
         }
       };
+      const CONFIGURATION_SORTABLE_KINDS = new Set(['levels', 'priorities', 'projectStatuses']);
 
       function getPriorityPresetFromHex(colorHex) {
         const normalizedHex = String(colorHex || '').trim().toLowerCase();
@@ -361,6 +362,15 @@
           }
         }
         return 'custom';
+      }
+
+      function isConfigurationKindSortable(kind) {
+        return CONFIGURATION_SORTABLE_KINDS.has(kind);
+      }
+
+      function normalizeConfigurationSortOrder(list, kind) {
+        if (!isConfigurationKindSortable(kind)) return [...list];
+        return list.map((item, index) => ({ ...item, sortOrder: index + 1 }));
       }
 
       function getPriorityPresentation(priorityName, colorHex = '#64748B') {
@@ -686,12 +696,12 @@
           }
           await loadAdminAccessData();
         }
-        state.configurationDraft = {
-          trades: (state.configuration.trades || []).map((row) => ({ ...row })),
-          levels: (state.configuration.levels || []).map((row) => ({ ...row })),
-          priorities: (state.configuration.priorities || []).map((row) => ({ ...row, colorHex: row.colorHex || row.color_hex, sortOrder: Number(row.sortOrder ?? row.sort_order ?? 0) })),
-          projectStatuses: (state.configuration.projectStatuses || []).map((row) => ({ ...row, name: row.label || row.name, colorHex: row.colorHex || row.color_hex, sortOrder: Number(row.sortOrder ?? row.sort_order ?? 0) }))
-        };
+          state.configurationDraft = {
+            trades: (state.configuration.trades || []).map((row) => ({ ...row })),
+            levels: (state.configuration.levels || []).map((row) => ({ ...row, sortOrder: Number(row.sortOrder ?? row.sort_order ?? 0) })),
+            priorities: (state.configuration.priorities || []).map((row) => ({ ...row, colorHex: row.colorHex || row.color_hex, sortOrder: Number(row.sortOrder ?? row.sort_order ?? 0) })),
+            projectStatuses: (state.configuration.projectStatuses || []).map((row) => ({ ...row, name: row.label || row.name, colorHex: row.colorHex || row.color_hex, sortOrder: Number(row.sortOrder ?? row.sort_order ?? 0) }))
+          };
 
       }
 
@@ -718,7 +728,7 @@
         };
 
         const trades = normalizeConfigurationDraftNames(nextDraft.trades).map((item) => ({ id: item.id || null, name: item.name }));
-        const levels = normalizeConfigurationDraftNames(nextDraft.levels).map((item) => ({ id: item.id || null, name: item.name }));
+        const levels = normalizeConfigurationDraftNames(nextDraft.levels).map((item, index) => ({ id: item.id || null, name: item.name, sortOrder: Number(item.sortOrder || (index + 1)) }));
         const priorities = normalizeConfigurationDraftNames(nextDraft.priorities).map((item, index) => ({ id: item.id || null, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
         const projectStatuses = normalizeConfigurationDraftNames(nextDraft.projectStatuses).map((item, index) => ({ id: item.id || null, key: String(item.key || '').trim().toLowerCase() || `status_${index + 1}`, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
 
@@ -730,7 +740,7 @@
           actionLabel: 'Undo',
           onAction: async () => {
             const undoTrades = normalizeConfigurationDraftNames(previousDraft.trades).map((item) => ({ id: item.id || null, name: item.name }));
-            const undoLevels = normalizeConfigurationDraftNames(previousDraft.levels).map((item) => ({ id: item.id || null, name: item.name }));
+            const undoLevels = normalizeConfigurationDraftNames(previousDraft.levels).map((item, index) => ({ id: item.id || null, name: item.name, sortOrder: Number(item.sortOrder || (index + 1)) }));
             const undoPriorities = normalizeConfigurationDraftNames(previousDraft.priorities).map((item, index) => ({ id: item.id || null, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
             const undoProjectStatuses = normalizeConfigurationDraftNames(previousDraft.projectStatuses).map((item, index) => ({ id: item.id || null, key: String(item.key || '').trim().toLowerCase() || `status_${index + 1}`, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
             try {
@@ -757,11 +767,12 @@
         }
 
         list.push({ id: null, name: value, usage_count: 0, isNew: true, colorHex: '#64748B', sortOrder: list.length + 1, key: kind === 'projectStatuses' ? value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') : null });
+        const normalizedList = normalizeConfigurationSortOrder(list, kind);
         const nextDraft = {
-          trades: kind === 'trades' ? list : [...(state.configurationDraft.trades || [])],
-          levels: kind === 'levels' ? list : [...(state.configurationDraft.levels || [])],
-          priorities: kind === 'priorities' ? list : [...(state.configurationDraft.priorities || [])],
-          projectStatuses: kind === 'projectStatuses' ? list : [...(state.configurationDraft.projectStatuses || [])]
+          trades: kind === 'trades' ? normalizedList : [...(state.configurationDraft.trades || [])],
+          levels: kind === 'levels' ? normalizedList : [...(state.configurationDraft.levels || [])],
+          priorities: kind === 'priorities' ? normalizedList : [...(state.configurationDraft.priorities || [])],
+          projectStatuses: kind === 'projectStatuses' ? normalizedList : [...(state.configurationDraft.projectStatuses || [])]
         };
         if (input) input.value = '';
         try {
@@ -785,11 +796,12 @@
         const updatedList = hasId
           ? list.filter((item) => Number(item.id) !== Number(idOrName))
           : list.filter((item) => String(item.name || '').toLowerCase() !== String(idOrName || '').toLowerCase());
+        const normalizedList = normalizeConfigurationSortOrder(updatedList, kind);
         const nextDraft = {
-          trades: kind === 'trades' ? updatedList : [...(state.configurationDraft.trades || [])],
-          levels: kind === 'levels' ? updatedList : [...(state.configurationDraft.levels || [])],
-          priorities: kind === 'priorities' ? updatedList : [...(state.configurationDraft.priorities || [])],
-          projectStatuses: kind === 'projectStatuses' ? updatedList : [...(state.configurationDraft.projectStatuses || [])]
+          trades: kind === 'trades' ? normalizedList : [...(state.configurationDraft.trades || [])],
+          levels: kind === 'levels' ? normalizedList : [...(state.configurationDraft.levels || [])],
+          priorities: kind === 'priorities' ? normalizedList : [...(state.configurationDraft.priorities || [])],
+          projectStatuses: kind === 'projectStatuses' ? normalizedList : [...(state.configurationDraft.projectStatuses || [])]
         };
         try {
           await applyConfigurationDraft(nextDraft, `${entry.name} removed from ${kind}.`);
@@ -820,6 +832,34 @@
           return;
         }
         await updateConfigurationItemField('priorities', idOrName, 'colorHex', PRIORITY_PRESET_MAP[preset].hex);
+      }
+
+      function dragConfigurationRowStart(kind, itemKey) {
+        if (!isConfigurationKindSortable(kind)) return;
+        state.configurationDrag = { kind, itemKey: String(itemKey) };
+      }
+
+      function dragConfigurationRowOver(event) {
+        event.preventDefault();
+      }
+
+      async function dropConfigurationRow(kind, targetItemKey) {
+        const dragState = state.configurationDrag;
+        state.configurationDrag = null;
+        if (!dragState || dragState.kind !== kind || String(dragState.itemKey) === String(targetItemKey)) return;
+        const list = [...(state.configurationDraft[kind] || [])]
+          .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+        const sourceIndex = list.findIndex((item) => String(item.id || item.key || item.name) === String(dragState.itemKey));
+        const targetIndex = list.findIndex((item) => String(item.id || item.key || item.name) === String(targetItemKey));
+        if (sourceIndex < 0 || targetIndex < 0) return;
+        const [moved] = list.splice(sourceIndex, 1);
+        list.splice(targetIndex, 0, moved);
+        const nextDraft = { ...state.configurationDraft, [kind]: normalizeConfigurationSortOrder(list, kind) };
+        try {
+          await applyConfigurationDraft(nextDraft, `${moved.name} moved.`);
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
       }
 
       function optionList(items, selected) {
@@ -1063,21 +1103,27 @@ function clientsView() {
                       })()
                     : `<input type="color" value="${String(item.colorHex || '#64748B')}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'colorHex', this.value)" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />`)
                 : '—';
-              const sortCell = supportsSort ? `<input type="number" min="1" class="w-14 rounded bg-slate-900 p-1 text-xs" value="${Number(item.sortOrder || 0)}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'sortOrder', this.value)" />` : '—';
-              return `<tr class="border-t border-slate-800"><td class="p-2 text-slate-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2">${sortCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" ${removeDisabled} onclick="removeConfigurationItem('${kind}', '${itemKey}')">${i18n.t('common.delete')}</button></td></tr>`;
+              const sortCell = supportsSort ? '<span class="inline-flex items-center rounded border border-slate-700 px-2 py-1 text-xs text-slate-300">↕ Drag</span>' : '—';
+              const rowAttrs = supportsSort
+                ? `class="border-t border-slate-800 cursor-move hover:bg-slate-900/40" draggable="true" ondragstart="dragConfigurationRowStart('${kind}', '${itemKey}')" ondragover="dragConfigurationRowOver(event)" ondrop="dropConfigurationRow('${kind}', '${itemKey}')"`
+                : 'class="border-t border-slate-800"';
+              return `<tr ${rowAttrs}><td class="p-2 text-slate-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2">${sortCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" ${removeDisabled} onclick="removeConfigurationItem('${kind}', '${itemKey}')">${i18n.t('common.delete')}</button></td></tr>`;
             })
             .join('');
 
           return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="addConfigurationItem('${kind}')">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">Color</th><th class="p-2">Sort</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
         }
 
-        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">Manage static catalogs, client priorities and project statuses.</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'))}${renderCard('priorities', 'Priorities', { color: true, sort: true })}${renderCard('projectStatuses', 'Project Statuses', { color: true, sort: true })}</div></div>`;
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">Manage static catalogs, client priorities and project statuses.</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'), { sort: true })}${renderCard('priorities', 'Priorities', { color: true, sort: true })}${renderCard('projectStatuses', 'Project Statuses', { color: true, sort: true })}</div></div>`;
       }
 
       window.addConfigurationItem = addConfigurationItem;
       window.removeConfigurationItem = removeConfigurationItem;
       window.updateConfigurationItemField = updateConfigurationItemField;
       window.updateConfigurationPriorityPreset = updateConfigurationPriorityPreset;
+      window.dragConfigurationRowStart = dragConfigurationRowStart;
+      window.dragConfigurationRowOver = dragConfigurationRowOver;
+      window.dropConfigurationRow = dropConfigurationRow;
 
       function accessManagementView() {
         const userRows = (state.adminUsers || []).map((user) => {
@@ -3511,4 +3557,3 @@ function filteredPeople() {
       }
 
       init();
-

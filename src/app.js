@@ -1561,7 +1561,7 @@ async function distributeProjectQuantityAcrossAssignments(personId, projectId, t
 async function getPeopleCatalogLookups(client = pool) {
   const [trades, levels] = await Promise.all([
     client.query('SELECT id, name FROM trades ORDER BY name'),
-    client.query('SELECT id, name FROM levels ORDER BY name')
+    client.query('SELECT id, name FROM levels ORDER BY sort_order, id')
   ]);
 
   return {
@@ -2357,7 +2357,7 @@ app.get('/api/meta', async (_req, res) => {
     const [priorities, trades, levels, statuses] = await Promise.all([
       pool.query('SELECT id, name, color_hex, sort_order FROM priorities ORDER BY sort_order, id'),
       pool.query('SELECT id, name FROM trades ORDER BY name'),
-      pool.query('SELECT id, name FROM levels ORDER BY name'),
+      pool.query('SELECT id, name FROM levels ORDER BY sort_order, id'),
       pool.query('SELECT status_key, label, color_hex, sort_order FROM project_statuses ORDER BY sort_order, status_key')
     ]);
 
@@ -2440,7 +2440,7 @@ app.get('/api/export/config', requirePermission(PERMISSIONS.EXPORT_RUN), async (
   try {
     const [trades, levels] = await Promise.all([
       pool.query('SELECT id, name FROM trades ORDER BY name'),
-      pool.query('SELECT id, name FROM levels ORDER BY name')
+      pool.query('SELECT id, name FROM levels ORDER BY sort_order, id')
     ]);
 
     const payload = {
@@ -2477,10 +2477,19 @@ function normalizeConfigurationItems(list, label) {
       }
       return {
         id: Number.isInteger(Number(item?.id)) ? Number(item.id) : null,
-        name: item?.name
+        name: item?.name,
+        colorHex: item?.colorHex ?? item?.color_hex,
+        sortOrder: item?.sortOrder ?? item?.sort_order,
+        key: item?.key
       };
     })
-    .map((item) => ({ id: item.id, name: String(item.name || '').trim() }))
+    .map((item) => ({
+      id: item.id,
+      name: String(item.name || '').trim(),
+      colorHex: item.colorHex,
+      sortOrder: item.sortOrder,
+      key: item.key
+    }))
     .filter((item) => item.name);
 
   if (normalized.length === 0) {
@@ -2510,11 +2519,11 @@ app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), confi
          ORDER BY t.name`
       ),
       pool.query(
-        `SELECT l.id, l.name, COUNT(p.id)::int AS usage_count
+        `SELECT l.id, l.name, l.sort_order, COUNT(p.id)::int AS usage_count
          FROM levels l
          LEFT JOIN people p ON p.level_id = l.id
-         GROUP BY l.id, l.name
-         ORDER BY l.name`
+         GROUP BY l.id, l.name, l.sort_order
+         ORDER BY l.sort_order, l.id`
       ),
       pool.query(
         `SELECT pr.id, pr.name, pr.color_hex, pr.sort_order, COUNT(c.id)::int AS usage_count
@@ -2534,7 +2543,12 @@ app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), confi
 
     return res.json({
       trades: trades.rows,
-      levels: levels.rows,
+      levels: levels.rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        sortOrder: Number(row.sort_order || 0),
+        usage_count: Number(row.usage_count || 0)
+      })),
       priorities: priorities.rows,
       projectStatuses: projectStatuses.rows.map((row) => ({
         key: row.status_key,
@@ -2551,7 +2565,7 @@ app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), confi
 
 async function applyConfigurationCatalog({ trades, levels, priorities, projectStatuses }) {
   const nextTrades = normalizeConfigurationItems(trades, 'trades');
-  const nextLevels = normalizeConfigurationItems(levels, 'levels');
+  const nextLevels = normalizeConfigurationItems(levels, 'levels').map((item, index) => ({ ...item, sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : index + 1 }));
   const nextPriorities = normalizeConfigurationItems(priorities, 'priorities').map((item, index) => ({ ...item, colorHex: String(item.colorHex || item.color_hex || '#64748B').trim() || '#64748B', sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : index + 1 }));
   const nextProjectStatuses = normalizeConfigurationItems(projectStatuses, 'projectStatuses').map((item, index) => ({ key: String(item.key || '').trim().toLowerCase() || `status_${Date.now()}_${index}`, label: item.name, colorHex: String(item.colorHex || '#64748B').trim() || '#64748B', sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : index + 1 }));
 
@@ -2567,10 +2581,10 @@ async function applyConfigurationCatalog({ trades, levels, priorities, projectSt
          GROUP BY t.id, t.name`
       ),
       client.query(
-        `SELECT l.id, l.name, COUNT(p.id)::int AS usage_count
+        `SELECT l.id, l.name, l.sort_order, COUNT(p.id)::int AS usage_count
          FROM levels l
          LEFT JOIN people p ON p.level_id = l.id
-         GROUP BY l.id, l.name`
+         GROUP BY l.id, l.name, l.sort_order`
       )
     ]);
 
@@ -2608,7 +2622,7 @@ async function applyConfigurationCatalog({ trades, levels, priorities, projectSt
       await client.query('UPDATE trades SET name = $1 WHERE id = $2', [item.name, item.id]);
     }
     for (const item of nextLevels.filter((item) => item.id)) {
-      await client.query('UPDATE levels SET name = $1 WHERE id = $2', [item.name, item.id]);
+      await client.query('UPDATE levels SET name = $1, sort_order = $2 WHERE id = $3', [item.name, item.sortOrder, item.id]);
     }
 
     const deleteTradeIds = existingTrades.rows
@@ -2626,7 +2640,7 @@ async function applyConfigurationCatalog({ trades, levels, priorities, projectSt
     }
 
     const newTradeNames = nextTrades.filter((item) => !item.id).map((item) => item.name);
-    const newLevelNames = nextLevels.filter((item) => !item.id).map((item) => item.name);
+    const newLevels = nextLevels.filter((item) => !item.id);
 
     if (newTradeNames.length > 0) {
       await client.query(
@@ -2635,12 +2649,8 @@ async function applyConfigurationCatalog({ trades, levels, priorities, projectSt
         [newTradeNames]
       );
     }
-    if (newLevelNames.length > 0) {
-      await client.query(
-        `INSERT INTO levels (name)
-         SELECT value FROM UNNEST($1::text[]) AS value`,
-        [newLevelNames]
-      );
+    for (const item of newLevels) {
+      await client.query('INSERT INTO levels (name, sort_order) VALUES ($1, $2)', [item.name, item.sortOrder]);
     }
 
 
