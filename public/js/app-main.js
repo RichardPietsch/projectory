@@ -330,18 +330,55 @@
       }
 
 
+      const PRIORITY_PRESET_MAP = {
+        gold: {
+          hex: '#FFD700',
+          textClass: 'text-slate-900',
+          style: 'background: linear-gradient(145deg, rgba(250, 231, 135, 1) 0%, rgba(255, 162, 0, 1) 48%, rgba(255, 182, 87, 1) 49%, rgba(255, 237, 145, 1) 77%, rgba(255, 246, 219, 1) 78%, rgba(255, 175, 15, 1) 100%);'
+        },
+        silver: {
+          hex: '#C0C0C0',
+          textClass: 'text-slate-900',
+          style: 'background: linear-gradient(145deg, rgba(213, 225, 235, 1) 0%, rgba(224, 224, 224, 1) 47%, rgba(242, 242, 242, 1) 49%, rgba(225, 230, 230, 1) 77%, rgba(255, 255, 255, 1) 78%, rgba(227, 227, 227, 1) 100%);'
+        },
+        bronze: {
+          hex: '#CD7F32',
+          textClass: 'text-slate-900',
+          style: 'background: linear-gradient(145deg, rgba(199, 162, 111, 1) 0%, rgba(230, 214, 188, 1) 47%, rgba(242, 228, 201, 1) 49%, rgba(247, 214, 148, 1) 77%, rgba(247, 231, 178, 1) 78%, rgba(245, 219, 174, 1) 100%);'
+        },
+        black: {
+          hex: '#111111',
+          textClass: 'text-slate-100',
+          style: 'background: linear-gradient(145deg, rgba(17, 17, 17, 1) 0%, rgba(31, 41, 55, 1) 60%, rgba(17, 24, 39, 1) 100%);'
+        }
+      };
+
+      function getPriorityPresetFromHex(colorHex) {
+        const normalizedHex = String(colorHex || '').trim().toLowerCase();
+        for (const [preset, config] of Object.entries(PRIORITY_PRESET_MAP)) {
+          if (normalizedHex === String(config.hex || '').toLowerCase()) {
+            return preset;
+          }
+        }
+        return 'custom';
+      }
+
       function getPriorityPresentation(priorityName, colorHex = '#64748B') {
         const normalized = String(priorityName || '').trim() || 'Unknown';
+        const preset = getPriorityPresetFromHex(colorHex);
+        const presetConfig = PRIORITY_PRESET_MAP[preset];
         return {
           rank: 99,
           label: normalized,
-          colorHex: String(colorHex || '#64748B')
+          colorHex: String(colorHex || '#64748B'),
+          textClass: presetConfig?.textClass || 'text-white',
+          style: presetConfig?.style || `background:${String(colorHex || '#64748B')};`
         };
       }
 
       function renderPriorityPill(priorityName, colorHex = '#64748B') {
         const priority = getPriorityPresentation(priorityName, colorHex);
-        return `<span class="inline-flex items-center gap-1 rounded-full border border-white/30 px-2 py-1 text-xs font-semibold text-white" style="background:${priority.colorHex};"><span>${priority.label}</span></span>`;
+        return `<span class="inline-flex items-center gap-1 rounded-full border border-white/30 px-2 py-1 text-xs font-semibold ${priority.textClass}" style="${priority.style}"><span>${priority.label}</span></span>`;
       }
 
       const { api } = window.ProjectoryApi;
@@ -778,6 +815,13 @@
         }
       }
 
+      async function updateConfigurationPriorityPreset(idOrName, preset) {
+        if (!PRIORITY_PRESET_MAP[preset]) {
+          return;
+        }
+        await updateConfigurationItemField('priorities', idOrName, 'colorHex', PRIORITY_PRESET_MAP[preset].hex);
+      }
+
       function optionList(items, selected) {
         return items
           .map((item) => `<option value="${item.id}" ${String(selected) === String(item.id) ? 'selected' : ''}>${item.name}</option>`)
@@ -1008,7 +1052,14 @@ function clientsView() {
               const removeDisabled = usage > 0 ? 'disabled title="In use"' : '';
               const itemKey = item.id || item.key || item.name;
               const nameInput = `<input class="w-full rounded bg-slate-900 p-1 text-sm" value="${String(item.name || '').replace(/"/g, '&quot;')}" onblur="updateConfigurationItemField('${kind}', '${itemKey}', 'name', this.value)" />`;
-              const colorCell = supportsColor ? `<input type="color" value="${String(item.colorHex || '#64748B')}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'colorHex', this.value)" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />` : '—';
+              const colorCell = supportsColor
+                ? (kind === 'priorities'
+                    ? (() => {
+                        const selectedPreset = getPriorityPresetFromHex(item.colorHex || '#64748B');
+                        return `<div class="flex items-center gap-2"><select class="rounded bg-slate-900 p-1 text-xs" onchange="if (this.value !== 'custom') updateConfigurationPriorityPreset('${itemKey}', this.value)"><option value="gold" ${selectedPreset === 'gold' ? 'selected' : ''}>Gold</option><option value="silver" ${selectedPreset === 'silver' ? 'selected' : ''}>Silver</option><option value="bronze" ${selectedPreset === 'bronze' ? 'selected' : ''}>Bronze</option><option value="black" ${selectedPreset === 'black' ? 'selected' : ''}>Black</option><option value="custom" ${selectedPreset === 'custom' ? 'selected' : ''}>Custom hex</option></select><input type="color" value="${String(item.colorHex || '#64748B')}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'colorHex', this.value)" class="h-8 w-10 rounded border border-slate-700 bg-transparent" /></div>`;
+                      })()
+                    : `<input type="color" value="${String(item.colorHex || '#64748B')}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'colorHex', this.value)" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />`)
+                : '—';
               const sortCell = supportsSort ? `<input type="number" min="1" class="w-14 rounded bg-slate-900 p-1 text-xs" value="${Number(item.sortOrder || 0)}" onchange="updateConfigurationItemField('${kind}', '${itemKey}', 'sortOrder', this.value)" />` : '—';
               return `<tr class="border-t border-slate-800"><td class="p-2 text-slate-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2">${sortCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" ${removeDisabled} onclick="removeConfigurationItem('${kind}', '${itemKey}')">${i18n.t('common.delete')}</button></td></tr>`;
             })
@@ -1023,6 +1074,7 @@ function clientsView() {
       window.addConfigurationItem = addConfigurationItem;
       window.removeConfigurationItem = removeConfigurationItem;
       window.updateConfigurationItemField = updateConfigurationItemField;
+      window.updateConfigurationPriorityPreset = updateConfigurationPriorityPreset;
 
       function accessManagementView() {
         const userRows = (state.adminUsers || []).map((user) => {
