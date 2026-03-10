@@ -74,58 +74,32 @@
     <div id="toast-container" class="fixed right-4 top-4 z-[70] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"></div>
 
     <div id="export-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+      <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-lg font-semibold" data-i18n="modal.export.title">Export data</h3>
+          <h3 class="text-lg font-semibold">Export data</h3>
           <button id="export-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
         </div>
-        <label class="mb-3 block text-sm"><span data-i18n="modal.export.scope">Export type</span>
-          <select id="export-scope" class="mt-1 w-full rounded bg-slate-950 p-2">
-            <option value="app" data-i18n="modal.scope.app">Application data</option>
-            <option value="configuration" data-i18n="modal.scope.configuration">Configuration</option>
-          </select>
-        </label>
-        <label class="mb-4 block text-sm"><span data-i18n="modal.format">Format</span>
-          <select id="export-format" class="mt-1 w-full rounded bg-slate-950 p-2">
-            <option value="json">JSON</option>
-            <option value="csv">CSV</option>
-          </select>
-        </label>
-        <div class="flex justify-end gap-2">
+        <div id="export-scope-list" class="space-y-2"></div>
+        <div class="mt-4 flex justify-end">
           <button id="export-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
-          <button id="export-confirm" class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="common.export">Export</button>
         </div>
       </div>
     </div>
 
     <div id="import-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 p-5">
+      <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
         <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-lg font-semibold" data-i18n="modal.import.title">Import data</h3>
+          <h3 class="text-lg font-semibold">Import data</h3>
           <button id="import-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
         </div>
 
-        <label class="mb-3 block text-sm"><span data-i18n="modal.import.scope">Import type</span>
-          <select id="import-scope" class="mt-1 w-full rounded bg-slate-950 p-2">
-            <option value="app" data-i18n="modal.scope.app">Application data</option>
-            <option value="configuration" data-i18n="modal.scope.configuration">Configuration</option>
-          </select>
-        </label>
+        <div id="import-scope-list" class="space-y-2"></div>
+        <input id="import-file" type="file" accept=".json,.csv,application/json,text/csv" class="hidden" />
 
-        <input id="import-file" type="file" accept=".json,.csv,application/json,text/csv" class="mb-3 block w-full text-sm" />
-
-        <div id="import-preview" class="hidden rounded border border-slate-700 bg-slate-950/60 p-3 text-sm">
-          <p class="mb-2 text-amber-300" data-i18n="modal.import.warning">⚠️ Warning: importing will replace and permanently delete all current data.</p>
-          <p class="mb-2 text-slate-300" data-i18n="modal.import.summary">Import summary:</p>
-          <ul class="list-disc pl-5 text-slate-200">
-            <li><span data-i18n="entity.people">People</span>: <span id="import-count-people">0</span></li>
-            <li><span data-i18n="entity.clients">Clients</span>: <span id="import-count-clients">0</span></li>
-            <li><span data-i18n="entity.projects">Projects</span>: <span id="import-count-projects">0</span></li>
-            <li><span data-i18n="entity.challenges">Challenges</span>: <span id="import-count-challenges">0</span></li>
-            <li><span data-i18n="entity.assignments">Assignments</span>: <span id="import-count-assignments">0</span></li>
-            <li id="import-count-trades-row" class="hidden"><span data-i18n="configuration.trades">Trades</span>: <span id="import-count-trades">0</span></li>
-            <li id="import-count-levels-row" class="hidden"><span data-i18n="configuration.levels">Levels</span>: <span id="import-count-levels">0</span></li>
-          </ul>
+        <div id="import-preview" class="mt-3 hidden rounded border border-slate-700 bg-slate-950/60 p-3 text-sm">
+          <p class="mb-1 text-amber-300">⚠️ Warning: importing will replace data inside the selected cluster.</p>
+          <p id="import-preview-scope" class="mb-2 text-slate-300"></p>
+          <ul id="import-preview-summary" class="list-disc pl-5 text-slate-200"></ul>
         </div>
 
         <div class="mt-4 flex justify-end gap-2">

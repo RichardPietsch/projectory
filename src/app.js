@@ -2661,6 +2661,246 @@ function normalizeConfigurationItems(list, label) {
   return normalized;
 }
 
+
+const PORTABILITY_SCOPES = new Set(['people', 'clients', 'projects', 'configuration', 'access-audit']);
+
+function normalizePortabilityScope(scope) {
+  const normalized = String(scope || '').trim().toLowerCase();
+  return PORTABILITY_SCOPES.has(normalized) ? normalized : '';
+}
+
+function summarizeScopedPayload(scope, payload) {
+  if (scope === 'people') return { people: (payload.people || []).length };
+  if (scope === 'clients') return { clients: (payload.clients || []).length };
+  if (scope === 'projects') return { projects: (payload.projects || []).length, challenges: (payload.challenges || []).length, assignments: (payload.assignments || []).length };
+  if (scope === 'configuration') return { trades: (payload.trades || []).length, levels: (payload.levels || []).length, priorities: (payload.priorities || []).length, projectStatuses: (payload.projectStatuses || []).length };
+  return { users: (payload.users || []).length, userRoles: (payload.userRoles || []).length, userProjectAccess: (payload.userProjectAccess || []).length, userInvites: (payload.userInvites || []).length, auditLog: (payload.auditLog || []).length, smtpSettings: (payload.smtpSettings || []).length };
+}
+
+function scopedPayloadToCsv(payload) {
+  const entities = Object.keys(payload || {});
+  const headers = new Set(['entity']);
+  for (const entity of entities) {
+    for (const row of payload[entity] || []) {
+      Object.keys(row || {}).forEach((key) => headers.add(key));
+    }
+  }
+  const orderedHeaders = [...headers];
+  const rows = [orderedHeaders.map(csvEscape).join(';')];
+  for (const entity of entities) {
+    for (const row of payload[entity] || []) {
+      const mapped = orderedHeaders.map((header) => {
+        if (header === 'entity') return entity;
+        return row?.[header];
+      });
+      rows.push(mapped.map(csvEscape).join(';'));
+    }
+  }
+  return rows.join('\n');
+}
+
+function csvToScopedPayload(text) {
+  const rows = parseCsv(text);
+  if (rows.length === 0) throw new Error('CSV file is empty.');
+  const headers = rows[0];
+  if (!headers.includes('entity')) throw new Error('CSV missing required header: entity');
+  const payload = {};
+  for (let i = 1; i < rows.length; i += 1) {
+    const line = rows[i];
+    if (line.every((cell) => !String(cell).trim())) continue;
+    const record = {};
+    for (let h = 0; h < headers.length; h += 1) {
+      record[headers[h]] = line[h] ?? '';
+    }
+    const entity = String(record.entity || '').trim();
+    if (!entity) continue;
+    delete record.entity;
+    payload[entity] = payload[entity] || [];
+    payload[entity].push(record);
+  }
+  return payload;
+}
+
+async function buildScopedExportPayload(scope) {
+  if (scope === 'people') {
+    const people = await pool.query(
+      `SELECT p.id, p.first_name, p.last_name, p.trade_id, t.name AS trade, p.level_id, l.name AS level,
+              COALESCE(p.is_hidden, FALSE) AS is_hidden, COALESCE(p.is_leaver, FALSE) AS is_leaver, p.status, p.working_hours
+       FROM people p
+       JOIN trades t ON t.id = p.trade_id
+       JOIN levels l ON l.id = p.level_id
+       ORDER BY p.id`
+    );
+    return { people: people.rows };
+  }
+  if (scope === 'clients') {
+    const clients = await pool.query('SELECT id, name, location, since_month, priority_id FROM clients ORDER BY id');
+    return { clients: clients.rows };
+  }
+  if (scope === 'projects') {
+    const [projects, challenges, assignments] = await Promise.all([
+      pool.query('SELECT id, client_id, name, status, start_month, end_month, budget_cents FROM projects ORDER BY id'),
+      pool.query('SELECT id, project_id, title, description FROM challenges ORDER BY id'),
+      pool.query('SELECT id, project_id, challenge_id, person_id, is_owner, is_leader, quantity FROM assignments ORDER BY id')
+    ]);
+    return { projects: projects.rows, challenges: challenges.rows, assignments: assignments.rows };
+  }
+  if (scope === 'configuration') {
+    const [trades, levels, priorities, statuses] = await Promise.all([
+      pool.query('SELECT id, name FROM trades ORDER BY id'),
+      pool.query('SELECT id, name, sort_order FROM levels ORDER BY sort_order, id'),
+      pool.query('SELECT id, name, color_hex, sort_order FROM priorities ORDER BY sort_order, id'),
+      pool.query('SELECT status_key, label, color_hex, sort_order FROM project_statuses ORDER BY sort_order, status_key')
+    ]);
+    return { trades: trades.rows, levels: levels.rows, priorities: priorities.rows, projectStatuses: statuses.rows };
+  }
+
+  const [users, userRoles, userProjectAccess, userInvites, smtpSettings, auditLog] = await Promise.all([
+    pool.query('SELECT id, email, display_name, is_active, person_id, password_hash, last_login_at, failed_login_count, locked_until, created_at FROM users ORDER BY id'),
+    pool.query('SELECT ur.user_id, r.name AS role_name FROM user_roles ur JOIN roles r ON r.id = ur.role_id ORDER BY ur.user_id, r.name'),
+    pool.query('SELECT user_id, project_id FROM user_project_access ORDER BY user_id, project_id'),
+    pool.query('SELECT id, user_id, token_hash, expires_at, accepted_at, invited_by_user_id, created_at FROM user_invites ORDER BY id'),
+    pool.query('SELECT id, host, port, username, password, from_email, secure, enabled, updated_at FROM smtp_settings ORDER BY id'),
+    pool.query('SELECT id, actor_user_id, actor_role, action, entity_type, entity_id, status_code, request_path, ip_address, user_agent, metadata_json, created_at FROM audit_log ORDER BY id')
+  ]);
+  return { users: users.rows, userRoles: userRoles.rows, userProjectAccess: userProjectAccess.rows, userInvites: userInvites.rows, smtpSettings: smtpSettings.rows, auditLog: auditLog.rows };
+}
+
+app.get('/api/export/:scope', requirePermission(PERMISSIONS.EXPORT_RUN), exportRouteRateLimitMiddleware, async (req, res) => {
+  const scope = normalizePortabilityScope(req.params.scope);
+  if (!scope) return badRequest(res, 'Unsupported export scope.');
+  try {
+    const data = await buildScopedExportPayload(scope);
+    const payload = { exportedAt: new Date().toISOString(), version: 2, scope, data };
+    if ((req.query.format || '').toLowerCase() === 'csv') {
+      const csv = scopedPayloadToCsv(data);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="projectory-${scope}-export-${new Date().toISOString().slice(0, 10)}.csv"`);
+      return res.send(csv);
+    }
+    return res.json(payload);
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.post('/api/import/:scope/preview', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+  const scope = normalizePortabilityScope(req.params.scope);
+  if (!scope) return badRequest(res, 'Unsupported import scope.');
+  const format = String(req.body?.format || '').toLowerCase();
+  try {
+    let data;
+    if (format === 'json') {
+      data = req.body?.data;
+      if (!data) return badRequest(res, 'Import payload must contain a data object.');
+    } else if (format === 'csv') {
+      const content = req.body?.content;
+      if (typeof content !== 'string') return badRequest(res, 'CSV preview requires a content string.');
+      data = csvToScopedPayload(content);
+    } else {
+      return badRequest(res, 'Unsupported import format.');
+    }
+    return res.json({ ok: true, scope, summary: summarizeScopedPayload(scope, data), data });
+  } catch (error) {
+    return badRequest(res, error.message || 'Invalid import payload.');
+  }
+});
+
+app.post('/api/import/:scope', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+  const scope = normalizePortabilityScope(req.params.scope);
+  if (!scope) return badRequest(res, 'Unsupported import scope.');
+  const data = req.body?.data;
+  if (!data) return badRequest(res, 'Import payload must contain a data object.');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    if (scope === 'people') {
+      const payload = { people: (data.people || []).map((row) => ({ ...row, id: parseCsvInteger(row.id), trade_id: parseCsvInteger(row.trade_id), level_id: parseCsvInteger(row.level_id), is_hidden: parseCsvBoolean(row.is_hidden), is_leaver: parseCsvBoolean(row.is_leaver), working_hours: parseCsvInteger(row.working_hours) })), clients: [], projects: [], challenges: [], assignments: [] };
+      const err = await normalizeImportPeople(payload);
+      if (err) throw new Error(err);
+      await client.query('DELETE FROM people');
+      for (const row of payload.people) {
+        await client.query('INSERT INTO people (id, first_name, last_name, trade_id, level_id, is_hidden, is_leaver, status, working_hours) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)', [row.id, row.first_name, row.last_name, row.trade_id, row.level_id, Boolean(row.is_hidden), Boolean(row.is_leaver), normalizePeopleStatus(row.status), row.working_hours || 40]);
+      }
+    } else if (scope === 'clients') {
+      for (const row of (data.clients || [])) {
+        await client.query(
+          `INSERT INTO clients (id, name, location, since_month, priority_id)
+           VALUES ($1,$2,$3,$4,$5)
+           ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, location=EXCLUDED.location, since_month=EXCLUDED.since_month, priority_id=EXCLUDED.priority_id`,
+          [parseCsvInteger(row.id), row.name, row.location, row.since_month, parseCsvInteger(row.priority_id)]
+        );
+      }
+    } else if (scope === 'projects') {
+      await client.query('DELETE FROM assignments');
+      await client.query('DELETE FROM challenges');
+      await client.query('DELETE FROM projects');
+      for (const row of (data.projects || [])) {
+        await client.query('INSERT INTO projects (id, client_id, name, status, start_month, end_month, budget_cents) VALUES ($1,$2,$3,$4,$5,$6,$7)', [parseCsvInteger(row.id), parseCsvInteger(row.client_id), row.name, normalizeProjectStatus(row.status), row.start_month, row.end_month || null, parseCsvInteger(row.budget_cents)]);
+      }
+      for (const row of (data.challenges || [])) {
+        await client.query('INSERT INTO challenges (id, project_id, title, description) VALUES ($1,$2,$3,$4)', [parseCsvInteger(row.id), parseCsvInteger(row.project_id), row.title, row.description]);
+      }
+      for (const row of (data.assignments || [])) {
+        await client.query('INSERT INTO assignments (id, project_id, challenge_id, person_id, is_owner, is_leader, quantity) VALUES ($1,$2,$3,$4,$5,$6,$7)', [parseCsvInteger(row.id), parseCsvInteger(row.project_id), parseCsvInteger(row.challenge_id), parseCsvInteger(row.person_id), parseCsvBoolean(row.is_owner), parseCsvBoolean(row.is_leader), parseCsvNumber(row.quantity)]);
+      }
+    } else if (scope === 'configuration') {
+      await applyConfigurationCatalog({
+        trades: data.trades,
+        levels: (data.levels || []).map((row) => ({ ...row, sortOrder: parseCsvInteger(row.sort_order || row.sortOrder) })),
+        priorities: (data.priorities || []).map((row) => ({ ...row, colorHex: row.color_hex || row.colorHex, sortOrder: parseCsvInteger(row.sort_order || row.sortOrder) })),
+        projectStatuses: (data.projectStatuses || []).map((row) => ({ key: row.status_key || row.key, name: row.label || row.name, colorHex: row.color_hex || row.colorHex, sortOrder: parseCsvInteger(row.sort_order || row.sortOrder) }))
+      });
+    } else {
+      for (const row of (data.users || [])) {
+        await client.query(
+          `INSERT INTO users (id, email, display_name, is_active, person_id, password_hash, last_login_at, failed_login_count, locked_until, created_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+           ON CONFLICT (id) DO UPDATE SET email=EXCLUDED.email, display_name=EXCLUDED.display_name, is_active=EXCLUDED.is_active, person_id=EXCLUDED.person_id, password_hash=EXCLUDED.password_hash, last_login_at=EXCLUDED.last_login_at, failed_login_count=EXCLUDED.failed_login_count, locked_until=EXCLUDED.locked_until`,
+          [parseCsvInteger(row.id), row.email, row.display_name, parseCsvBoolean(row.is_active), parseCsvInteger(row.person_id), row.password_hash || null, row.last_login_at || null, parseCsvInteger(row.failed_login_count) || 0, row.locked_until || null, row.created_at || new Date().toISOString()]
+        );
+      }
+      await client.query('DELETE FROM user_roles');
+      for (const row of (data.userRoles || [])) {
+        const roleLookup = await client.query('SELECT id FROM roles WHERE LOWER(name)=LOWER($1) LIMIT 1', [row.role_name || row.role]);
+        if (roleLookup.rowCount) {
+          await client.query('INSERT INTO user_roles (user_id, role_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [parseCsvInteger(row.user_id), roleLookup.rows[0].id]);
+        }
+      }
+      await client.query('DELETE FROM user_project_access');
+      for (const row of (data.userProjectAccess || [])) {
+        await client.query('INSERT INTO user_project_access (user_id, project_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [parseCsvInteger(row.user_id), parseCsvInteger(row.project_id)]);
+      }
+      await client.query('DELETE FROM user_invites');
+      for (const row of (data.userInvites || [])) {
+        await client.query('INSERT INTO user_invites (id, user_id, token_hash, expires_at, accepted_at, invited_by_user_id, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7)', [parseCsvInteger(row.id), parseCsvInteger(row.user_id), row.token_hash, row.expires_at, row.accepted_at || null, parseCsvInteger(row.invited_by_user_id), row.created_at || new Date().toISOString()]);
+      }
+      if ((data.smtpSettings || []).length > 0) {
+        await client.query('DELETE FROM smtp_settings');
+        for (const row of data.smtpSettings) {
+          await client.query('INSERT INTO smtp_settings (id, host, port, username, password, from_email, secure, enabled, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)', [parseCsvInteger(row.id), row.host || null, parseCsvInteger(row.port), row.username || null, row.password || null, row.from_email || null, parseCsvBoolean(row.secure), parseCsvBoolean(row.enabled), row.updated_at || new Date().toISOString()]);
+        }
+      }
+      if ((data.auditLog || []).length > 0) {
+        await client.query('DELETE FROM audit_log');
+        for (const row of data.auditLog) {
+          await client.query('INSERT INTO audit_log (id, actor_user_id, actor_role, action, entity_type, entity_id, status_code, request_path, ip_address, user_agent, metadata_json, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12)', [parseCsvInteger(row.id), parseCsvInteger(row.actor_user_id), row.actor_role || null, row.action, row.entity_type || null, parseCsvInteger(row.entity_id), parseCsvInteger(row.status_code), row.request_path || null, row.ip_address || null, row.user_agent || null, row.metadata_json || '{}', row.created_at || new Date().toISOString()]);
+        }
+      }
+    }
+
+    await client.query('COMMIT');
+    return res.json({ ok: true, scope, summary: summarizeScopedPayload(scope, data) });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    return badRequest(res, error.message || 'Invalid import payload.');
+  } finally {
+    client.release();
+  }
+});
+
 app.get('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), configurationRouteRateLimitMiddleware, async (_req, res) => {
   try {
     const [trades, levels, priorities, projectStatuses] = await Promise.all([
@@ -3031,7 +3271,7 @@ async function normalizeImportPeople(payload) {
 
 function csvEscape(value) {
   const raw = value === null || value === undefined ? '' : String(value);
-  if (raw.includes('"') || raw.includes(',') || raw.includes('\n') || raw.includes('\r')) {
+  if (raw.includes('"') || raw.includes(';') || raw.includes(',') || raw.includes('\n') || raw.includes('\r')) {
     return `"${raw.replace(/"/g, '""')}"`;
   }
   return raw;
@@ -3044,7 +3284,7 @@ function payloadToCsv(payload) {
     'is_owner', 'is_leader', 'quantity'
   ];
 
-  const rows = [headers.join(',')];
+  const rows = [headers.join(';')];
 
   function pushRow(entity, row) {
     const values = headers.map((header) => {
@@ -3052,7 +3292,7 @@ function payloadToCsv(payload) {
       if (entity === 'people' && header === 'person_status') return row.status;
       return row[header];
     });
-    rows.push(values.map(csvEscape).join(','));
+    rows.push(values.map(csvEscape).join(';'));
   }
 
   payload.clients.forEach((row) => pushRow('clients', row));
@@ -3092,7 +3332,7 @@ function parseCsv(text) {
       continue;
     }
 
-    if (char === ',') {
+    if (char === ';') {
       row.push(field);
       field = '';
       continue;
@@ -3237,9 +3477,9 @@ function csvToPayload(text) {
 }
 
 function configurationPayloadToCsv(payload) {
-  const rows = ['entity,id,name'];
-  (payload.trades || []).forEach((row) => rows.push([csvEscape('trades'), csvEscape(row.id), csvEscape(row.name)].join(',')));
-  (payload.levels || []).forEach((row) => rows.push([csvEscape('levels'), csvEscape(row.id), csvEscape(row.name)].join(',')));
+  const rows = ['entity;id;name'];
+  (payload.trades || []).forEach((row) => rows.push([csvEscape('trades'), csvEscape(row.id), csvEscape(row.name)].join(';')));
+  (payload.levels || []).forEach((row) => rows.push([csvEscape('levels'), csvEscape(row.id), csvEscape(row.name)].join(';')));
   return rows.join('\n');
 }
 

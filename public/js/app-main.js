@@ -2292,10 +2292,21 @@ function filteredPeople() {
 
       }
 
-      async function downloadExport(format) {
-        const scope = String(document.getElementById('export-scope')?.value || 'app');
-        const endpoint = scope === 'configuration' ? '/api/export/config' : '/api/export';
-        const prefix = scope === 'configuration' ? 'projectory-configuration-export' : 'projectory-export';
+      const portabilityScopes = [
+        { key: 'people', label: 'People' },
+        { key: 'clients', label: 'Clients' },
+        { key: 'projects', label: 'Projects (including assignments)' },
+        { key: 'configuration', label: 'Configuration' },
+        { key: 'access-audit', label: 'Access & audit' }
+      ];
+
+      function getScopeLabel(scopeKey) {
+        return portabilityScopes.find((scope) => scope.key === scopeKey)?.label || scopeKey;
+      }
+
+      async function downloadExport(scope, format) {
+        const endpoint = `/api/export/${scope}`;
+        const prefix = `projectory-${scope}-export`;
         if (format === 'csv') {
           const response = await fetch(`${endpoint}?format=csv`);
           if (!response.ok) {
@@ -2330,6 +2341,9 @@ function filteredPeople() {
         const modal = document.getElementById('export-modal');
         modal.classList.toggle('hidden', !state.exportModalOpen);
         modal.classList.toggle('flex', state.exportModalOpen);
+        const list = document.getElementById('export-scope-list');
+        if (!list) return;
+        list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-slate-700 bg-slate-950/40 p-2"><span class="text-sm text-slate-200">${scope.label}</span><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-export-scope="${scope.key}" data-export-format="json">Export JSON</button><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-export-scope="${scope.key}" data-export-format="csv">Export CSV</button></div>`).join('');
       }
 
       function closeExportModal() {
@@ -2347,45 +2361,86 @@ function filteredPeople() {
         modal.classList.toggle('hidden', !state.importModalOpen);
         modal.classList.toggle('flex', state.importModalOpen);
 
+        const list = document.getElementById('import-scope-list');
+        if (list) {
+          list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-slate-700 bg-slate-950/40 p-2"><span class="text-sm text-slate-200">${scope.label}</span><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-import-scope="${scope.key}" data-import-format="json">Import JSON</button><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-import-scope="${scope.key}" data-import-format="csv">Import CSV</button></div>`).join('');
+        }
+
         const preview = document.getElementById('import-preview');
         const confirmButton = document.getElementById('import-confirm');
-        const tradesRow = document.getElementById('import-count-trades-row');
-        const levelsRow = document.getElementById('import-count-levels-row');
-        const appRows = [
-          document.getElementById('import-count-people')?.closest('li'),
-          document.getElementById('import-count-clients')?.closest('li'),
-          document.getElementById('import-count-projects')?.closest('li'),
-          document.getElementById('import-count-challenges')?.closest('li'),
-          document.getElementById('import-count-assignments')?.closest('li')
-        ].filter(Boolean);
-        const isConfiguration = state.importScope === 'configuration';
-        appRows.forEach((row) => row.classList.toggle('hidden', isConfiguration));
-        tradesRow?.classList.toggle('hidden', !isConfiguration);
-        levelsRow?.classList.toggle('hidden', !isConfiguration);
-
         if (!state.importPreviewData) {
-          preview.classList.add('hidden');
+          preview?.classList.add('hidden');
           if (confirmButton) confirmButton.disabled = true;
           return;
         }
 
-        preview.classList.remove('hidden');
-        document.getElementById('import-count-people').textContent = state.importPreviewData.summary.people;
-        document.getElementById('import-count-clients').textContent = state.importPreviewData.summary.clients;
-        document.getElementById('import-count-projects').textContent = state.importPreviewData.summary.projects;
-        document.getElementById('import-count-challenges').textContent = state.importPreviewData.summary.challenges;
-        document.getElementById('import-count-assignments').textContent = state.importPreviewData.summary.assignments;
-        document.getElementById('import-count-trades').textContent = state.importPreviewData.summary.trades || 0;
-        document.getElementById('import-count-levels').textContent = state.importPreviewData.summary.levels || 0;
+        preview?.classList.remove('hidden');
+        const previewScope = document.getElementById('import-preview-scope');
+        if (previewScope) previewScope.textContent = `Selected cluster: ${getScopeLabel(state.importScope)} (${String(state.importFormat || '').toUpperCase()})`;
+        const summaryList = document.getElementById('import-preview-summary');
+        if (summaryList) {
+          const items = Object.entries(state.importPreviewData.summary || {});
+          summaryList.innerHTML = items.map(([key, value]) => `<li>${key}: ${value}</li>`).join('');
+        }
         if (confirmButton) confirmButton.disabled = false;
       }
 
       function closeImportModal() {
         state.importModalOpen = false;
         state.importPreviewData = null;
+        state.importScope = '';
+        state.importFormat = '';
         const input = document.getElementById('import-file');
         if (input) input.value = '';
         renderImportModal();
+      }
+
+      function openImportModal() {
+        state.importModalOpen = true;
+        state.importScope = '';
+        state.importFormat = '';
+        state.importPreviewData = null;
+        renderImportModal();
+      }
+
+      async function previewImportFile(file) {
+        const format = String(state.importFormat || '').toLowerCase();
+        const scope = String(state.importScope || '').toLowerCase();
+        if (!scope) {
+          throw new Error('Please choose an import cluster first.');
+        }
+
+        if (format === 'json') {
+          const text = await file.text();
+          const payload = JSON.parse(text);
+          const preview = await api(`/api/import/${scope}/preview`, {
+            method: 'POST',
+            body: JSON.stringify({ format: 'json', data: payload.data || payload })
+          });
+          state.importPreviewData = preview;
+          renderImportModal();
+          return;
+        }
+
+        const text = await file.text();
+        const preview = await api(`/api/import/${scope}/preview`, {
+          method: 'POST',
+          body: JSON.stringify({ format: 'csv', content: text })
+        });
+        state.importPreviewData = preview;
+        renderImportModal();
+      }
+
+      async function confirmImport() {
+        if (!state.importPreviewData?.data) {
+          showMessage('Please choose a valid JSON or CSV file first.', 'error');
+          return;
+        }
+
+        await api(`/api/import/${state.importScope}`, { method: 'POST', body: JSON.stringify({ data: state.importPreviewData.data }) });
+        await loadData({ forceAppData: true });
+        closeImportModal();
+        showMessage('Import completed.');
       }
 
       function renderProjectStatusModal() {
@@ -2467,61 +2522,6 @@ function filteredPeople() {
 
         closeProjectStatusModal();
       }
-
-      function openImportModal() {
-        state.importModalOpen = true;
-        state.importScope = 'app';
-        state.importPreviewData = null;
-        renderImportModal();
-      }
-
-      function detectImportFormat(file) {
-        const name = file.name.toLowerCase();
-        if (name.endsWith('.csv')) return 'csv';
-        return 'json';
-      }
-
-      async function previewImportFile(file) {
-        const format = detectImportFormat(file);
-        const text = await file.text();
-        const scope = String(document.getElementById('import-scope')?.value || state.importScope || 'app');
-        state.importScope = scope;
-
-        const previewEndpoint = scope === 'configuration' ? '/api/import/config/preview' : '/api/import/preview';
-
-        if (format === 'json') {
-          const payload = JSON.parse(text);
-          const preview = await api(previewEndpoint, {
-            method: 'POST',
-            body: JSON.stringify({ format: 'json', data: payload.data || payload })
-          });
-          state.importPreviewData = preview;
-          renderImportModal();
-          return;
-        }
-
-        const preview = await api(previewEndpoint, {
-          method: 'POST',
-          body: JSON.stringify({ format: 'csv', content: text })
-        });
-        state.importPreviewData = preview;
-        renderImportModal();
-      }
-
-      async function confirmImport() {
-        if (!state.importPreviewData?.data) {
-          showMessage('Please choose a valid JSON or CSV file first.', 'error');
-          return;
-        }
-
-        const endpoint = state.importScope === 'configuration' ? '/api/import/config' : '/api/import';
-        await api(endpoint, { method: 'POST', body: JSON.stringify({ data: state.importPreviewData.data }) });
-        await loadData();
-        render();
-        closeImportModal();
-        showMessage('Import completed.');
-      }
-
 
       function onboardingSteps() {
         return onboardingTour.filterOnboardingStepsByRole(onboardingDemo.steps, currentRole());
@@ -2692,11 +2692,11 @@ function filteredPeople() {
 
         document.getElementById('export-modal-close')?.addEventListener('click', closeExportModal);
         document.getElementById('export-cancel')?.addEventListener('click', closeExportModal);
-        document.getElementById('export-confirm')?.addEventListener('click', async () => {
+        document.addEventListener('click', async (event) => {
+          const exportAction = event.target.closest('[data-export-scope][data-export-format]');
+          if (!exportAction) return;
           try {
-            const format = document.getElementById('export-format').value;
-            await downloadExport(format);
-            closeExportModal();
+            await downloadExport(exportAction.dataset.exportScope, exportAction.dataset.exportFormat);
             showMessage('Export completed.');
           } catch (error) {
             showMessage(error.message, 'error');
@@ -2710,9 +2710,18 @@ function filteredPeople() {
 
         document.getElementById('import-modal-close')?.addEventListener('click', closeImportModal);
         document.getElementById('import-cancel')?.addEventListener('click', closeImportModal);
-        document.getElementById('import-scope')?.addEventListener('change', (event) => {
-          state.importScope = event.target.value;
+        document.addEventListener('click', (event) => {
+          const action = event.target.closest('[data-import-scope][data-import-format]');
+          if (!action) return;
+          state.importScope = action.dataset.importScope;
+          state.importFormat = action.dataset.importFormat;
           state.importPreviewData = null;
+          const input = document.getElementById('import-file');
+          if (input) {
+            input.value = '';
+            input.accept = state.importFormat === 'json' ? '.json,application/json' : '.csv,text/csv';
+            input.click();
+          }
           renderImportModal();
         });
 
