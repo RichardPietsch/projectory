@@ -2614,6 +2614,18 @@ async function applyConfigurationCatalog({ trades, levels, priorities, projectSt
          FROM levels l
          LEFT JOIN people p ON p.level_id = l.id
          GROUP BY l.id, l.name, l.sort_order`
+      ),
+      client.query(
+        `SELECT pr.id, pr.name, pr.color_hex, pr.sort_order, COUNT(c.id)::int AS usage_count
+         FROM priorities pr
+         LEFT JOIN clients c ON c.priority_id = pr.id
+         GROUP BY pr.id, pr.name, pr.color_hex, pr.sort_order`
+      ),
+      client.query(
+        `SELECT ps.status_key, ps.label, ps.color_hex, ps.sort_order, COUNT(p.id)::int AS usage_count
+         FROM project_statuses ps
+         LEFT JOIN projects p ON p.status = ps.status_key
+         GROUP BY ps.status_key, ps.label, ps.color_hex, ps.sort_order`
       )
     ]);
 
