@@ -670,7 +670,7 @@
       async function loadData(options = {}) {
         const forceAppData = Boolean(options.forceAppData);
         state.auth = await api('/api/auth/me');
-        state.authRequired = state.auth?.authSource !== 'session';
+        state.authRequired = forceAppData ? false : state.auth?.authSource !== 'session';
 
         if (state.authRequired && !forceAppData) {
           state.meta = { priorities: [], trades: [], levels: [], projectStatuses: [] };
