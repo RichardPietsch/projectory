@@ -720,6 +720,7 @@
       }
 
       async function applyConfigurationDraft(nextDraft, successMessage) {
+        const forceAppData = state.auth?.authSource !== 'session';
         const previousDraft = {
           trades: (state.configurationDraft.trades || []).map((item) => ({ ...item })),
           levels: (state.configurationDraft.levels || []).map((item) => ({ ...item })),
@@ -733,7 +734,7 @@
         const projectStatuses = normalizeConfigurationDraftNames(nextDraft.projectStatuses).map((item, index) => ({ id: item.id || null, key: String(item.key || '').trim().toLowerCase() || `status_${index + 1}`, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
 
         await api('/api/configuration', { method: 'PUT', body: JSON.stringify({ trades, levels, priorities, projectStatuses }) });
-        await loadData();
+        await loadData({ forceAppData });
         render();
 
         showMessage(successMessage, 'ok', {
@@ -745,7 +746,7 @@
             const undoProjectStatuses = normalizeConfigurationDraftNames(previousDraft.projectStatuses).map((item, index) => ({ id: item.id || null, key: String(item.key || '').trim().toLowerCase() || `status_${index + 1}`, name: item.name, colorHex: String(item.colorHex || '#64748B'), sortOrder: Number(item.sortOrder || (index + 1)) }));
             try {
               await api('/api/configuration', { method: 'PUT', body: JSON.stringify({ trades: undoTrades, levels: undoLevels, priorities: undoPriorities, projectStatuses: undoProjectStatuses }) });
-              await loadData();
+              await loadData({ forceAppData });
               render();
               showMessage('Configuration change reverted.');
             } catch (error) {
@@ -915,6 +916,7 @@
         document.addEventListener('drop', (event) => {
           const row = event.target.closest('[data-config-action="drag-row"]');
           if (!row) return;
+          event.preventDefault();
           dropConfigurationRow(row.dataset.kind, row.dataset.itemKey);
         });
       }
@@ -1141,7 +1143,7 @@ function clientsView() {
           const items = state.configurationDraft[kind] || [];
           const supportsColor = Boolean(options.color);
           const supportsSort = Boolean(options.sort);
-          const rows = items
+          const rows = [...items]
             .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.name || '').localeCompare(String(b.name || '')))
             .map((item) => {
               const usage = Number(item.usage_count || 0);
