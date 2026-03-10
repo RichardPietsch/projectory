@@ -317,7 +317,7 @@
         if (configured) {
           return { key: configured.key, rank: Number(configured.sortOrder || 999), label: configured.label || configured.key, colorHex: configured.colorHex || '#64748B' };
         }
-        const legacyMap = { green: { key: 'done', rank: 1, label: 'Done', colorHex: '#22C55E' }, yellow: { key: 'in_progress', rank: 2, label: 'In Progress', colorHex: '#EAB308' }, blue: { key: 'in_progress', rank: 2, label: 'In Progress', colorHex: '#EAB308' }, red: { key: 'rework_needed', rank: 3, label: 'Rework needed', colorHex: '#EF4444' }, white: { key: 'in_progress', rank: 2, label: 'In Progress', colorHex: '#EAB308' } };
+        const legacyMap = { green: { key: 'done', rank: 1, label: 'Done', colorHex: '#17B439' }, yellow: { key: 'in_progress', rank: 2, label: 'In Progress', colorHex: '#0375FD' }, blue: { key: 'in_progress', rank: 2, label: 'In Progress', colorHex: '#0375FD' }, red: { key: 'rework_needed', rank: 3, label: 'Rework needed', colorHex: '#E99C0C' }, white: { key: 'in_progress', rank: 2, label: 'In Progress', colorHex: '#0375FD' } };
         return legacyMap[normalized] || { key: normalized, rank: 999, label: normalized, colorHex: '#64748B' };
       }
 
@@ -354,6 +354,7 @@
       };
       const CONFIGURATION_SORTABLE_KINDS = new Set(['levels', 'priorities', 'projectStatuses']);
       const CONFIGURATION_COLOR_SWATCHES = ['#EF4009', '#E99C0C', '#FAF407', '#A1E70C', '#17B439', '#15BAA6', '#0375FD', '#6C16F2', '#B401FE', '#AEAEAE'];
+      state.configurationColorPicker = { open: false, kind: '', itemKey: '', selectedHex: '' };
 
       function getPriorityPresetFromHex(colorHex) {
         const normalizedHex = String(colorHex || '').trim().toLowerCase();
@@ -836,6 +837,21 @@
         await updateConfigurationItemField('priorities', idOrName, 'colorHex', PRIORITY_PRESET_MAP[preset].hex);
       }
 
+      function openConfigurationColorPicker(kind, itemKey, selectedHex) {
+        state.configurationColorPicker = {
+          open: true,
+          kind,
+          itemKey: String(itemKey),
+          selectedHex: String(selectedHex || '#64748B')
+        };
+        render();
+      }
+
+      function closeConfigurationColorPicker() {
+        state.configurationColorPicker = { open: false, kind: '', itemKey: '', selectedHex: '' };
+        render();
+      }
+
       function dragConfigurationRowStart(kind, itemKey) {
         if (!isConfigurationKindSortable(kind)) return;
         state.configurationDrag = { kind, itemKey: String(itemKey), lastOverKey: null };
@@ -905,6 +921,25 @@
           const colorSwatch = event.target.closest('[data-config-action="pick-color"]');
           if (colorSwatch) {
             updateConfigurationItemField(colorSwatch.dataset.kind, colorSwatch.dataset.itemKey, 'colorHex', colorSwatch.dataset.color);
+            closeConfigurationColorPicker();
+            return;
+          }
+
+          const openColorModalButton = event.target.closest('[data-config-action="open-color-modal"]');
+          if (openColorModalButton) {
+            openConfigurationColorPicker(openColorModalButton.dataset.kind, openColorModalButton.dataset.itemKey, openColorModalButton.dataset.selectedHex);
+            return;
+          }
+
+          const closeColorModalButton = event.target.closest('[data-config-action="close-color-modal"]');
+          if (closeColorModalButton) {
+            closeConfigurationColorPicker();
+            return;
+          }
+
+          const colorModalOverlay = event.target.closest('[data-config-action="color-modal-overlay"]');
+          if (colorModalOverlay && event.target === colorModalOverlay) {
+            closeConfigurationColorPicker();
           }
         });
 
@@ -1174,6 +1209,17 @@ function clientsView() {
           return `<div class="grid grid-cols-5 gap-2">${swatches}</div>`;
         }
 
+        function renderSelectedColorSwatch(kind, itemKey, colorHex, useMetallicSwatch = false) {
+          const selected = String(colorHex || '#64748B');
+          if (useMetallicSwatch) {
+            const preset = getPriorityPresetFromHex(selected);
+            if (preset !== 'custom' && PRIORITY_PRESET_MAP[preset]) {
+              return `<button type="button" class="inline-flex h-6 w-6 rounded-full border border-slate-700" style="${PRIORITY_PRESET_MAP[preset].style}" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${preset}"></button>`;
+            }
+          }
+          return `<button type="button" class="inline-flex h-6 w-6 rounded-full border border-slate-700" style="background:${selected};" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${selected}"></button>`;
+        }
+
         function renderCard(kind, label, options = {}) {
           const items = state.configurationDraft[kind] || [];
           const supportsColor = Boolean(options.color);
@@ -1191,12 +1237,10 @@ function clientsView() {
                 ? (kind === 'priorities'
                     ? (() => {
                         const selectedPreset = getPriorityPresetFromHex(item.colorHex || '#64748B');
-                        const presetPreview = selectedPreset === 'custom'
-                          ? renderColorSwatchGrid(kind, escapedItemKey, item.colorHex || '#64748B')
-                          : `<span class="inline-flex h-8 w-10 rounded border border-slate-700" style="${PRIORITY_PRESET_MAP[selectedPreset].style}" title="${selectedPreset}"></span>`;
+                        const presetPreview = renderSelectedColorSwatch(kind, escapedItemKey, item.colorHex || '#64748B', true);
                         return `<div class="flex items-center gap-2"><select class="rounded bg-slate-900 p-1 text-xs" data-config-action="set-priority-preset" data-item-key="${escapedItemKey}"><option value="gold" ${selectedPreset === 'gold' ? 'selected' : ''}>Gold</option><option value="silver" ${selectedPreset === 'silver' ? 'selected' : ''}>Silver</option><option value="bronze" ${selectedPreset === 'bronze' ? 'selected' : ''}>Bronze</option><option value="black" ${selectedPreset === 'black' ? 'selected' : ''}>Black</option><option value="custom" ${selectedPreset === 'custom' ? 'selected' : ''}>Custom color</option></select>${presetPreview}</div>`;
                       })()
-                    : renderColorSwatchGrid(kind, escapedItemKey, item.colorHex || '#64748B'))
+                    : renderSelectedColorSwatch(kind, escapedItemKey, item.colorHex || '#64748B'))
                 : '—';
               const dropHighlightClass = supportsSort && state.configurationDrag?.kind === kind && state.configurationDrag?.lastOverKey === String(itemKey)
                 ? ' bg-slate-800/60'
@@ -1214,7 +1258,11 @@ function clientsView() {
           return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-config-action="add-item" data-kind="${kind}">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="w-8 p-2"></th><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">Color</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
         }
 
-        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">Manage static catalogs, client priorities and project statuses.</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'), { sort: true })}${renderCard('priorities', 'Priorities', { color: true, sort: true })}${renderCard('projectStatuses', 'Project Statuses', { color: true, sort: true })}</div></div>`;
+        const colorPickerModal = state.configurationColorPicker?.open
+          ? `<div class="fixed inset-0 z-40 flex items-center justify-center bg-black/60" data-config-action="color-modal-overlay"><div class="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">Select color</h4><button type="button" class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-config-action="close-color-modal">Close</button></div>${renderColorSwatchGrid(state.configurationColorPicker.kind, state.configurationColorPicker.itemKey, state.configurationColorPicker.selectedHex)}</div></div>`
+          : '';
+
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">Manage static catalogs, client priorities and project statuses.</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'), { sort: true })}${renderCard('priorities', 'Priorities', { color: true, sort: true })}${renderCard('projectStatuses', 'Project Statuses', { color: true, sort: true })}</div>${colorPickerModal}</div>`;
       }
 
       window.addConfigurationItem = addConfigurationItem;

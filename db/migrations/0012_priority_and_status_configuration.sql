@@ -27,9 +27,9 @@ CREATE TABLE IF NOT EXISTS project_statuses (
 
 INSERT INTO project_statuses (status_key, label, color_hex, sort_order)
 VALUES
-  ('done', 'Done', '#22C55E', 1),
-  ('in_progress', 'In Progress', '#EAB308', 2),
-  ('rework_needed', 'Rework needed', '#EF4444', 3)
+  ('done', 'Done', '#17B439', 1),
+  ('in_progress', 'In Progress', '#0375FD', 2),
+  ('rework_needed', 'Rework needed', '#E99C0C', 3)
 ON CONFLICT (status_key)
 DO UPDATE SET
   label = EXCLUDED.label,
