@@ -353,6 +353,7 @@
         }
       };
       const CONFIGURATION_SORTABLE_KINDS = new Set(['levels', 'priorities', 'projectStatuses']);
+      const CONFIGURATION_COLOR_SWATCHES = ['#EF4009', '#E99C0C', '#FAF407', '#A1E70C', '#17B439', '#15BAA6', '#0375FD', '#6C16F2', '#B401FE', '#AEAEAE'];
 
       function getPriorityPresetFromHex(colorHex) {
         const normalizedHex = String(colorHex || '').trim().toLowerCase();
@@ -898,16 +899,16 @@
           const removeButton = event.target.closest('[data-config-action="remove-item"]');
           if (removeButton) {
             removeConfigurationItem(removeButton.dataset.kind, removeButton.dataset.itemKey);
+            return;
+          }
+
+          const colorSwatch = event.target.closest('[data-config-action="pick-color"]');
+          if (colorSwatch) {
+            updateConfigurationItemField(colorSwatch.dataset.kind, colorSwatch.dataset.itemKey, 'colorHex', colorSwatch.dataset.color);
           }
         });
 
         document.addEventListener('change', (event) => {
-          const colorInput = event.target.closest('[data-config-action="set-color"]');
-          if (colorInput) {
-            updateConfigurationItemField(colorInput.dataset.kind, colorInput.dataset.itemKey, 'colorHex', colorInput.value);
-            return;
-          }
-
           const presetSelect = event.target.closest('[data-config-action="set-priority-preset"]');
           if (presetSelect && presetSelect.value !== 'custom') {
             updateConfigurationPriorityPreset(presetSelect.dataset.itemKey, presetSelect.value);
@@ -1163,6 +1164,16 @@ function clientsView() {
       }
 
       function configurationView() {
+        function renderColorSwatchGrid(kind, itemKey, selectedHex) {
+          const normalizedSelected = String(selectedHex || '').toLowerCase();
+          const swatches = CONFIGURATION_COLOR_SWATCHES.map((hex) => {
+            const isSelected = normalizedSelected === hex.toLowerCase();
+            const selectedClass = isSelected ? 'ring-2 ring-[#00d8ff] ring-offset-1 ring-offset-slate-900' : 'ring-1 ring-slate-700';
+            return `<button type="button" class="h-4 w-4 rounded-full ${selectedClass}" style="background:${hex};" data-config-action="pick-color" data-kind="${kind}" data-item-key="${itemKey}" data-color="${hex}" title="${hex}" aria-label="Select color ${hex}"></button>`;
+          }).join('');
+          return `<div class="grid grid-cols-5 gap-2">${swatches}</div>`;
+        }
+
         function renderCard(kind, label, options = {}) {
           const items = state.configurationDraft[kind] || [];
           const supportsColor = Boolean(options.color);
@@ -1181,11 +1192,11 @@ function clientsView() {
                     ? (() => {
                         const selectedPreset = getPriorityPresetFromHex(item.colorHex || '#64748B');
                         const presetPreview = selectedPreset === 'custom'
-                          ? `<input type="color" data-config-action="set-color" data-kind="${kind}" data-item-key="${escapedItemKey}" value="${String(item.colorHex || '#64748B')}" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />`
+                          ? renderColorSwatchGrid(kind, escapedItemKey, item.colorHex || '#64748B')
                           : `<span class="inline-flex h-8 w-10 rounded border border-slate-700" style="${PRIORITY_PRESET_MAP[selectedPreset].style}" title="${selectedPreset}"></span>`;
-                        return `<div class="flex items-center gap-2"><select class="rounded bg-slate-900 p-1 text-xs" data-config-action="set-priority-preset" data-item-key="${escapedItemKey}"><option value="gold" ${selectedPreset === 'gold' ? 'selected' : ''}>Gold</option><option value="silver" ${selectedPreset === 'silver' ? 'selected' : ''}>Silver</option><option value="bronze" ${selectedPreset === 'bronze' ? 'selected' : ''}>Bronze</option><option value="black" ${selectedPreset === 'black' ? 'selected' : ''}>Black</option><option value="custom" ${selectedPreset === 'custom' ? 'selected' : ''}>Custom hex</option></select>${presetPreview}</div>`;
+                        return `<div class="flex items-center gap-2"><select class="rounded bg-slate-900 p-1 text-xs" data-config-action="set-priority-preset" data-item-key="${escapedItemKey}"><option value="gold" ${selectedPreset === 'gold' ? 'selected' : ''}>Gold</option><option value="silver" ${selectedPreset === 'silver' ? 'selected' : ''}>Silver</option><option value="bronze" ${selectedPreset === 'bronze' ? 'selected' : ''}>Bronze</option><option value="black" ${selectedPreset === 'black' ? 'selected' : ''}>Black</option><option value="custom" ${selectedPreset === 'custom' ? 'selected' : ''}>Custom color</option></select>${presetPreview}</div>`;
                       })()
-                    : `<input type="color" data-config-action="set-color" data-kind="${kind}" data-item-key="${escapedItemKey}" value="${String(item.colorHex || '#64748B')}" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />`)
+                    : renderColorSwatchGrid(kind, escapedItemKey, item.colorHex || '#64748B'))
                 : '—';
               const dropHighlightClass = supportsSort && state.configurationDrag?.kind === kind && state.configurationDrag?.lastOverKey === String(itemKey)
                 ? ' bg-slate-800/60'
