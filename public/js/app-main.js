@@ -353,7 +353,20 @@
         }
       };
       const CONFIGURATION_SORTABLE_KINDS = new Set(['levels', 'priorities', 'projectStatuses']);
-      const CONFIGURATION_COLOR_SWATCHES = ['#EF4009', '#E99C0C', '#FAF407', '#A1E70C', '#17B439', '#15BAA6', '#0375FD', '#6C16F2', '#B401FE', '#AEAEAE'];
+      const CONFIGURATION_COLOR_OPTIONS = [
+        { hex: PRIORITY_PRESET_MAP.gold.hex, style: PRIORITY_PRESET_MAP.gold.style },
+        { hex: PRIORITY_PRESET_MAP.silver.hex, style: PRIORITY_PRESET_MAP.silver.style },
+        { hex: PRIORITY_PRESET_MAP.bronze.hex, style: PRIORITY_PRESET_MAP.bronze.style },
+        { hex: PRIORITY_PRESET_MAP.black.hex, style: PRIORITY_PRESET_MAP.black.style },
+        { hex: '#EF4009' },
+        { hex: '#E99C0C' },
+        { hex: '#FAF407' },
+        { hex: '#17B439' },
+        { hex: '#15BAA6' },
+        { hex: '#0375FD' },
+        { hex: '#6C16F2' },
+        { hex: '#B401FE' }
+      ];
       state.configurationColorPicker = { open: false, kind: '', itemKey: '', selectedHex: '' };
 
       function getPriorityPresetFromHex(colorHex) {
@@ -943,13 +956,6 @@
           }
         });
 
-        document.addEventListener('change', (event) => {
-          const presetSelect = event.target.closest('[data-config-action="set-priority-preset"]');
-          if (presetSelect && presetSelect.value !== 'custom') {
-            updateConfigurationPriorityPreset(presetSelect.dataset.itemKey, presetSelect.value);
-          }
-        });
-
         document.addEventListener('focusout', (event) => {
           const nameInput = event.target.closest('[data-config-action="set-name"]');
           if (nameInput) {
@@ -1201,12 +1207,14 @@ function clientsView() {
       function configurationView() {
         function renderColorSwatchGrid(kind, itemKey, selectedHex) {
           const normalizedSelected = String(selectedHex || '').toLowerCase();
-          const swatches = CONFIGURATION_COLOR_SWATCHES.map((hex) => {
+          const swatches = CONFIGURATION_COLOR_OPTIONS.map((option) => {
+            const hex = option.hex;
             const isSelected = normalizedSelected === hex.toLowerCase();
             const selectedClass = isSelected ? 'ring-2 ring-[#00d8ff] ring-offset-1 ring-offset-slate-900' : 'ring-1 ring-slate-700';
-            return `<button type="button" class="h-4 w-4 rounded-full ${selectedClass}" style="background:${hex};" data-config-action="pick-color" data-kind="${kind}" data-item-key="${itemKey}" data-color="${hex}" title="${hex}" aria-label="Select color ${hex}"></button>`;
+            const swatchStyle = option.style || `background:${hex};`;
+            return `<button type="button" class="h-5 w-5 rounded-full ${selectedClass}" style="${swatchStyle}" data-config-action="pick-color" data-kind="${kind}" data-item-key="${itemKey}" data-color="${hex}" title="${hex}" aria-label="Select color ${hex}"></button>`;
           }).join('');
-          return `<div class="grid grid-cols-5 gap-2">${swatches}</div>`;
+          return `<div class="grid grid-cols-4 gap-2">${swatches}</div>`;
         }
 
         function renderSelectedColorSwatch(kind, itemKey, colorHex, useMetallicSwatch = false) {
@@ -1234,13 +1242,7 @@ function clientsView() {
               const escapedItemKey = String(itemKey).replace(/"/g, '&quot;');
               const nameInput = `<input class="w-full rounded bg-slate-900 p-1 text-sm" data-config-action="set-name" data-kind="${kind}" data-item-key="${escapedItemKey}" value="${String(item.name || '').replace(/"/g, '&quot;')}" />`;
               const colorCell = supportsColor
-                ? (kind === 'priorities'
-                    ? (() => {
-                        const selectedPreset = getPriorityPresetFromHex(item.colorHex || '#64748B');
-                        const presetPreview = renderSelectedColorSwatch(kind, escapedItemKey, item.colorHex || '#64748B', true);
-                        return `<div class="flex items-center gap-2"><select class="rounded bg-slate-900 p-1 text-xs" data-config-action="set-priority-preset" data-item-key="${escapedItemKey}"><option value="gold" ${selectedPreset === 'gold' ? 'selected' : ''}>Gold</option><option value="silver" ${selectedPreset === 'silver' ? 'selected' : ''}>Silver</option><option value="bronze" ${selectedPreset === 'bronze' ? 'selected' : ''}>Bronze</option><option value="black" ${selectedPreset === 'black' ? 'selected' : ''}>Black</option><option value="custom" ${selectedPreset === 'custom' ? 'selected' : ''}>Custom color</option></select>${presetPreview}</div>`;
-                      })()
-                    : renderSelectedColorSwatch(kind, escapedItemKey, item.colorHex || '#64748B'))
+                ? renderSelectedColorSwatch(kind, escapedItemKey, item.colorHex || '#64748B', kind === 'priorities')
                 : '—';
               const dropHighlightClass = supportsSort && state.configurationDrag?.kind === kind && state.configurationDrag?.lastOverKey === String(itemKey)
                 ? ' bg-slate-800/60'
@@ -1949,8 +1951,8 @@ function clientsView() {
 
         const statusPresentation = getProjectStatusPresentation(selectedProject.status);
         const statusControl = viewerMode
-          ? `<div class="inline-flex h-9 items-center gap-2 rounded-md border border-slate-600 bg-slate-950 px-3"><span class="h-2.5 w-2.5 rounded-full ${statusPresentation.classes}"></span><span class="text-xs font-semibold text-slate-100">${statusPresentation.label}</span></div>`
-          : `<button class="inline-flex h-9 items-center gap-2 rounded-md border border-slate-600 bg-slate-950 px-3 hover:bg-slate-800" onclick="openProjectStatusModal(${selectedProject.id}, '${String(selectedProject.status || 'white').toLowerCase()}')"><span class="h-2.5 w-2.5 rounded-full ${statusPresentation.classes}"></span><span class="text-xs font-semibold text-slate-100">${statusPresentation.label}</span></button>`;
+          ? `<div class="inline-flex h-9 items-center gap-2 rounded-md border border-slate-600 bg-slate-950 px-3"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold text-slate-100">${statusPresentation.label}</span></div>`
+          : `<button class="inline-flex h-9 items-center gap-2 rounded-md border border-slate-600 bg-slate-950 px-3 hover:bg-slate-800" onclick="openProjectStatusModal(${selectedProject.id}, '${String(selectedProject.status || 'white').toLowerCase()}')"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold text-slate-100">${statusPresentation.label}</span></button>`;
 
         const priorityControl = viewerMode || isTeammateMode()
           ? `<div class="inline-flex h-9 items-center">${renderPriorityPill(selectedProject.priority_name, selectedProject.priority_color_hex)}</div>`

@@ -14,16 +14,9 @@ DECLARE
   v_lead_person_id INTEGER;
   v_contributor_person_id INTEGER;
 
-  v_owner_user_id INTEGER;
-  v_lead_user_id INTEGER;
-  v_contributor_user_id INTEGER;
-
   v_owner_challenge_id INTEGER;
   v_lead_challenge_id INTEGER;
   v_contributor_challenge_id INTEGER;
-
-  v_planner_role_id INTEGER;
-  v_teammate_role_id INTEGER;
 BEGIN
   SELECT id INTO v_priority_id FROM priorities WHERE name = '⭐️ Hero' LIMIT 1;
   IF v_priority_id IS NULL THEN
@@ -75,49 +68,8 @@ BEGIN
     RETURNING id INTO v_contributor_person_id;
   END IF;
 
-  SELECT id INTO v_owner_user_id FROM users WHERE lower(email) = 'olivia.owner@example.local' LIMIT 1;
-  IF v_owner_user_id IS NULL THEN
-    INSERT INTO users (email, display_name, person_id, is_active)
-    VALUES ('olivia.owner@example.local', 'Olivia Owner', v_owner_person_id, TRUE)
-    RETURNING id INTO v_owner_user_id;
-  END IF;
-
-  SELECT id INTO v_lead_user_id FROM users WHERE lower(email) = 'liam.lead@example.local' LIMIT 1;
-  IF v_lead_user_id IS NULL THEN
-    INSERT INTO users (email, display_name, person_id, is_active)
-    VALUES ('liam.lead@example.local', 'Liam Lead', v_lead_person_id, TRUE)
-    RETURNING id INTO v_lead_user_id;
-  END IF;
-
-  SELECT id INTO v_contributor_user_id FROM users WHERE lower(email) = 'casey.contributor@example.local' LIMIT 1;
-  IF v_contributor_user_id IS NULL THEN
-    INSERT INTO users (email, display_name, person_id, is_active)
-    VALUES ('casey.contributor@example.local', 'Casey Contributor', v_contributor_person_id, TRUE)
-    RETURNING id INTO v_contributor_user_id;
-  END IF;
-
-  SELECT id INTO v_planner_role_id FROM roles WHERE name = 'planner' LIMIT 1;
-  SELECT id INTO v_teammate_role_id FROM roles WHERE name = 'teammate' LIMIT 1;
-
-  IF v_planner_role_id IS NOT NULL THEN
-    INSERT INTO user_roles (user_id, role_id)
-    VALUES (v_owner_user_id, v_planner_role_id)
-    ON CONFLICT DO NOTHING;
-  END IF;
-
-  IF v_teammate_role_id IS NOT NULL THEN
-    INSERT INTO user_roles (user_id, role_id)
-    VALUES
-      (v_lead_user_id, v_teammate_role_id),
-      (v_contributor_user_id, v_teammate_role_id)
-    ON CONFLICT DO NOTHING;
-  END IF;
-
-  INSERT INTO user_project_access (user_id, project_id)
-  VALUES
-    (v_lead_user_id, v_project_id),
-    (v_contributor_user_id, v_project_id)
-  ON CONFLICT DO NOTHING;
+  -- Intentionally do not seed user accounts for demo people.
+  -- The three sample people are planning examples only.
 
   SELECT id INTO v_owner_challenge_id
   FROM challenges
