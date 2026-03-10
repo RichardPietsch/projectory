@@ -3469,8 +3469,15 @@ function filteredPeople() {
         await handleMutation(() => api(`/api/assignments/${id}`, { method: 'PUT', body: JSON.stringify(next) }), 'Assignment role updated.');
       };
 
+      function trimSlashes(value) {
+        let normalized = String(value || '/');
+        while (normalized.startsWith('/')) normalized = normalized.slice(1);
+        while (normalized.endsWith('/')) normalized = normalized.slice(0, -1);
+        return normalized;
+      }
+
       function parseAppRoute(pathname) {
-        const normalized = String(pathname || '/').replace(/^\/+|\/+$/g, '');
+        const normalized = trimSlashes(pathname);
         const parts = normalized ? normalized.split('/') : [];
 
         if (parts.length === 0 || (parts.length === 1 && parts[0] === 'teams')) {
