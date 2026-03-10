@@ -837,27 +837,47 @@
 
       function dragConfigurationRowStart(kind, itemKey) {
         if (!isConfigurationKindSortable(kind)) return;
-        state.configurationDrag = { kind, itemKey: String(itemKey) };
+        state.configurationDrag = { kind, itemKey: String(itemKey), lastOverKey: null };
       }
 
-      function dragConfigurationRowOver(event) {
+      function reorderConfigurationDraftList(kind, sourceItemKey, targetItemKey) {
+        const list = [...(state.configurationDraft[kind] || [])]
+          .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+        const sourceIndex = list.findIndex((item) => String(item.id || item.key || item.name) === String(sourceItemKey));
+        const targetIndex = list.findIndex((item) => String(item.id || item.key || item.name) === String(targetItemKey));
+        if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return null;
+        const [moved] = list.splice(sourceIndex, 1);
+        list.splice(targetIndex, 0, moved);
+        return normalizeConfigurationSortOrder(list, kind);
+      }
+
+      function dragConfigurationRowOver(event, kind, targetItemKey) {
+        const dragState = state.configurationDrag;
+        if (!dragState || dragState.kind !== kind || String(dragState.itemKey) === String(targetItemKey)) return;
+        if (dragState.lastOverKey === String(targetItemKey)) {
+          event.preventDefault();
+          return;
+        }
+
+        const reordered = reorderConfigurationDraftList(kind, dragState.itemKey, targetItemKey);
+        if (!reordered) return;
+
+        dragState.lastOverKey = String(targetItemKey);
+        state.configurationDrag = { ...dragState };
+        state.configurationDraft = { ...state.configurationDraft, [kind]: reordered };
+        render();
         event.preventDefault();
       }
 
       async function dropConfigurationRow(kind, targetItemKey) {
         const dragState = state.configurationDrag;
         state.configurationDrag = null;
-        if (!dragState || dragState.kind !== kind || String(dragState.itemKey) === String(targetItemKey)) return;
-        const list = [...(state.configurationDraft[kind] || [])]
-          .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.name || '').localeCompare(String(b.name || '')));
-        const sourceIndex = list.findIndex((item) => String(item.id || item.key || item.name) === String(dragState.itemKey));
-        const targetIndex = list.findIndex((item) => String(item.id || item.key || item.name) === String(targetItemKey));
-        if (sourceIndex < 0 || targetIndex < 0) return;
-        const [moved] = list.splice(sourceIndex, 1);
-        list.splice(targetIndex, 0, moved);
-        const nextDraft = { ...state.configurationDraft, [kind]: normalizeConfigurationSortOrder(list, kind) };
+        if (!dragState || dragState.kind !== kind) return;
+        const persistedList = reorderConfigurationDraftList(kind, dragState.itemKey, targetItemKey) || [...(state.configurationDraft[kind] || [])];
+        const moved = persistedList.find((item) => String(item.id || item.key || item.name) === String(dragState.itemKey));
+        const nextDraft = { ...state.configurationDraft, [kind]: persistedList };
         try {
-          await applyConfigurationDraft(nextDraft, `${moved.name} moved.`);
+          await applyConfigurationDraft(nextDraft, `${moved?.name || 'Item'} moved.`);
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -902,22 +922,26 @@
         });
 
         document.addEventListener('dragstart', (event) => {
-          const row = event.target.closest('[data-config-action="drag-row"]');
-          if (!row) return;
-          dragConfigurationRowStart(row.dataset.kind, row.dataset.itemKey);
+          const handle = event.target.closest('[data-config-action="drag-handle"]');
+          if (!handle) return;
+          dragConfigurationRowStart(handle.dataset.kind, handle.dataset.itemKey);
         });
 
         document.addEventListener('dragover', (event) => {
-          const row = event.target.closest('[data-config-action="drag-row"]');
+          const row = event.target.closest('[data-config-action="drag-drop-target"]');
           if (!row) return;
-          dragConfigurationRowOver(event);
+          dragConfigurationRowOver(event, row.dataset.kind, row.dataset.itemKey);
         });
 
         document.addEventListener('drop', (event) => {
-          const row = event.target.closest('[data-config-action="drag-row"]');
+          const row = event.target.closest('[data-config-action="drag-drop-target"]');
           if (!row) return;
           event.preventDefault();
           dropConfigurationRow(row.dataset.kind, row.dataset.itemKey);
+        });
+
+        document.addEventListener('dragend', () => {
+          state.configurationDrag = null;
         });
       }
 
@@ -1163,15 +1187,20 @@ function clientsView() {
                       })()
                     : `<input type="color" data-config-action="set-color" data-kind="${kind}" data-item-key="${escapedItemKey}" value="${String(item.colorHex || '#64748B')}" class="h-8 w-10 rounded border border-slate-700 bg-transparent" />`)
                 : '—';
-              const sortCell = supportsSort ? '<span class="inline-flex items-center rounded border border-slate-700 px-2 py-1 text-xs text-slate-300">↕ Drag</span>' : '—';
+              const dropHighlightClass = supportsSort && state.configurationDrag?.kind === kind && state.configurationDrag?.lastOverKey === String(itemKey)
+                ? ' bg-slate-800/60'
+                : '';
               const rowAttrs = supportsSort
-                ? `class="border-t border-slate-800 cursor-move hover:bg-slate-900/40" draggable="true" data-config-action="drag-row" data-kind="${kind}" data-item-key="${escapedItemKey}"`
+                ? `class="border-t border-slate-800 hover:bg-slate-900/40${dropHighlightClass}" data-config-action="drag-drop-target" data-kind="${kind}" data-item-key="${escapedItemKey}"`
                 : 'class="border-t border-slate-800"';
-              return `<tr ${rowAttrs}><td class="p-2 text-slate-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2">${sortCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" data-config-action="remove-item" data-kind="${kind}" data-item-key="${escapedItemKey}" ${removeDisabled}>${i18n.t('common.delete')}</button></td></tr>`;
+              const handleCell = supportsSort
+                ? `<button type="button" aria-label="Drag to reorder" class="cursor-grab active:cursor-grabbing rounded p-1 text-slate-500 hover:text-slate-300" draggable="true" data-config-action="drag-handle" data-kind="${kind}" data-item-key="${escapedItemKey}"><span class="grid grid-cols-2 gap-0.5"><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span></span></button>`
+                : '';
+              return `<tr ${rowAttrs}><td class="w-8 p-2 align-middle">${handleCell}</td><td class="p-2 text-slate-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" data-config-action="remove-item" data-kind="${kind}" data-item-key="${escapedItemKey}" ${removeDisabled}>${i18n.t('common.delete')}</button></td></tr>`;
             })
             .join('');
 
-          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-config-action="add-item" data-kind="${kind}">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">Color</th><th class="p-2">Sort</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
+          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-config-action="add-item" data-kind="${kind}">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="w-8 p-2"></th><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">Color</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
         }
 
         return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">Manage static catalogs, client priorities and project statuses.</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'), { sort: true })}${renderCard('priorities', 'Priorities', { color: true, sort: true })}${renderCard('projectStatuses', 'Project Statuses', { color: true, sort: true })}</div></div>`;
