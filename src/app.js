@@ -1176,6 +1176,22 @@ async function isInitialAdminRegistrationOpen(client = pool) {
   return result.rowCount === 0;
 }
 
+
+async function getAdminUserIds(client = pool) {
+  const result = await client.query(
+    `SELECT u.id
+     FROM users u
+     JOIN user_roles ur ON ur.user_id = u.id
+     JOIN roles r ON r.id = ur.role_id
+     WHERE LOWER(r.name) = 'admin'`
+  );
+
+  return result.rows.map((row) => Number(row.id)).filter((id) => Number.isInteger(id) && id > 0);
+}
+
+function resolveBootstrapAdminId(adminUserIds = []) {
+  return adminUserIds.length ? Math.min(...adminUserIds) : null;
+}
 async function createUserInvite(userId, invitedByUserId, expiresHours = 72) {
   const token = createOpaqueToken(32);
   const tokenHash = hashOpaqueToken(token);
@@ -2220,6 +2236,11 @@ app.delete('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), 
       return res.status(409).json({ error: 'You cannot delete your own account.' });
     }
 
+    const adminUserIds = await getAdminUserIds();
+    if (adminUserIds.length < 2) {
+      return res.status(409).json({ error: 'Add a second admin before deleting users.' });
+    }
+
     const deleted = await pool.query(`DELETE FROM users WHERE id = $1`, [req.params.id]);
     if (deleted.rowCount === 0) {
       return res.status(404).json({ error: 'User not found.' });
@@ -2252,6 +2273,12 @@ app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCE
 
     if (!userResult.rows[0].is_active) {
       return res.status(409).json({ error: 'Cannot invite an inactive user.' });
+    }
+
+    const adminUserIds = await getAdminUserIds();
+    const bootstrapAdminId = resolveBootstrapAdminId(adminUserIds);
+    if (bootstrapAdminId && Number(req.params.id) === bootstrapAdminId) {
+      return res.status(409).json({ error: 'The initial admin account cannot be invited.' });
     }
 
     const invite = await createUserInvite(userResult.rows[0].id, req.auth.userId, expiresHours);

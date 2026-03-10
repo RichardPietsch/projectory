@@ -450,23 +450,26 @@
             ? `<p class="mt-2 text-xs text-rose-300">${state.initialRegistration.error}</p>`
             : '';
 
-          return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
+          return `<div class="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
             <h2 class="text-3xl font-bold">${i18n.t('auth.register.title')}</h2>
             <p class="mt-2 text-slate-300">${i18n.t('auth.register.subtitle')}</p>
-            <form id="initial-register-form" class="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-              <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.register.displayName')}
-                <input id="register-display-name" type="text" class="mt-1 w-full rounded bg-slate-950 p-2" required />
-              </label>
-              <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.login.email')}
-                <input id="register-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
-              </label>
-              <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.login.password')}
-                <input id="register-password" type="password" minlength="12" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.password')}" required />
-              </label>
-              <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.register.confirmPassword')}
-                <input id="register-password-confirm" type="password" minlength="12" class="mt-1 w-full rounded bg-slate-950 p-2" required />
-              </label>
-              <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${state.initialRegistration.submitting ? 'disabled' : ''}>${registerBusy}</button>
+            <div class="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">Complete all 4 fields below to create the first administrator account.</div>
+            <form id="initial-register-form" class="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+              <div class="grid gap-3 md:grid-cols-2">
+                <label class="block text-sm text-slate-300">${i18n.t('auth.register.displayName')}
+                  <input id="register-display-name" type="text" class="mt-1 w-full rounded bg-slate-950 p-2" required />
+                </label>
+                <label class="block text-sm text-slate-300">${i18n.t('auth.login.email')}
+                  <input id="register-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
+                </label>
+                <label class="block text-sm text-slate-300">${i18n.t('auth.login.password')}
+                  <input id="register-password" type="password" minlength="12" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.password')}" required />
+                </label>
+                <label class="block text-sm text-slate-300">${i18n.t('auth.register.confirmPassword')}
+                  <input id="register-password-confirm" type="password" minlength="12" class="mt-1 w-full rounded bg-slate-950 p-2" required />
+                </label>
+              </div>
+              <button type="submit" class="mt-4 rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${state.initialRegistration.submitting ? 'disabled' : ''}>${registerBusy}</button>
               ${registerError}
             </form>
           </div>`;
@@ -500,9 +503,7 @@
                 </label>
                 <div class="flex gap-2">
                   <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950">${i18n.t('auth.login.submit')}</button>
-                  <button type="button" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="continueWithCurrentAccess()">${i18n.t('auth.login.continueWithout')}</button>
                 </div>
-                <p class="mt-3 text-xs text-slate-500">${i18n.t('auth.login.devTip')}</p>
               </form>
 
               <form id="forgot-password-form" class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
@@ -510,9 +511,8 @@
                 <label class="block text-sm text-slate-300">${i18n.t('auth.forgot.emailLabel')}
                   <input id="forgot-password-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
                 </label>
-                <div class="mt-3 flex items-center justify-between gap-3">
+                <div class="mt-3">
                   <button type="submit" class="rounded border border-slate-600 px-3 py-2 text-xs hover:bg-slate-800 disabled:opacity-60" ${state.forgotPassword.submitting ? 'disabled' : ''}>${forgotBusy}</button>
-                  <a href="/reset-password" class="text-xs text-sky-300 hover:text-sky-200">${i18n.t('auth.forgot.haveToken')}</a>
                 </div>
                 ${forgotSuccess}
                 ${forgotError}
@@ -1344,11 +1344,26 @@ function clientsView() {
       bindConfigurationPanelEvents();
 
       function accessManagementView() {
+        const adminUserIds = (state.adminUsers || [])
+          .filter((entry) => (entry.roles || []).map((role) => String(role).toLowerCase()).includes('admin'))
+          .map((entry) => Number(entry.id))
+          .filter((id) => Number.isInteger(id) && id > 0);
+        const adminCount = adminUserIds.length;
+        const bootstrapAdminId = adminUserIds.length ? Math.min(...adminUserIds) : null;
         const userRows = (state.adminUsers || []).map((user) => {
           const statusLabel = String(user.status || 'unknown').replace(/_/g, ' ');
           const inviteMeta = user.latestInvitedAt ? `<div class="text-[11px] text-slate-500">Invited: ${user.latestInvitedAt}</div>` : '';
-          const revokeButton = user.canRevokeInvite ? `<button class="rounded border border-amber-500/50 px-2 py-1 text-xs text-amber-300 hover:bg-slate-800" onclick="revokeInviteFromAccessTab(${Number(user.id)})">Revoke Invite</button>` : '';
-          return `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td><td class="p-2 text-slate-300"><div class="capitalize">${statusLabel}</div>${inviteMeta}</td><td class="p-2 text-right"><div class="flex flex-wrap justify-end gap-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" onclick="openAdminUserEditModal(${Number(user.id)})">Edit</button><button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="inviteAdminUserFromAccessTab(${Number(user.id)})">Invite</button>${revokeButton}<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800" onclick="deleteAdminUserFromAccessTab(${Number(user.id)})">Delete</button></div></td></tr>`;
+          const userRoles = (user.roles || []).map((role) => String(role).toLowerCase());
+          const isBootstrapAdmin = userRoles.includes('admin') && Number(user.id) === bootstrapAdminId;
+          const inviteButton = isBootstrapAdmin
+            ? ''
+            : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="inviteAdminUserFromAccessTab(${Number(user.id)})">Invite</button>`;
+          const revokeButton = user.canRevokeInvite && !isBootstrapAdmin ? `<button class="rounded border border-amber-500/50 px-2 py-1 text-xs text-amber-300 hover:bg-slate-800" onclick="revokeInviteFromAccessTab(${Number(user.id)})">Revoke Invite</button>` : '';
+          const deleteDisabled = adminCount < 2;
+          const deleteButton = deleteDisabled
+            ? `<button class="rounded border border-rose-500/30 px-2 py-1 text-xs text-rose-300/40 cursor-not-allowed" disabled title="Add a second admin before deleting users">Delete</button>`
+            : `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800" onclick="deleteAdminUserFromAccessTab(${Number(user.id)})">Delete</button>`;
+          return `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td><td class="p-2 text-slate-300"><div class="capitalize">${statusLabel}</div>${inviteMeta}</td><td class="p-2 text-right"><div class="flex flex-wrap justify-end gap-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" onclick="openAdminUserEditModal(${Number(user.id)})">Edit</button>${inviteButton}${revokeButton}${deleteButton}</div></td></tr>`;
         }).join('');
         const auditRows = (state.auditEntries || []).slice(0, 20).map((entry) => `<tr class="border-t border-slate-800"><td class="p-2 text-xs text-slate-300">${entry.created_at || ''}</td><td class="p-2 text-xs">${entry.action || ''}</td><td class="p-2 text-xs text-slate-300">${entry.actor_role || '—'}</td><td class="p-2 text-xs text-slate-300">${entry.entity_type || '—'} ${entry.entity_id || ''}</td></tr>`).join('');
         const smtp = state.smtpSettings || {};
@@ -1539,6 +1554,11 @@ function clientsView() {
         try {
           const user = (state.adminUsers || []).find((entry) => Number(entry.id) === Number(userId));
           if (!user) return;
+          const adminCount = (state.adminUsers || []).filter((entry) => (entry.roles || []).map((role) => String(role).toLowerCase()).includes('admin')).length;
+          if (adminCount < 2) {
+            showMessage('Add a second admin before deleting users.', 'error');
+            return;
+          }
           if (!window.confirm(`Delete user ${user.displayName} (${user.email})?`)) return;
 
           await api(`/api/admin/users/${Number(userId)}`, { method: 'DELETE' });
@@ -3628,15 +3648,6 @@ function filteredPeople() {
 
       window.setAdminTab = function setAdminTab(tabId) { if (!canAccessAdmin()) return; state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
       window.closeAdminStandalone = function closeAdminStandalone() { state.showAdmin = false; navigateFromState(); render(); };
-      window.continueWithCurrentAccess = async function continueWithCurrentAccess() {
-        try {
-          await loadData({ forceAppData: true });
-          state.authRequired = false;
-          render();
-        } catch (error) {
-          showMessage(error.message, 'error');
-        }
-      };
 
       window.loginFromSplash = async function loginFromSplash(event) {
         event?.preventDefault();

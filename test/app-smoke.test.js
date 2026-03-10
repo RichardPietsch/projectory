@@ -939,9 +939,10 @@ test('PUT /api/admin/users/:id updates editable fields for admin', async () => {
   }
 });
 
-test('DELETE /api/admin/users/:id deletes user for admin', async () => {
+test('DELETE /api/admin/users/:id deletes user for admin when at least two admins exist', async () => {
   const originalQuery = pool.query;
   pool.query = async (sql) => {
+    if (sql.includes("WHERE LOWER(r.name) = 'admin'")) return { rowCount: 2, rows: [{ id: 1 }, { id: 2 }] };
     if (sql.includes('DELETE FROM users')) return { rowCount: 1, rows: [] };
     return { rowCount: 0, rows: [] };
   };
@@ -963,11 +964,38 @@ test('DELETE /api/admin/users/:id deletes user for admin', async () => {
   }
 });
 
+test('DELETE /api/admin/users/:id is blocked when only one admin exists', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes("WHERE LOWER(r.name) = 'admin'")) return { rowCount: 1, rows: [{ id: 1 }] };
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users/8`, {
+      method: 'DELETE',
+      headers: ADMIN_HEADERS
+    });
+
+    assert.equal(response.status, 409);
+    const body = await response.json();
+    assert.equal(body.error, 'Add a second admin before deleting users.');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
 test('POST /api/admin/users/:id/invite requires smtp config before sending', async () => {
   const originalQuery = pool.query;
   pool.query = async (sql) => {
     if (sql.includes('FROM users')) {
       return { rowCount: 1, rows: [{ id: 5, email: 'invitee@example.com', is_active: true }] };
+    }
+    if (sql.includes("WHERE LOWER(r.name) = 'admin'")) {
+      return { rowCount: 2, rows: [{ id: 1 }, { id: 9 }] };
     }
     if (sql.includes('INSERT INTO user_invites')) {
       return { rowCount: 1, rows: [{ id: 1, created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 3600_000).toISOString() }] };
@@ -990,6 +1018,36 @@ test('POST /api/admin/users/:id/invite requires smtp config before sending', asy
     assert.equal(response.status, 409);
     const body = await response.json();
     assert.equal(body.error, 'SMTP is not configured. Configure SMTP settings before sending invites.');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('POST /api/admin/users/:id/invite blocks inviting the bootstrap admin account', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (sql.includes('FROM users')) {
+      return { rowCount: 1, rows: [{ id: 1, email: 'admin@example.com', is_active: true }] };
+    }
+    if (sql.includes("WHERE LOWER(r.name) = 'admin'")) {
+      return { rowCount: 2, rows: [{ id: 1 }, { id: 8 }] };
+    }
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/admin/users/1/invite`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ expiresHours: 24 })
+    });
+
+    assert.equal(response.status, 409);
+    const body = await response.json();
+    assert.equal(body.error, 'The initial admin account cannot be invited.');
   } finally {
     server.close();
     pool.query = originalQuery;
