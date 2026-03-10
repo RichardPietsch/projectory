@@ -1171,6 +1171,11 @@ async function getRoleIdByName(roleName) {
   return result.rowCount ? result.rows[0] : null;
 }
 
+async function isInitialAdminRegistrationOpen(client = pool) {
+  const result = await client.query('SELECT id FROM users LIMIT 1');
+  return result.rowCount === 0;
+}
+
 async function createUserInvite(userId, invitedByUserId, expiresHours = 72) {
   const token = createOpaqueToken(32);
   const tokenHash = hashOpaqueToken(token);
@@ -1614,6 +1619,98 @@ app.get('/api/auth/me', (req, res) => {
     isScopedTeammate: Boolean(req.auth.isScopedTeammate),
     authMode: getAuthMode()
   });
+});
+
+app.get('/api/auth/bootstrap-status', async (_req, res) => {
+  try {
+    const registrationOpen = await isInitialAdminRegistrationOpen();
+    return res.json({ registrationOpen });
+  } catch (error) {
+    return handleDbError(res, error);
+  }
+});
+
+app.post('/api/auth/register-initial-admin', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const displayName = String(req.body?.displayName || '').trim();
+  const password = String(req.body?.password || '');
+
+  if (!isValidEmail(email)) {
+    return badRequest(res, 'Valid email is required.');
+  }
+
+  if (!displayName) {
+    return badRequest(res, 'displayName is required.');
+  }
+
+  const passwordError = validatePasswordStrength(password);
+  if (passwordError) {
+    return badRequest(res, passwordError);
+  }
+
+  let client = null;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    await client.query('LOCK TABLE users IN ACCESS EXCLUSIVE MODE');
+
+    const registrationOpen = await isInitialAdminRegistrationOpen(client);
+    if (!registrationOpen) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Initial admin registration is already completed.' });
+    }
+
+    const adminRole = await client.query(
+      `SELECT id
+       FROM roles
+       WHERE LOWER(name) = 'admin'
+       LIMIT 1`
+    );
+
+    if (adminRole.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(500).json({ error: 'Admin role is not configured.' });
+    }
+
+    const passwordHash = await hashPassword(password);
+    const userInsert = await client.query(
+      `INSERT INTO users (email, display_name, password_hash, is_active)
+       VALUES ($1, $2, $3, TRUE)
+       RETURNING id`,
+      [email, displayName, passwordHash]
+    );
+
+    const userId = userInsert.rows[0]?.id;
+    await client.query(
+      `INSERT INTO user_roles (user_id, role_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [userId, adminRole.rows[0].id]
+    );
+
+    const sessionId = createOpaqueToken(48);
+    const expiresAt = new Date(Date.now() + (AUTH_SESSION_TTL_HOURS * 60 * 60 * 1000));
+    await client.query(
+      `INSERT INTO auth_sessions (id, user_id, expires_at, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [sessionId, userId, expiresAt.toISOString(), req.ip || null, req.header('user-agent') || null]
+    );
+
+    await client.query('COMMIT');
+    res.setHeader('Set-Cookie', serializeSessionCookie(sessionId, expiresAt));
+    return res.status(201).json({ ok: true, userId });
+  } catch (error) {
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (_rollbackError) {
+        // noop
+      }
+    }
+    return handleDbError(res, error);
+  } finally {
+    if (client) client.release();
+  }
 });
 
 app.post('/api/auth/login', async (req, res) => {

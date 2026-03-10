@@ -154,6 +154,7 @@ Additional auth env defaults:
 Audit log retention can be tuned with `AUDIT_LOG_RETENTION_MONTHS` (defaults to `6`).
 
 Password reset journey is available via `POST /api/auth/forgot-password` (request e-mail link) and `POST /api/auth/reset-password` (consume token), with reset landing route at `/reset-password?token=...`.
+If no users exist, Projectory exposes an initial bootstrap registration flow (`GET /api/auth/bootstrap-status`, `POST /api/auth/register-initial-admin`) that creates the first account as `admin` and signs it in.
 
 ---
 

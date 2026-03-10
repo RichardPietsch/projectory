@@ -1357,6 +1357,105 @@ test('POST /api/auth/reset-password rejects invalid token with 400', async () =>
   }
 });
 
+test('GET /api/auth/bootstrap-status exposes open registration when no users exist', async () => {
+  const originalQuery = pool.query;
+  pool.query = async (sql) => {
+    if (String(sql).includes('SELECT id FROM users LIMIT 1')) {
+      return { rowCount: 0, rows: [] };
+    }
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/bootstrap-status`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.registrationOpen, true);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+test('POST /api/auth/register-initial-admin provisions first admin and sets session cookie', async () => {
+  const originalConnect = pool.connect;
+
+  const callLog = [];
+  const fakeClient = {
+    async query(sql) {
+      const normalized = String(sql);
+      callLog.push(normalized);
+      if (normalized.includes('SELECT id FROM users LIMIT 1')) return { rowCount: 0, rows: [] };
+      if (normalized.includes('FROM roles')) return { rowCount: 1, rows: [{ id: 1 }] };
+      if (normalized.includes('INSERT INTO users')) return { rowCount: 1, rows: [{ id: 77 }] };
+      return { rowCount: 1, rows: [] };
+    },
+    release() {}
+  };
+
+  pool.connect = async () => fakeClient;
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/register-initial-admin`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'first.admin@example.com', displayName: 'First Admin', password: 'very-strong-pass' })
+    });
+
+    assert.equal(response.status, 201);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.userId, 77);
+    assert.equal(String(response.headers.get('set-cookie') || '').includes('projectory_session='), true);
+    assert.equal(callLog.some((entry) => entry.includes('LOCK TABLE users IN ACCESS EXCLUSIVE MODE')), true);
+    assert.equal(callLog.some((entry) => entry.includes('INSERT INTO user_roles')), true);
+    assert.equal(callLog.some((entry) => entry.includes('INSERT INTO auth_sessions')), true);
+  } finally {
+    server.close();
+    pool.connect = originalConnect;
+  }
+});
+
+test('POST /api/auth/register-initial-admin returns 409 after bootstrap is already completed', async () => {
+  const originalConnect = pool.connect;
+
+  const fakeClient = {
+    async query(sql) {
+      if (String(sql).includes('SELECT id FROM users LIMIT 1')) {
+        return { rowCount: 1, rows: [{ id: 5 }] };
+      }
+      return { rowCount: 1, rows: [] };
+    },
+    release() {}
+  };
+
+  pool.connect = async () => fakeClient;
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/auth/register-initial-admin`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'first.admin@example.com', displayName: 'First Admin', password: 'very-strong-pass' })
+    });
+
+    assert.equal(response.status, 409);
+    const body = await response.json();
+    assert.equal(body.error, 'Initial admin registration is already completed.');
+  } finally {
+    server.close();
+    pool.connect = originalConnect;
+  }
+});
+
 test('POST /api/auth/login returns non-enumerating failures for unknown/inactive/wrong credentials', async () => {
   const originalQuery = pool.query;
   const activeHash = await hashPassword('correct-password');

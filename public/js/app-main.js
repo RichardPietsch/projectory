@@ -442,6 +442,36 @@
       }
 
       function loginScreenView() {
+        if (state.initialRegistration.required) {
+          const registerBusy = state.initialRegistration.submitting
+            ? i18n.t('auth.register.submitBusy')
+            : i18n.t('auth.register.submit');
+          const registerError = state.initialRegistration.error
+            ? `<p class="mt-2 text-xs text-rose-300">${state.initialRegistration.error}</p>`
+            : '';
+
+          return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
+            <h2 class="text-3xl font-bold">${i18n.t('auth.register.title')}</h2>
+            <p class="mt-2 text-slate-300">${i18n.t('auth.register.subtitle')}</p>
+            <form id="initial-register-form" class="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+              <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.register.displayName')}
+                <input id="register-display-name" type="text" class="mt-1 w-full rounded bg-slate-950 p-2" required />
+              </label>
+              <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.login.email')}
+                <input id="register-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
+              </label>
+              <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.login.password')}
+                <input id="register-password" type="password" minlength="12" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.password')}" required />
+              </label>
+              <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.register.confirmPassword')}
+                <input id="register-password-confirm" type="password" minlength="12" class="mt-1 w-full rounded bg-slate-950 p-2" required />
+              </label>
+              <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${state.initialRegistration.submitting ? 'disabled' : ''}>${registerBusy}</button>
+              ${registerError}
+            </form>
+          </div>`;
+        }
+
         const forgotBusy = state.forgotPassword.submitting ? i18n.t('auth.forgot.submitBusy') : i18n.t('auth.forgot.submit');
         const forgotError = state.forgotPassword.error ? `<p class="mt-2 text-xs text-rose-300">${state.forgotPassword.error}</p>` : '';
         const forgotSuccess = state.forgotPassword.submitted
@@ -654,6 +684,41 @@
         }
       };
 
+      window.submitInitialRegistration = async function submitInitialRegistration(event) {
+        event?.preventDefault();
+        const displayName = String(document.getElementById('register-display-name')?.value || '').trim();
+        const email = String(document.getElementById('register-email')?.value || '').trim();
+        const password = String(document.getElementById('register-password')?.value || '');
+        const confirm = String(document.getElementById('register-password-confirm')?.value || '');
+
+        if (password !== confirm) {
+          state.initialRegistration.error = i18n.t('auth.reset.passwordsMismatch');
+          render();
+          return;
+        }
+
+        state.initialRegistration.submitting = true;
+        state.initialRegistration.error = '';
+        render();
+        try {
+          await api('/api/auth/register-initial-admin', {
+            method: 'POST',
+            body: JSON.stringify({ displayName, email, password })
+          });
+          state.initialRegistration.submitting = false;
+          state.initialRegistration.required = false;
+          await loadData({ forceAppData: true });
+          state.authRequired = false;
+          showMessage(i18n.t('auth.register.success'));
+          render();
+        } catch (error) {
+          state.initialRegistration.submitting = false;
+          state.initialRegistration.error = error.message || i18n.t('auth.register.genericError');
+          await loadData();
+          render();
+        }
+      };
+
       async function loadAdminAccessData() {
         // Step 6: preload admin access-management data for a single cohesive tab.
         try {
@@ -684,6 +749,8 @@
 
       async function loadData(options = {}) {
         const forceAppData = Boolean(options.forceAppData);
+        const bootstrapStatus = await api('/api/auth/bootstrap-status');
+        state.initialRegistration.required = Boolean(bootstrapStatus?.registrationOpen);
         state.auth = await api('/api/auth/me');
         state.authRequired = forceAppData ? false : state.auth?.authSource !== 'session';
 
@@ -3605,6 +3672,7 @@ function filteredPeople() {
           document.getElementById('view').innerHTML = loginScreenView();
           document.getElementById('login-form')?.addEventListener('submit', window.loginFromSplash);
           document.getElementById('forgot-password-form')?.addEventListener('submit', window.submitForgotPassword);
+          document.getElementById('initial-register-form')?.addEventListener('submit', window.submitInitialRegistration);
         } else if (state.showAdmin) {
           document.getElementById('view').innerHTML = adminStandaloneView();
         } else {
