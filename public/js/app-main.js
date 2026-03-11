@@ -450,7 +450,7 @@
             ? `<p class="mt-2 text-xs text-rose-300">${state.initialRegistration.error}</p>`
             : '';
 
-          return `<div class="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
+          return `<div class="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-800 bg-slate-800 p-8 shadow-2xl">
             <h2 class="text-3xl font-bold">${i18n.t('auth.register.title')}</h2>
             <p class="mt-2 text-slate-300">${i18n.t('auth.register.subtitle')}</p>
             <div class="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">Complete all 4 fields below to create the first administrator account.</div>
@@ -481,7 +481,7 @@
           ? `<p class="mt-2 text-xs text-emerald-300">${i18n.t('auth.forgot.success')}</p>`
           : '';
 
-        return `<div class="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
+        return `<div class="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-800 bg-slate-800 p-8 shadow-2xl">
           <div class="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
               <h2 class="text-3xl font-bold">${i18n.t('auth.login.title')}</h2>
@@ -530,7 +530,7 @@
         const busyLabel = state.inviteFlow.submitting ? 'Setting password…' : 'Set password and continue';
         const errorHtml = state.inviteFlow.error ? `<p class="mt-3 text-sm text-rose-300">${state.inviteFlow.error}</p>` : '';
 
-        return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
+        return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-800 p-8 shadow-2xl">
           <h2 class="text-3xl font-bold">${title}</h2>
           <p class="mt-2 text-slate-300">${subtitle}</p>
           <p class="mt-1 text-xs text-slate-500">Invite token: ${state.inviteFlow.token ? 'loaded' : 'missing'}</p>
@@ -604,7 +604,7 @@
         const errorHtml = state.resetPasswordFlow.error ? `<p class="mt-3 text-sm text-rose-300">${state.resetPasswordFlow.error}</p>` : '';
         const doneHtml = state.resetPasswordFlow.done ? `<p class="mt-3 text-sm text-emerald-300">${i18n.t('auth.reset.success')}</p>` : '';
 
-        return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
+        return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-800 p-8 shadow-2xl">
           <h2 class="text-3xl font-bold">${i18n.t('auth.reset.title')}</h2>
           <p class="mt-2 text-slate-300">${i18n.t('auth.reset.subtitle')}</p>
           <p class="mt-1 text-xs text-slate-500">${i18n.t('auth.reset.tokenStatus', { status: state.resetPasswordFlow.token ? i18n.t('auth.reset.tokenLoaded') : i18n.t('auth.reset.tokenMissing') })}</p>
