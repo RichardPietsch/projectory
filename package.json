@@ -13,7 +13,8 @@
     "format:check": "node scripts/ci-format-check.js",
     "locale:check": "node scripts/check-locale-keys.js",
     "lint:eslint": "eslint src scripts test test-utils public/js --max-warnings 0",
-    "lint:boundaries": "node scripts/ci-lint-check.js"
+    "lint:boundaries": "node scripts/ci-lint-check.js && npm run test:architecture",
+    "test:architecture": "node scripts/architecture-fitness-check.js"
   },
   "dependencies": {
     "express": "^4.19.2",

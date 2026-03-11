@@ -27,5 +27,6 @@ CI enforces ESLint static analysis (primary) plus boundary checks through `npm r
 - [ ] Architecture impact evaluated; ADR added/updated if required
 - [ ] Boundary rules respected
 - [ ] `npm run lint:ci` passes
+- [ ] `npm run test:architecture` passes (or is covered by `lint:ci`)
 - [ ] `npm run check:syntax` passes
 - [ ] `npm test` passes
