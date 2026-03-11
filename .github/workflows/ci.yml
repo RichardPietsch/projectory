@@ -28,7 +28,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install --no-fund
+        run: npm ci --no-fund
 
       - name: Prepare CI artifact directory
         run: mkdir -p ci-artifacts
@@ -236,7 +236,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Prepare test artifact directory
         run: mkdir -p ci-artifacts
@@ -318,7 +318,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Prepare release DB gate artifact directory
         run: mkdir -p ci-artifacts

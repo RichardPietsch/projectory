@@ -275,6 +275,10 @@ npm test
 
 CI (`.github/workflows/ci.yml`) runs migrations + syntax + tests on push/PR.
 
+Dependency install policy in CI:
+- All Node-based CI jobs use `npm ci` (not `npm install`) so installs are locked to `package-lock.json` exactly.
+- This improves reproducibility and supply-chain control by preventing opportunistic lockfile drift during CI and ensuring the dependency graph is deterministic across runners.
+
 Release-grade CI behavior:
 - Pull requests use fast gates for feedback speed (`quality-and-security`, `static-analysis`, `container-image-security`, `build-and-test`).
 - Pushes to `main` and `release/*` also require `release-db-contract-gate`, which runs migrations plus real-DB contract suites (`test/api-contract.db.test.js`, `test/db-integration.test.js`) against Postgres.
