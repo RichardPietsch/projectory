@@ -28,6 +28,16 @@ Current modules:
 - registering domain routes through `src/modules/index.js`
 - non-domain portability/admin endpoints that are still centrally hosted
 
+### App composition module map
+
+As part of continued decomposition, `src/app.js` now orchestrates focused helpers under `src/app/`:
+
+- `src/app/bootstrap.js`: startup orchestration (runtime validation, maintenance warmup, recurring cleanup scheduler, listener boot)
+- `src/app/request-logging.js`: request logging diagnostics shaping (explicit header allowlist + minimal route-aware body summaries)
+- `src/app/observability.js`: shared observability formatting helpers (metric path normalization, Prometheus label escaping, counter serialization)
+
+`src/app.js` remains the entrypoint, but these modules establish stricter boundaries for future extraction of middleware stack, auth routes, admin/import-export routes, and additional observability surfaces.
+
 ## Architecture governance
 
 - ADR history is stored in `docs/adr/`.

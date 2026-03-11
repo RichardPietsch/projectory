@@ -10,6 +10,9 @@ const { PERMISSIONS, getPermissionsForRole } = require('./auth/permissions');
 const { getAuthMode, isLocalDevRuntime, validateAuthRuntimeSafety } = require('./auth/runtime');
 const { validatePasswordStrength, hashPassword, verifyPassword } = require('./auth/passwords');
 const { createOpaqueToken, hashOpaqueToken } = require('./auth/tokens');
+const { normalizeMetricPath, escapePrometheusLabel, serializeCounterMetric } = require('./app/observability');
+const { buildRequestLogHeaders, buildRequestLogBody } = require('./app/request-logging');
+const { startServerRuntime } = require('./app/bootstrap');
 
 // Single Express app serving API + static frontend.
 const app = express();
@@ -222,23 +225,6 @@ function observeDurationBuckets(map, keyPrefix, durationMs) {
   incrementCounter(map, `${prefix}le=+Inf`);
 }
 
-function normalizeMetricPath(rawPath) {
-  return String(rawPath || '/')
-    .replace(/\/[0-9]+(?=\/|$)/g, '/:id')
-    .replace(/[0-9a-f]{8}-[0-9a-f-]{27,36}/gi, ':uuid');
-}
-
-function escapePrometheusLabel(value) {
-  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
-}
-
-function serializeCounterMetric(name, help, map, labelsBuilder) {
-  const lines = [`# HELP ${name} ${help}`, `# TYPE ${name} counter`];
-  for (const [key, value] of map.entries()) {
-    lines.push(`${name}{${labelsBuilder(key)}} ${value}`);
-  }
-  return lines.join('\n');
-}
 
 function renderPrometheusMetrics() {
   const sections = [];
@@ -415,45 +401,6 @@ function obfuscateSecurityKey(rawValue) {
   return crypto.createHash('sha256').update(String(rawValue || 'unknown')).digest('hex').slice(0, 16);
 }
 
-function buildRequestLogHeaders(req) {
-  const source = req.headers || {};
-  const output = {};
-  for (const [key, value] of Object.entries(source)) {
-    const normalized = String(key || '').toLowerCase();
-    if (!REQUEST_LOG_HEADER_ALLOWLIST.has(normalized)) {
-      continue;
-    }
-    output[normalized] = Array.isArray(value) ? value.join(',') : String(value || '');
-  }
-  return output;
-}
-
-function buildRequestLogBody(req) {
-  if (!req.path.startsWith('/api/')) {
-    return undefined;
-  }
-
-  const body = req.body && typeof req.body === 'object' ? req.body : {};
-  const normalizedPath = String(req.path || '');
-
-  if (normalizedPath === '/api/auth/login' || normalizedPath === '/api/auth/forgot-password') {
-    return {
-      emailHash: body.email ? obfuscateSecurityKey(String(body.email).toLowerCase().trim()) : null,
-      credentialProvided: Boolean(body.password)
-    };
-  }
-
-  if (normalizedPath === '/api/auth/reset-password' || normalizedPath === '/api/auth/accept-invite' || normalizedPath === '/api/auth/invite-preview') {
-    return {
-      resetOrInviteReferenceProvided: Boolean(body.token),
-      credentialProvided: Boolean(body.password)
-    };
-  }
-
-  return {
-    fieldCount: Object.keys(body).length
-  };
-}
 
 function emitAuthSecurityEvent(eventName, fields = {}) {
   if (String(eventName).includes('failed') || String(eventName).includes('throttled')) {
@@ -736,8 +683,8 @@ app.use((req, res, next) => {
     path: req.path,
     ipHash: obfuscateSecurityKey(req.ip || req.socket?.remoteAddress || 'unknown'),
     userAgent: req.header('user-agent') || null,
-    requestHeaders: buildRequestLogHeaders(req),
-    requestBody: buildRequestLogBody(req)
+    requestHeaders: buildRequestLogHeaders(req, REQUEST_LOG_HEADER_ALLOWLIST),
+    requestBody: buildRequestLogBody(req, { obfuscateSecurityKey })
   });
 
   res.on('finish', () => {
@@ -3860,38 +3807,15 @@ app.use((error, _req, res, next) => {
 });
 
 async function startServer() {
-  validateAuthRuntimeSafety();
-  validateRuntimeEnvironment();
-
-  try {
-    await cleanupAuditLogRetention();
-  } catch (error) {
-    console.warn('Startup readiness validation skipped optional maintenance.', error.message);
-  }
-
-  try {
-    await cleanupAuthLifecycleArtifacts();
-  } catch (error) {
-    incrementCounter(metricsState.authLifecycleCleanupRunsTotal, 'failure', 1);
-    console.warn('Startup auth lifecycle cleanup failed.', error.message);
-  }
-
-  const cleanupIntervalMs = Number.isFinite(AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS) && AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS > 0
-    ? AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS
-    : 15 * 60 * 1000;
-
-  const cleanupInterval = setInterval(async () => {
-    try {
-      await cleanupAuthLifecycleArtifacts();
-    } catch (error) {
-      incrementCounter(metricsState.authLifecycleCleanupRunsTotal, 'failure', 1);
-      console.warn('Scheduled auth lifecycle cleanup failed.', error.message);
-    }
-  }, cleanupIntervalMs);
-  cleanupInterval.unref();
-
-  app.listen(port, () => {
-    console.log(`Projectory app listening on port ${port}`);
+  return startServerRuntime({
+    validateAuthRuntimeSafety,
+    validateRuntimeEnvironment,
+    cleanupAuditLogRetention,
+    cleanupAuthLifecycleArtifacts,
+    incrementCleanupFailure: () => incrementCounter(metricsState.authLifecycleCleanupRunsTotal, 'failure', 1),
+    cleanupIntervalMs: AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS,
+    app,
+    port
   });
 }
 
