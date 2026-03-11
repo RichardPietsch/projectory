@@ -89,6 +89,13 @@ const SENSITIVE_LOG_KEYS = new Set([
   'client_secret'
 ]);
 
+const REQUEST_LOG_HEADER_ALLOWLIST = new Set([
+  'content-type',
+  'content-length',
+  'accept',
+  'x-correlation-id'
+]);
+
 
 
 function clearRequestRateLimitBuckets() {
@@ -408,6 +415,46 @@ function obfuscateSecurityKey(rawValue) {
   return crypto.createHash('sha256').update(String(rawValue || 'unknown')).digest('hex').slice(0, 16);
 }
 
+function buildRequestLogHeaders(req) {
+  const source = req.headers || {};
+  const output = {};
+  for (const [key, value] of Object.entries(source)) {
+    const normalized = String(key || '').toLowerCase();
+    if (!REQUEST_LOG_HEADER_ALLOWLIST.has(normalized)) {
+      continue;
+    }
+    output[normalized] = Array.isArray(value) ? value.join(',') : String(value || '');
+  }
+  return output;
+}
+
+function buildRequestLogBody(req) {
+  if (!req.path.startsWith('/api/')) {
+    return undefined;
+  }
+
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const normalizedPath = String(req.path || '');
+
+  if (normalizedPath === '/api/auth/login' || normalizedPath === '/api/auth/forgot-password') {
+    return {
+      emailHash: body.email ? obfuscateSecurityKey(String(body.email).toLowerCase().trim()) : null,
+      credentialProvided: Boolean(body.password)
+    };
+  }
+
+  if (normalizedPath === '/api/auth/reset-password' || normalizedPath === '/api/auth/accept-invite' || normalizedPath === '/api/auth/invite-preview') {
+    return {
+      resetOrInviteReferenceProvided: Boolean(body.token),
+      credentialProvided: Boolean(body.password)
+    };
+  }
+
+  return {
+    fieldCount: Object.keys(body).length
+  };
+}
+
 function emitAuthSecurityEvent(eventName, fields = {}) {
   if (String(eventName).includes('failed') || String(eventName).includes('throttled')) {
     incrementCounter(metricsState.authFailuresTotal, eventName, 1);
@@ -689,8 +736,8 @@ app.use((req, res, next) => {
     path: req.path,
     ipHash: obfuscateSecurityKey(req.ip || req.socket?.remoteAddress || 'unknown'),
     userAgent: req.header('user-agent') || null,
-    requestHeaders: req.path.startsWith('/api/') ? (req.headers || {}) : undefined,
-    requestBody: req.path.startsWith('/api/') ? (req.body || {}) : undefined
+    requestHeaders: buildRequestLogHeaders(req),
+    requestBody: buildRequestLogBody(req)
   });
 
   res.on('finish', () => {

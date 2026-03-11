@@ -2,6 +2,13 @@
 
 Projectory exposes production-oriented health and metric endpoints for orchestrators and monitoring stacks.
 
+## Structured request logging privacy defaults
+
+- Request lifecycle logs preserve correlation IDs (`x-correlation-id`) and security telemetry while reducing privacy/log-volume risk.
+- Incoming request headers are logged with an explicit allowlist only (`content-type`, `content-length`, `accept`, `x-correlation-id`).
+- Request bodies are summarized via allowlisted diagnostics (for example hashed login e-mail identifiers and boolean presence flags) instead of full payload dumps.
+- Secrets/tokens/passwords are never emitted as plaintext in request lifecycle logs.
+
 ## Health endpoints
 
 ### `GET /health/live`
