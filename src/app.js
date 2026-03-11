@@ -91,6 +91,7 @@ const SENSITIVE_LOG_KEYS = new Set([
 
 function clearRequestRateLimitBuckets() {
   requestRateBuckets.clear();
+  routeRateLimitBuckets.clear();
   lastRateLimitBucketSweepAt = 0;
 }
 
@@ -625,9 +626,15 @@ const exportRouteRateLimitMiddleware = rateLimit({
 
 const importRouteRateLimitMiddleware = rateLimit({
   keyPrefix: 'import-scoped',
-  max: Number(process.env.IMPORT_RATE_LIMIT_MAX || 10),
+  max: Number(process.env.IMPORT_RATE_LIMIT_MAX || 3),
   windowMs: Number(process.env.IMPORT_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
-  message: 'Too many import requests. Please wait before trying again.'
+  message: 'Too many import requests. Please wait before trying again.',
+  keyGenerator: (req) => {
+    const ip = String(req.ip || req.socket?.remoteAddress || 'unknown');
+    const scope = String(req.params?.scope || 'unknown').trim().toLowerCase();
+    const user = String(req.auth?.userId || req.auth?.email || 'anonymous').trim().toLowerCase() || 'anonymous';
+    return `${ip}|${user}|${scope}`;
+  }
 });
 
 const adminAuditRouteRateLimitMiddleware = rateLimit({

@@ -341,6 +341,67 @@ test('GET /health rate limiting falls back to local buckets when shared backend 
   }
 });
 
+
+test('POST /api/import/:scope returns 429 when scoped import rate limit is exceeded', async () => {
+  const originalConnect = pool.connect;
+  const originalQuery = pool.query;
+  const previousMax = process.env.IMPORT_RATE_LIMIT_MAX;
+  const previousWindow = process.env.IMPORT_RATE_LIMIT_WINDOW_MS;
+  process.env.IMPORT_RATE_LIMIT_MAX = '1';
+  process.env.IMPORT_RATE_LIMIT_WINDOW_MS = '60000';
+
+  pool.query = async (sql) => {
+    const text = String(sql || '');
+    if (text.includes('rate_limit_buckets')) return { rowCount: 0, rows: [] };
+    if (text.includes('FROM trades')) return { rowCount: 1, rows: [{ id: 1, name: 'UX' }] };
+    if (text.includes('FROM levels')) return { rowCount: 1, rows: [{ id: 1, name: 'JUNIOR' }] };
+    return { rowCount: 0, rows: [] };
+  };
+
+  const fakeClient = {
+    async query(sql) {
+      const text = String(sql);
+      if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rowCount: 0, rows: [] };
+      if (text.includes('DELETE FROM people')) return { rowCount: 0, rows: [] };
+      if (text.includes('INSERT INTO people')) return { rowCount: 1, rows: [] };
+      return { rowCount: 0, rows: [] };
+    },
+    release() {}
+  };
+  pool.connect = async () => fakeClient;
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    clearRequestRateLimitBuckets();
+
+    const payload = { data: { people: [{ id: 1, first_name: 'A', last_name: 'B', trade_id: 1, level_id: 1, status: 'active', working_hours: 40 }], clients: [], projects: [], challenges: [], assignments: [] } };
+
+    const first = await fetch(`http://127.0.0.1:${port}/api/import/people`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify(payload)
+    });
+    assert.equal(first.status, 200);
+
+    const blocked = await fetch(`http://127.0.0.1:${port}/api/import/people`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify(payload)
+    });
+    assert.equal(blocked.status, 429);
+    const body = await blocked.json();
+    assert.equal(body.error, 'Too many import requests. Please wait before trying again.');
+  } finally {
+    server.close();
+    pool.connect = originalConnect;
+    pool.query = originalQuery;
+    if (previousMax === undefined) delete process.env.IMPORT_RATE_LIMIT_MAX; else process.env.IMPORT_RATE_LIMIT_MAX = previousMax;
+    if (previousWindow === undefined) delete process.env.IMPORT_RATE_LIMIT_WINDOW_MS; else process.env.IMPORT_RATE_LIMIT_WINDOW_MS = previousWindow;
+  }
+});
+
 test('GET /health rate limit window resets after configured interval', async () => {
   const originalQuery = pool.query;
   pool.query = async () => ({ rows: [{ ok: 1 }] });
@@ -1412,6 +1473,7 @@ test('POST /api/auth/reset-password rejects invalid token with 400', async () =>
   } finally {
     server.close();
     pool.connect = originalConnect;
+    pool.query = originalQuery;
   }
 });
 
@@ -1477,6 +1539,7 @@ test('POST /api/auth/register-initial-admin provisions first admin and sets sess
   } finally {
     server.close();
     pool.connect = originalConnect;
+    pool.query = originalQuery;
   }
 });
 
@@ -1511,6 +1574,7 @@ test('POST /api/auth/register-initial-admin returns 409 after bootstrap is alrea
   } finally {
     server.close();
     pool.connect = originalConnect;
+    pool.query = originalQuery;
   }
 });
 
@@ -1753,6 +1817,7 @@ test('POST /api/auth/accept-invite throttles repeated failures and resets after 
     server.close();
     pool.connect = originalConnect;
     pool.query = originalQuery;
+    pool.query = originalQuery;
     clearAuthAttemptBuckets();
     if (previousMax === undefined) delete process.env.AUTH_PROTECTION_MAX_FAILURES; else process.env.AUTH_PROTECTION_MAX_FAILURES = previousMax;
     if (previousWindow === undefined) delete process.env.AUTH_PROTECTION_WINDOW_MS; else process.env.AUTH_PROTECTION_WINDOW_MS = previousWindow;
@@ -1801,6 +1866,7 @@ test('POST /api/auth/accept-invite sets password and marks invite as accepted', 
   } finally {
     server.close();
     pool.connect = originalConnect;
+    pool.query = originalQuery;
     pool.query = originalQuery;
   }
 });
