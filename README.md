@@ -182,6 +182,17 @@ If no users exist, Projectory exposes an initial bootstrap registration flow (`G
 - Prometheus metrics: `GET /metrics`
 
 Operational semantics, baseline alerts, and dashboard guidance are documented in `docs/observability.md`.
+SLO/SLI baseline definitions, alert rules, dashboard JSON and remediation runbook are versioned in:
+- `docs/operations/slo-baseline.md`
+- `ops/alerts/projectory-slo-alerts.yml`
+- `ops/dashboards/projectory-slo-dashboard.json`
+- `docs/runbooks/slo-remediation.md`
+
+For release readiness validation of these artifacts:
+
+```bash
+npm run ops:readiness-check
+```
 
 
 

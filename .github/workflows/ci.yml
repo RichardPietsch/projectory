@@ -327,6 +327,10 @@ jobs:
         run: |
           npm run migrate | tee ci-artifacts/release-db-migrate.txt
 
+      - name: Validate SLO operational readiness artifacts
+        run: |
+          npm run ops:readiness-check | tee ci-artifacts/release-slo-readiness.txt
+
       - name: Run real-DB contract suites (mandatory on release branches)
         run: |
           node --test test/api-contract.db.test.js test/db-integration.test.js | tee ci-artifacts/release-db-contract-tests.txt
@@ -338,6 +342,7 @@ jobs:
             echo "# Release DB Contract Gate Summary"
             echo ""
             echo "- Migrations: see release-db-migrate.txt"
+            echo "- SLO readiness artifacts: see release-slo-readiness.txt"
             echo "- Real-DB contract suites: see release-db-contract-tests.txt"
             echo ""
             echo "This gate is mandatory on pushes to main/release/* branches."

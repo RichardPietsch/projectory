@@ -92,6 +92,7 @@ This keeps tests repeatable and makes failures actionable (API or schema regress
 - `npm run lint:ci` is a unified lint workflow: ESLint static analysis (primary quality gate) plus architecture boundary checks.
 - CI dependency installs use `npm ci` in Node jobs to enforce lockfile determinism and reduce supply-chain variance between runs.
 - Pushes to `main` and `release/*` have an additional **mandatory** `release-db-contract-gate` job that runs:
+  - `npm run ops:readiness-check`
   - `npm run migrate`
   - `node --test test/api-contract.db.test.js test/db-integration.test.js`
 - This release gate fails the pipeline on any migration/contract regression and is required before release promotion.
