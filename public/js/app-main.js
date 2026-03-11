@@ -450,11 +450,11 @@
             ? `<p class="mt-2 text-xs text-rose-300">${state.initialRegistration.error}</p>`
             : '';
 
-          return `<div class="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-800 bg-slate-800 p-8 shadow-2xl">
+          return `<div class="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
             <h2 class="text-3xl font-bold">${i18n.t('auth.register.title')}</h2>
             <p class="mt-2 text-slate-300">${i18n.t('auth.register.subtitle')}</p>
             <div class="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">Complete all 4 fields below to create the first administrator account.</div>
-            <form id="initial-register-form" class="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <form id="initial-register-form" class="mt-4 rounded-xl border border-slate-800 bg-slate-800 p-4">
               <div class="grid gap-3 md:grid-cols-2">
                 <label class="block text-sm text-slate-300">${i18n.t('auth.register.displayName')}
                   <input id="register-display-name" type="text" class="mt-1 w-full rounded bg-slate-950 p-2" required />
@@ -481,7 +481,7 @@
           ? `<p class="mt-2 text-xs text-emerald-300">${i18n.t('auth.forgot.success')}</p>`
           : '';
 
-        return `<div class="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-800 bg-slate-800 p-8 shadow-2xl">
+        return `<div class="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
           <div class="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
               <h2 class="text-3xl font-bold">${i18n.t('auth.login.title')}</h2>
@@ -493,7 +493,7 @@
               </ul>
             </div>
             <div class="space-y-4">
-              <form id="login-form" class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+              <form id="login-form" class="rounded-xl border border-slate-800 bg-slate-800 p-4">
                 <h3 class="mb-3 text-lg font-semibold">${i18n.t('auth.login.formTitle')}</h3>
                 <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.login.email')}
                   <input id="login-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
@@ -506,7 +506,7 @@
                 </div>
               </form>
 
-              <form id="forgot-password-form" class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+              <form id="forgot-password-form" class="rounded-xl border border-slate-800 bg-slate-800 p-4">
                 <h3 class="mb-2 text-sm font-semibold text-slate-200">${i18n.t('auth.forgot.title')}</h3>
                 <label class="block text-sm text-slate-300">${i18n.t('auth.forgot.emailLabel')}
                   <input id="forgot-password-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
