@@ -13,6 +13,8 @@ const { createOpaqueToken, hashOpaqueToken } = require('./auth/tokens');
 const { normalizeMetricPath, escapePrometheusLabel, serializeCounterMetric } = require('./app/observability');
 const { buildRequestLogHeaders, buildRequestLogBody } = require('./app/request-logging');
 const { startServerRuntime } = require('./app/bootstrap');
+const { registerCoreMiddlewareStack } = require('./app/middleware-stack');
+const { registerAuthRoutes } = require('./app/auth-routes');
 
 // Single Express app serving API + static frontend.
 const app = express();
@@ -661,62 +663,60 @@ const spaShellRouteRateLimitMiddleware = rateLimit({
   message: 'Too many page requests. Please slow down.'
 });
 
-app.use(requestRateLimitMiddleware);
-app.use(appWideDoSRateLimitMiddleware);
-
-app.use((req, res, next) => {
-  req.setTimeout(REQUEST_TIMEOUT_MS, () => {
-    if (!res.headersSent) {
-      res.status(408).json({ error: 'Request timeout.' });
-    }
-  });
-  next();
-});
-app.use(express.json({ limit: REQUEST_BODY_LIMIT }));
-app.use(express.urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
-app.use((req, res, next) => {
-  const startedAt = Date.now();
-  const normalizedPath = normalizeMetricPath(req.path);
-  emitStructuredLog('info', 'request.start', {
-    correlationId: req.correlationId,
-    method: req.method,
-    path: req.path,
-    ipHash: obfuscateSecurityKey(req.ip || req.socket?.remoteAddress || 'unknown'),
-    userAgent: req.header('user-agent') || null,
-    requestHeaders: buildRequestLogHeaders(req, REQUEST_LOG_HEADER_ALLOWLIST),
-    requestBody: buildRequestLogBody(req, { obfuscateSecurityKey })
-  });
-
-  res.on('finish', () => {
-    const durationMs = Date.now() - startedAt;
-    const method = String(req.method || 'GET').toUpperCase();
-    const statusCode = Number(res.statusCode || 0);
-    const requestKey = `${method}|${normalizedPath}|${statusCode}`;
-    incrementCounter(metricsState.requestsTotal, requestKey, 1);
-
-    const durationKey = `${method}|${normalizedPath}`;
-    observeDurationBuckets(metricsState.requestDurationBuckets, durationKey, durationMs);
-    incrementCounter(metricsState.requestDurationCount, durationKey, 1);
-    incrementCounter(metricsState.requestDurationSumMs, durationKey, durationMs);
-
-    if (statusCode >= 500) {
-      incrementCounter(metricsState.requestErrorsTotal, `${method}|${normalizedPath}`, 1);
-    }
-
-    emitStructuredLog('info', 'request.finish', {
+function createRequestLifecycleLogger() {
+  return (req, res, next) => {
+    const startedAt = Date.now();
+    const normalizedPath = normalizeMetricPath(req.path);
+    emitStructuredLog('info', 'request.start', {
       correlationId: req.correlationId,
       method: req.method,
       path: req.path,
-      statusCode,
-      durationMs
+      ipHash: obfuscateSecurityKey(req.ip || req.socket?.remoteAddress || 'unknown'),
+      userAgent: req.header('user-agent') || null,
+      requestHeaders: buildRequestLogHeaders(req, REQUEST_LOG_HEADER_ALLOWLIST),
+      requestBody: buildRequestLogBody(req, { obfuscateSecurityKey })
     });
-  });
 
-  next();
+    res.on('finish', () => {
+      const durationMs = Date.now() - startedAt;
+      const method = String(req.method || 'GET').toUpperCase();
+      const statusCode = Number(res.statusCode || 0);
+      const requestKey = `${method}|${normalizedPath}|${statusCode}`;
+      incrementCounter(metricsState.requestsTotal, requestKey, 1);
+
+      const durationKey = `${method}|${normalizedPath}`;
+      observeDurationBuckets(metricsState.requestDurationBuckets, durationKey, durationMs);
+      incrementCounter(metricsState.requestDurationCount, durationKey, 1);
+      incrementCounter(metricsState.requestDurationSumMs, durationKey, durationMs);
+
+      if (statusCode >= 500) {
+        incrementCounter(metricsState.requestErrorsTotal, `${method}|${normalizedPath}`, 1);
+      }
+
+      emitStructuredLog('info', 'request.finish', {
+        correlationId: req.correlationId,
+        method: req.method,
+        path: req.path,
+        statusCode,
+        durationMs
+      });
+    });
+
+    next();
+  };
+}
+
+registerCoreMiddlewareStack({
+  app,
+  requestRateLimitMiddleware,
+  appWideDoSRateLimitMiddleware,
+  requestTimeoutMs: REQUEST_TIMEOUT_MS,
+  requestBodyLimit: REQUEST_BODY_LIMIT,
+  createRequestLifecycleLogger,
+  attachAuthContext,
+  staticAssetsPath: express.static(path.join(__dirname, '..', 'public')),
+  adminAuditRouteRateLimitMiddleware
 });
-app.use(attachAuthContext);
-app.use(express.static(path.join(__dirname, '..', 'public')));
-app.use('/api/admin/audit', adminAuditRouteRateLimitMiddleware);
 
 const AUTH_SESSION_COOKIE = 'projectory_session';
 const AUTH_SESSION_TTL_HOURS = Number(process.env.AUTH_SESSION_TTL_HOURS || 12);
@@ -1688,7 +1688,7 @@ async function getPeopleCatalogLookups(client = pool) {
 }
 
 
-app.get('/api/auth/me', (req, res) => {
+const authMeHandler = (req, res) => {
   res.json({
     userId: req.auth.userId,
     email: req.auth.email,
@@ -1702,18 +1702,18 @@ app.get('/api/auth/me', (req, res) => {
     isScopedTeammate: Boolean(req.auth.isScopedTeammate),
     authMode: getAuthMode()
   });
-});
+};
 
-app.get('/api/auth/bootstrap-status', async (_req, res) => {
+const authBootstrapStatusHandler = async (_req, res) => {
   try {
     const registrationOpen = await isInitialAdminRegistrationOpen();
     return res.json({ registrationOpen });
   } catch (error) {
     return handleDbError(res, error);
   }
-});
+};
 
-app.post('/api/auth/register-initial-admin', async (req, res) => {
+const authRegisterInitialAdminHandler = async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   const displayName = String(req.body?.displayName || '').trim();
   const password = String(req.body?.password || '');
@@ -1794,9 +1794,9 @@ app.post('/api/auth/register-initial-admin', async (req, res) => {
   } finally {
     if (client) client.release();
   }
-});
+};
 
-app.post('/api/auth/login', async (req, res) => {
+const authLoginHandler = async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {
     return badRequest(res, 'email and password are required.');
@@ -1869,9 +1869,9 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) {
     return handleDbError(res, error);
   }
-});
+};
 
-app.post('/api/auth/logout', async (req, res) => {
+const authLogoutHandler = async (req, res) => {
   try {
     const sessionId = parseCookieHeader(req.headers.cookie).get(AUTH_SESSION_COOKIE);
     if (sessionId) {
@@ -1887,9 +1887,9 @@ app.post('/api/auth/logout', async (req, res) => {
   } catch (error) {
     return handleDbError(res, error);
   }
-});
+};
 
-app.post('/api/auth/forgot-password', forgotPasswordRouteRateLimitMiddleware, async (req, res) => {
+const authForgotPasswordHandler = async (req, res) => {
   const email = String(req.body?.email || '').trim();
   if (!email) {
     return badRequest(res, 'email is required.');
@@ -1942,9 +1942,9 @@ app.post('/api/auth/forgot-password', forgotPasswordRouteRateLimitMiddleware, as
   } catch (error) {
     return handleDbError(res, error);
   }
-});
+};
 
-app.post('/api/auth/reset-password', async (req, res) => {
+const authResetPasswordHandler = async (req, res) => {
   const token = String(req.body?.token || '').trim();
   const password = String(req.body?.password || '');
 
@@ -2004,10 +2004,10 @@ app.post('/api/auth/reset-password', async (req, res) => {
   } finally {
     if (client) client.release();
   }
-});
+};
 
 
-app.post('/api/auth/invite-preview', async (req, res) => {
+const authInvitePreviewHandler = async (req, res) => {
   const token = String(req.body?.token || '').trim();
   if (!token) {
     return badRequest(res, 'token is required.');
@@ -2042,9 +2042,9 @@ app.post('/api/auth/invite-preview', async (req, res) => {
   } catch (error) {
     return handleDbError(res, error);
   }
-});
+};
 
-app.post('/api/auth/accept-invite', async (req, res) => {
+const authAcceptInviteHandler = async (req, res) => {
   const token = String(req.body?.token || '').trim();
   const password = String(req.body?.password || '');
 
@@ -2131,8 +2131,24 @@ app.post('/api/auth/accept-invite', async (req, res) => {
   } finally {
     if (client) client.release();
   }
-});
+};
 
+
+registerAuthRoutes({
+  app,
+  forgotPasswordRouteRateLimitMiddleware,
+  handlers: {
+    me: authMeHandler,
+    bootstrapStatus: authBootstrapStatusHandler,
+    registerInitialAdmin: authRegisterInitialAdminHandler,
+    login: authLoginHandler,
+    logout: authLogoutHandler,
+    forgotPassword: authForgotPasswordHandler,
+    resetPassword: authResetPasswordHandler,
+    invitePreview: authInvitePreviewHandler,
+    acceptInvite: authAcceptInviteHandler
+  }
+});
 
 app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
   try {
