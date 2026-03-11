@@ -607,6 +607,20 @@ const forgotPasswordRouteRateLimitMiddleware = rateLimit({
   }
 });
 
+const loginRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'auth-login',
+  max: Number(process.env.AUTH_LOGIN_RATE_LIMIT_MAX || 30),
+  windowMs: Number(process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS || 60000),
+  message: 'Too many login attempts. Please wait before trying again.'
+});
+
+const registerInitialAdminRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'auth-register-initial-admin',
+  max: Number(process.env.AUTH_REGISTER_INITIAL_ADMIN_RATE_LIMIT_MAX || 5),
+  windowMs: Number(process.env.AUTH_REGISTER_INITIAL_ADMIN_RATE_LIMIT_WINDOW_MS || 60000),
+  message: 'Too many initial admin registration attempts. Please wait before trying again.'
+});
+
 
 const configurationRouteRateLimitMiddleware = rateLimit({
   keyPrefix: 'admin-configuration',
@@ -2136,6 +2150,8 @@ const authAcceptInviteHandler = async (req, res) => {
 
 registerAuthRoutes({
   app,
+  loginRouteRateLimitMiddleware,
+  registerInitialAdminRouteRateLimitMiddleware,
   forgotPasswordRouteRateLimitMiddleware,
   handlers: {
     me: authMeHandler,

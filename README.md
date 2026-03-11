@@ -199,6 +199,7 @@ Rate limiting now uses a shared Postgres-backed bucket table (`rate_limit_bucket
 Operational tuning:
 - `REQUEST_RATE_LIMIT_MAX` and `REQUEST_RATE_LIMIT_WINDOW_MS` control global request throttling.
 - Route-specific windows remain configurable (for example `AUTH_FORGOT_PASSWORD_RATE_LIMIT_*`, `SPA_SHELL_RATE_LIMIT_*`).
+- Sensitive auth routes also support dedicated limiters (`AUTH_LOGIN_RATE_LIMIT_*`, `AUTH_REGISTER_INITIAL_ADMIN_RATE_LIMIT_*`) to reduce brute-force and bootstrap abuse risk.
 - `RATE_LIMIT_DISTRIBUTED_RETENTION_MS` controls bucket retention/cleanup horizon for shared buckets.
 
 If shared bucket writes are temporarily unavailable, the app falls back to process-local buckets to preserve protection and retry headers.
