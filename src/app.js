@@ -623,6 +623,13 @@ const exportRouteRateLimitMiddleware = rateLimit({
   message: 'Too many export requests. Please wait before trying again.'
 });
 
+const importRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'import-scoped',
+  max: Number(process.env.IMPORT_RATE_LIMIT_MAX || 10),
+  windowMs: Number(process.env.IMPORT_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+  message: 'Too many import requests. Please wait before trying again.'
+});
+
 const adminAuditRouteRateLimitMiddleware = rateLimit({
   keyPrefix: 'admin-audit',
   max: Number(process.env.ADMIN_AUDIT_RATE_LIMIT_MAX || 30),
@@ -2806,7 +2813,7 @@ app.post('/api/import/:scope/preview', requirePermission(PERMISSIONS.IMPORT_RUN)
   }
 });
 
-app.post('/api/import/:scope', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+app.post('/api/import/:scope', requirePermission(PERMISSIONS.IMPORT_RUN), importRouteRateLimitMiddleware, async (req, res) => {
   const scope = normalizePortabilityScope(req.params.scope);
   if (!scope) return badRequest(res, 'Unsupported import scope.');
   const data = req.body?.data;

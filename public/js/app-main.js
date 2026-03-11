@@ -2293,15 +2293,16 @@ function filteredPeople() {
       }
 
       const portabilityScopes = [
-        { key: 'people', label: 'People' },
-        { key: 'clients', label: 'Clients' },
-        { key: 'projects', label: 'Projects (including assignments)' },
-        { key: 'configuration', label: 'Configuration' },
-        { key: 'access-audit', label: 'Access & audit' }
+        { key: 'people', labelKey: 'portability.scope.people' },
+        { key: 'clients', labelKey: 'portability.scope.clients' },
+        { key: 'projects', labelKey: 'portability.scope.projects' },
+        { key: 'configuration', labelKey: 'portability.scope.configuration' },
+        { key: 'access-audit', labelKey: 'portability.scope.accessAudit' }
       ];
 
       function getScopeLabel(scopeKey) {
-        return portabilityScopes.find((scope) => scope.key === scopeKey)?.label || scopeKey;
+        const found = portabilityScopes.find((scope) => scope.key === scopeKey);
+        return found ? i18n.t(found.labelKey) : scopeKey;
       }
 
       async function downloadExport(scope, format) {
@@ -2343,7 +2344,7 @@ function filteredPeople() {
         modal.classList.toggle('flex', state.exportModalOpen);
         const list = document.getElementById('export-scope-list');
         if (!list) return;
-        list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-slate-700 bg-slate-950/40 p-2"><span class="text-sm text-slate-200">${scope.label}</span><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-export-scope="${scope.key}" data-export-format="json">Export JSON</button><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-export-scope="${scope.key}" data-export-format="csv">Export CSV</button></div>`).join('');
+        list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-slate-700 bg-slate-950/40 p-2"><span class="text-sm text-slate-200">${i18n.t(scope.labelKey)}</span><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-export-scope="${scope.key}" data-export-format="json">${i18n.t('portability.exportJson')}</button><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-export-scope="${scope.key}" data-export-format="csv">${i18n.t('portability.exportCsv')}</button></div>`).join('');
       }
 
       function closeExportModal() {
@@ -2363,7 +2364,7 @@ function filteredPeople() {
 
         const list = document.getElementById('import-scope-list');
         if (list) {
-          list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-slate-700 bg-slate-950/40 p-2"><span class="text-sm text-slate-200">${scope.label}</span><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-import-scope="${scope.key}" data-import-format="json">Import JSON</button><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-import-scope="${scope.key}" data-import-format="csv">Import CSV</button></div>`).join('');
+          list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-slate-700 bg-slate-950/40 p-2"><span class="text-sm text-slate-200">${i18n.t(scope.labelKey)}</span><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-import-scope="${scope.key}" data-import-format="json">${i18n.t('portability.importJson')}</button><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-import-scope="${scope.key}" data-import-format="csv">${i18n.t('portability.importCsv')}</button></div>`).join('');
         }
 
         const preview = document.getElementById('import-preview');
@@ -2376,7 +2377,7 @@ function filteredPeople() {
 
         preview?.classList.remove('hidden');
         const previewScope = document.getElementById('import-preview-scope');
-        if (previewScope) previewScope.textContent = `Selected cluster: ${getScopeLabel(state.importScope)} (${String(state.importFormat || '').toUpperCase()})`;
+        if (previewScope) previewScope.textContent = i18n.t('portability.selectedCluster', { cluster: getScopeLabel(state.importScope), format: String(state.importFormat || '').toUpperCase() });
         const summaryList = document.getElementById('import-preview-summary');
         if (summaryList) {
           const items = Object.entries(state.importPreviewData.summary || {});
@@ -2407,7 +2408,7 @@ function filteredPeople() {
         const format = String(state.importFormat || '').toLowerCase();
         const scope = String(state.importScope || '').toLowerCase();
         if (!scope) {
-          throw new Error('Please choose an import cluster first.');
+          throw new Error(i18n.t('portability.import.chooseCluster'));
         }
 
         if (format === 'json') {
@@ -2433,14 +2434,14 @@ function filteredPeople() {
 
       async function confirmImport() {
         if (!state.importPreviewData?.data) {
-          showMessage('Please choose a valid JSON or CSV file first.', 'error');
+          showMessage(i18n.t('portability.import.chooseFile'), 'error');
           return;
         }
 
         await api(`/api/import/${state.importScope}`, { method: 'POST', body: JSON.stringify({ data: state.importPreviewData.data }) });
         await loadData({ forceAppData: true });
         closeImportModal();
-        showMessage('Import completed.');
+        showMessage(i18n.t('portability.import.completed'));
       }
 
       function renderProjectStatusModal() {
@@ -2697,7 +2698,7 @@ function filteredPeople() {
           if (!exportAction) return;
           try {
             await downloadExport(exportAction.dataset.exportScope, exportAction.dataset.exportFormat);
-            showMessage('Export completed.');
+            showMessage(i18n.t('portability.export.completed'));
           } catch (error) {
             showMessage(error.message, 'error');
           }
