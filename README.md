@@ -151,6 +151,20 @@ Additional auth env defaults:
 - `AUTH_MODE` defaults to `session`.
 - `AUTH_DEFAULT_ROLE` is only used when local header simulation is enabled; otherwise requests default to `viewer` until session auth is established.
 
+Password policy defaults are now stronger than length-only and are configurable for phased rollout:
+- `PASSWORD_MIN_LENGTH` (default `12`)
+- `PASSWORD_MIN_UNIQUE_CHARS` (default `8`)
+- `PASSWORD_MIN_CHARACTER_CLASSES` (default `2` across lowercase/uppercase/number/symbol buckets)
+- `PASSWORD_MAX_REPEATED_CHAR_RUN` (default `3`)
+- `PASSWORD_ENFORCE_WEAK_DENYLIST` (default `true`)
+
+Recommended non-local production baseline:
+- `PASSWORD_MIN_LENGTH=14`
+- `PASSWORD_MIN_UNIQUE_CHARS=10`
+- `PASSWORD_MIN_CHARACTER_CLASSES=3`
+- `PASSWORD_MAX_REPEATED_CHAR_RUN=2`
+- `PASSWORD_ENFORCE_WEAK_DENYLIST=true`
+
 Audit log retention can be tuned with `AUDIT_LOG_RETENTION_MONTHS` (defaults to `6`).
 
 Password reset journey is available via `POST /api/auth/forgot-password` (request e-mail link) and `POST /api/auth/reset-password` (consume token), with reset landing route at `/reset-password?token=...`.
