@@ -222,7 +222,7 @@ For QA stress runs against hardcoded text and truncation issues, use pseudo loca
 - Architecture decisions are tracked in `docs/adr/`.
 - Use `docs/adr/0000-template.md` for new records and see `docs/adr/README.md` for required scope (auth/data/infra).
 - Contributor expectations and boundary rules are documented in `CONTRIBUTING.md`.
-- CI runs lightweight boundary checks via `npm run lint:ci` to prevent module boundary drift.
+- CI runs ESLint static analysis as the primary lint gate via `npm run lint:ci`, with custom boundary checks layered in to prevent module boundary drift.
 
 ## Migrations
 

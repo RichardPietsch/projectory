@@ -20,7 +20,7 @@ Projectory uses domain module boundaries (`src/modules/<domain>/...`).
 - Module `routes.js` files should orchestrate service/repo calls and avoid direct SQL (`pool.query(...)`) when a repo exists.
 - Shared cross-cutting concerns remain in `src/app.js` (auth overlay, error handling helpers, middleware composition).
 
-CI enforces lightweight boundary checks through `npm run lint:ci`.
+CI enforces ESLint static analysis (primary) plus boundary checks through `npm run lint:ci`.
 
 ## Pull request checklist
 

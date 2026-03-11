@@ -89,6 +89,7 @@ This keeps tests repeatable and makes failures actionable (API or schema regress
 ## 5) CI expectations
 
 - Pull request CI keeps fast checks enabled (`npm run lint:ci`, `npm run format:check`, `npm test`) for rapid feedback.
+- `npm run lint:ci` is a unified lint workflow: ESLint static analysis (primary quality gate) plus architecture boundary checks.
 - CI dependency installs use `npm ci` in Node jobs to enforce lockfile determinism and reduce supply-chain variance between runs.
 - Pushes to `main` and `release/*` have an additional **mandatory** `release-db-contract-gate` job that runs:
   - `npm run migrate`

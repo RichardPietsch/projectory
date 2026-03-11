@@ -86,7 +86,7 @@ function walk(dir) {
 walk(ROOT);
 
 if (lintIssues.length) {
-  console.error('Lint checks failed.');
+  console.error('Boundary lint checks failed.');
   for (const issue of lintIssues) console.error(`- ${issue}`);
   console.error('\nFix instructions:');
   console.error('1) Remove debugger statements from JS files.');
@@ -96,4 +96,4 @@ if (lintIssues.length) {
   process.exit(1);
 }
 
-console.log('Lint checks passed (debug/conflict + architecture boundary checks).');
+console.log('Boundary lint checks passed (merge/conflict + architecture boundary checks).');
