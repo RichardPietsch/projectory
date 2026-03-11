@@ -621,6 +621,13 @@ const registerInitialAdminRouteRateLimitMiddleware = rateLimit({
   message: 'Too many initial admin registration attempts. Please wait before trying again.'
 });
 
+const bootstrapStatusRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'auth-bootstrap-status',
+  max: Number(process.env.AUTH_BOOTSTRAP_STATUS_RATE_LIMIT_MAX || 60),
+  windowMs: Number(process.env.AUTH_BOOTSTRAP_STATUS_RATE_LIMIT_WINDOW_MS || 60000),
+  message: 'Too many bootstrap status requests. Please wait before trying again.'
+});
+
 
 const configurationRouteRateLimitMiddleware = rateLimit({
   keyPrefix: 'admin-configuration',
@@ -2152,6 +2159,7 @@ registerAuthRoutes({
   app,
   loginRouteRateLimitMiddleware,
   registerInitialAdminRouteRateLimitMiddleware,
+  bootstrapStatusRouteRateLimitMiddleware,
   forgotPasswordRouteRateLimitMiddleware,
   handlers: {
     me: authMeHandler,

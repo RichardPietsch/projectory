@@ -15,6 +15,7 @@ test('registerAuthRoutes wires auth endpoints with expected middleware placement
     app,
     loginRouteRateLimitMiddleware: noop,
     registerInitialAdminRouteRateLimitMiddleware: noop,
+    bootstrapStatusRouteRateLimitMiddleware: noop,
     forgotPasswordRouteRateLimitMiddleware: noop,
     handlers: {
       me: noop,
@@ -31,7 +32,7 @@ test('registerAuthRoutes wires auth endpoints with expected middleware placement
 
   assert.deepEqual(calls.map((c) => `${c.method}:${c.path}:${c.handlers}`), [
     'get:/api/auth/me:1',
-    'get:/api/auth/bootstrap-status:1',
+    'get:/api/auth/bootstrap-status:2',
     'post:/api/auth/register-initial-admin:2',
     'post:/api/auth/login:2',
     'post:/api/auth/logout:1',
