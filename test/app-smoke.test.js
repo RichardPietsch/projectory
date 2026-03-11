@@ -560,6 +560,8 @@ test('GET /metrics exposes core golden-signal and auth/db metrics', async () => 
     assert.equal(text.includes('projectory_auth_failures_total{type="auth_login_failed"}'), true);
     assert.equal(text.includes('projectory_db_query_duration_ms_count'), true);
     assert.equal(text.includes('projectory_db_query_errors_total'), true);
+    assert.equal(text.includes('projectory_auth_lifecycle_cleanup_runs_total'), true);
+    assert.equal(text.includes('projectory_auth_lifecycle_cleanup_deleted_rows_total'), true);
   } finally {
     server.close();
     pool.query = originalQuery;

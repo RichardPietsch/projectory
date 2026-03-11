@@ -66,7 +66,9 @@ const metricsState = {
   dbQueryDurationBuckets: new Map(),
   dbQueryDurationCount: 0,
   dbQueryDurationSumMs: 0,
-  dbQueryErrorsTotal: 0
+  dbQueryErrorsTotal: 0,
+  authLifecycleCleanupRunsTotal: new Map(),
+  authLifecycleCleanupDeletedRowsTotal: new Map()
 };
 
 const SENSITIVE_LOG_KEYS = new Set([
@@ -282,6 +284,20 @@ function renderPrometheusMetrics() {
   sections.push(dbDuration.join('\n'));
 
   sections.push(`# HELP projectory_db_query_errors_total Database query failures.\n# TYPE projectory_db_query_errors_total counter\nprojectory_db_query_errors_total ${metricsState.dbQueryErrorsTotal}`);
+
+  sections.push(serializeCounterMetric(
+    'projectory_auth_lifecycle_cleanup_runs_total',
+    'Auth lifecycle cleanup runs by outcome.',
+    metricsState.authLifecycleCleanupRunsTotal,
+    (key) => `outcome="${escapePrometheusLabel(key)}"`
+  ));
+
+  sections.push(serializeCounterMetric(
+    'projectory_auth_lifecycle_cleanup_deleted_rows_total',
+    'Rows deleted by auth lifecycle cleanup, partitioned by artifact kind.',
+    metricsState.authLifecycleCleanupDeletedRowsTotal,
+    (key) => `kind="${escapePrometheusLabel(key)}"`
+  ));
 
   return sections.join('\n\n') + '\n';
 }
@@ -712,6 +728,10 @@ const AUTH_SESSION_COOKIE = 'projectory_session';
 const AUTH_SESSION_TTL_HOURS = Number(process.env.AUTH_SESSION_TTL_HOURS || 12);
 const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES || 30);
 const AUDIT_LOG_RETENTION_MONTHS = Number(process.env.AUDIT_LOG_RETENTION_MONTHS || 6);
+const AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS = Number(process.env.AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS || 15 * 60 * 1000);
+const AUTH_SESSION_CLEANUP_RETENTION_HOURS = Number(process.env.AUTH_SESSION_CLEANUP_RETENTION_HOURS || 24);
+const PASSWORD_RESET_TOKEN_CLEANUP_RETENTION_HOURS = Number(process.env.PASSWORD_RESET_TOKEN_CLEANUP_RETENTION_HOURS || 168);
+const USER_INVITE_CLEANUP_RETENTION_HOURS = Number(process.env.USER_INVITE_CLEANUP_RETENTION_HOURS || 168);
 
 function validateRuntimeEnvironment() {
   if (isLocalDevRuntime()) {
@@ -822,6 +842,45 @@ async function cleanupAuditLogRetention() {
      WHERE created_at < NOW() - ($1::text || ' months')::interval`,
     [String(months)]
   );
+}
+
+function sanitizeRetentionHours(value, fallbackHours) {
+  if (Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  return fallbackHours;
+}
+
+async function cleanupAuthLifecycleArtifacts() {
+  const sessionRetentionHours = sanitizeRetentionHours(AUTH_SESSION_CLEANUP_RETENTION_HOURS, 24);
+  const passwordResetRetentionHours = sanitizeRetentionHours(PASSWORD_RESET_TOKEN_CLEANUP_RETENTION_HOURS, 168);
+  const userInviteRetentionHours = sanitizeRetentionHours(USER_INVITE_CLEANUP_RETENTION_HOURS, 168);
+
+  const [sessionResult, passwordResetResult, userInviteResult] = await Promise.all([
+    pool.query(
+      `DELETE FROM auth_sessions
+       WHERE expires_at < NOW() - (($1::numeric) * INTERVAL '1 hour')
+          OR (revoked_at IS NOT NULL AND revoked_at < NOW() - (($1::numeric) * INTERVAL '1 hour'))`,
+      [sessionRetentionHours]
+    ),
+    pool.query(
+      `DELETE FROM password_reset_tokens
+       WHERE expires_at < NOW() - (($1::numeric) * INTERVAL '1 hour')
+          OR (used_at IS NOT NULL AND used_at < NOW() - (($1::numeric) * INTERVAL '1 hour'))`,
+      [passwordResetRetentionHours]
+    ),
+    pool.query(
+      `DELETE FROM user_invites
+       WHERE expires_at < NOW() - (($1::numeric) * INTERVAL '1 hour')
+          OR (accepted_at IS NOT NULL AND accepted_at < NOW() - (($1::numeric) * INTERVAL '1 hour'))`,
+      [userInviteRetentionHours]
+    )
+  ]);
+
+  incrementCounter(metricsState.authLifecycleCleanupDeletedRowsTotal, 'auth_sessions', Number(sessionResult.rowCount || 0));
+  incrementCounter(metricsState.authLifecycleCleanupDeletedRowsTotal, 'password_reset_tokens', Number(passwordResetResult.rowCount || 0));
+  incrementCounter(metricsState.authLifecycleCleanupDeletedRowsTotal, 'user_invites', Number(userInviteResult.rowCount || 0));
+  incrementCounter(metricsState.authLifecycleCleanupRunsTotal, 'success', 1);
 }
 
 function parseCookieHeader(rawCookieHeader) {
@@ -3763,6 +3822,27 @@ async function startServer() {
     console.warn('Startup readiness validation skipped optional maintenance.', error.message);
   }
 
+  try {
+    await cleanupAuthLifecycleArtifacts();
+  } catch (error) {
+    incrementCounter(metricsState.authLifecycleCleanupRunsTotal, 'failure', 1);
+    console.warn('Startup auth lifecycle cleanup failed.', error.message);
+  }
+
+  const cleanupIntervalMs = Number.isFinite(AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS) && AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS > 0
+    ? AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS
+    : 15 * 60 * 1000;
+
+  const cleanupInterval = setInterval(async () => {
+    try {
+      await cleanupAuthLifecycleArtifacts();
+    } catch (error) {
+      incrementCounter(metricsState.authLifecycleCleanupRunsTotal, 'failure', 1);
+      console.warn('Scheduled auth lifecycle cleanup failed.', error.message);
+    }
+  }, cleanupIntervalMs);
+  cleanupInterval.unref();
+
   app.listen(port, () => {
     console.log(`Projectory app listening on port ${port}`);
   });
@@ -3777,5 +3857,6 @@ module.exports = {
   validateRuntimeEnvironment,
   clearRequestRateLimitBuckets,
   clearAuthAttemptBuckets,
-  clearMetrics
+  clearMetrics,
+  cleanupAuthLifecycleArtifacts
 };
