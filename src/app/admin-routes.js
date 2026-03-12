@@ -1,7 +1,7 @@
 function registerAdminRoutes(deps) {
   const { app, requirePermission, PERMISSIONS, pool, handleDbError, badRequest, isValidEmail, getRoleIdByName, getAdminUserIds, adminUserManagementRouteRateLimitMiddleware, createOpaqueToken, hashOpaqueToken, replaceUserProjectScope, sendSmtpTestEmail, adminAuditRouteRateLimitMiddleware, createUserInvite, resolveSmtpSettingsRow, sendSmtpEmail, buildInviteEmailBody, resolveBootstrapAdminId, redactSmtpSettings, encryptSmtpPassword } = deps;
 
-app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
+app.get('/api/admin/users', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT u.id,
