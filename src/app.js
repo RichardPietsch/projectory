@@ -677,6 +677,13 @@ const adminAuditRouteRateLimitMiddleware = rateLimit({
   message: 'Too many audit log requests. Please wait before trying again.'
 });
 
+const adminUserManagementRouteRateLimitMiddleware = rateLimit({
+  keyPrefix: 'admin-user-management',
+  max: Number(process.env.ADMIN_USER_MANAGEMENT_RATE_LIMIT_MAX || 60),
+  windowMs: Number(process.env.ADMIN_USER_MANAGEMENT_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+  message: 'Too many admin user management requests. Please wait before trying again.'
+});
+
 const spaShellRouteRateLimitMiddleware = rateLimit({
   keyPrefix: 'spa-shell',
   max: Number(process.env.SPA_SHELL_RATE_LIMIT_MAX || 240),
@@ -2249,7 +2256,7 @@ app.get('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (
   }
 });
 
-app.post('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.post('/api/admin/users', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const { email, displayName, role, personId, isActive } = req.body || {};
 
   if (!isValidEmail(email)) {
@@ -2285,7 +2292,7 @@ app.post('/api/admin/users', requirePermission(PERMISSIONS.ADMIN_ACCESS), async 
   }
 });
 
-app.put('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.put('/api/admin/users/:id', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const { email, displayName, role, personId, isActive } = req.body || {};
   if (!displayName || !String(displayName).trim()) {
     return badRequest(res, 'displayName is required.');
@@ -2375,7 +2382,7 @@ app.put('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), asy
   }
 });
 
-app.delete('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.delete('/api/admin/users/:id', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
     if (req.auth?.userId && Number(req.params.id) === Number(req.auth.userId)) {
       return res.status(409).json({ error: 'You cannot delete your own account.' });
