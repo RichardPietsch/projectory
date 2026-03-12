@@ -1,0 +1,40 @@
+services:
+  web:
+    build:
+      context: ${REPO_GIT_URL:?Set REPO_GIT_URL to your git URL with ref, e.g. https://github.com/owner/repo.git#main}
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-production}
+      AUTH_LOCAL_DEV: "false"
+      AUTH_MODE: session
+      AUTH_ALLOW_HEADER_SIMULATION: "false"
+      DB_HOST: ${DB_HOST:?Set DB_HOST for non-local deployment}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:?Set DB_NAME for non-local deployment}
+      DB_USER: ${DB_USER:?Set DB_USER for non-local deployment}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD for non-local deployment}
+      SMTP_PASSWORD_ENCRYPTION_KEY: ${SMTP_PASSWORD_ENCRYPTION_KEY:?Set SMTP_PASSWORD_ENCRYPTION_KEY (>=32 chars) for non-local deployment}
+    command: sh -c "npm run migrate && npm start"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    build:
+      context: ${REPO_GIT_URL:?Set REPO_GIT_URL to your git URL with ref, e.g. https://github.com/owner/repo.git#main}:db
+    environment:
+      POSTGRES_DB: ${DB_NAME:?Set DB_NAME for non-local deployment}
+      POSTGRES_USER: ${DB_USER:?Set DB_USER for non-local deployment}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD for non-local deployment}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:?Set DB_USER for non-local deployment} -d ${DB_NAME:?Set DB_NAME for non-local deployment}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
