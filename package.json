@@ -1,0 +1,26 @@
+{
+  "name": "projectory-hello-world",
+  "version": "1.0.0",
+  "description": "Dockerized Hello World web app with Express, Tailwind frontend, and Postgres",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "AUTH_LOCAL_DEV=true AUTH_MODE=hybrid AUTH_ALLOW_HEADER_SIMULATION=true AUTH_DEFAULT_ROLE=viewer node --test",
+    "check:syntax": "node --check src/server.js && node --check src/app.js && node --check src/auth/permissions.js && node --check src/auth/middleware.js && node --check src/modules/index.js && node --check src/modules/people/routes.js && node --check src/modules/people/service.js && node --check src/modules/people/repo.js && node --check src/modules/people/schema.js && node --check src/modules/clients/routes.js && node --check src/modules/clients/service.js && node --check src/modules/clients/repo.js && node --check src/modules/clients/schema.js && node --check src/modules/onboarding/routes.js && node --check src/modules/onboarding/service.js && node --check src/modules/onboarding/repo.js && node --check src/modules/onboarding/schema.js && node --check src/modules/projects/routes.js && node --check src/modules/projects/service.js && node --check src/modules/projects/repo.js && node --check scripts/run-migrations.js && node --check scripts/check-locale-keys.js && node --check public/js/api.js && node --check public/js/state.js && node --check public/js/views-people.js && node --check public/js/locales/en.js && node --check public/js/locales/de.js && node --check public/js/locales/pseudo.js && node --check public/js/i18n.js && node --check public/js/onboarding-tour.js && node --check public/js/views-clients.js && node --check public/js/views-admin-projects.js && node --check public/js/app-main.js",
+    "migrate": "node scripts/run-migrations.js",
+    "migrate:status": "node scripts/run-migrations.js --status",
+    "lint:ci": "npm run lint:eslint && npm run lint:boundaries",
+    "format:check": "node scripts/ci-format-check.js",
+    "locale:check": "node scripts/check-locale-keys.js && npm run frontend:i18n:check",
+    "lint:eslint": "eslint src scripts test test-utils public/js --max-warnings 0",
+    "lint:boundaries": "node scripts/ci-lint-check.js && npm run test:architecture",
+    "test:architecture": "node scripts/architecture-fitness-check.js",
+    "ops:readiness-check": "node scripts/check-operational-readiness.js",
+    "frontend:i18n:check": "node scripts/check-frontend-i18n.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "express-rate-limit": "^7.4.0"
+  }
+}
