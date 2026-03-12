@@ -4,6 +4,7 @@ const net = require('node:net');
 const tls = require('node:tls');
 const crypto = require('node:crypto');
 const { Pool } = require('pg');
+const expressRateLimit = require('express-rate-limit');
 const { registerModuleRoutes } = require('./modules');
 const { attachAuthContext, requirePermission } = require('./auth/middleware');
 const { PERMISSIONS, getPermissionsForRole } = require('./auth/permissions');
@@ -677,11 +678,12 @@ const adminAuditRouteRateLimitMiddleware = rateLimit({
   message: 'Too many audit log requests. Please wait before trying again.'
 });
 
-const adminUserManagementRouteRateLimitMiddleware = rateLimit({
-  keyPrefix: 'admin-user-management',
-  max: Number(process.env.ADMIN_USER_MANAGEMENT_RATE_LIMIT_MAX || 60),
+const adminUserManagementRouteRateLimitMiddleware = expressRateLimit({
   windowMs: Number(process.env.ADMIN_USER_MANAGEMENT_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
-  message: 'Too many admin user management requests. Please wait before trying again.'
+  max: Number(process.env.ADMIN_USER_MANAGEMENT_RATE_LIMIT_MAX || 60),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many admin user management requests. Please wait before trying again.' }
 });
 
 const spaShellRouteRateLimitMiddleware = rateLimit({
