@@ -2297,27 +2297,65 @@ app.put('/api/admin/users/:id', requirePermission(PERMISSIONS.ADMIN_ACCESS), asy
 
   let client = null;
   try {
-    const selectedRole = await getRoleIdByName(role || 'viewer');
+    client = await pool.connect();
+    await client.query('BEGIN');
+
+    const existingLookup = await client.query(
+      `SELECT u.id,
+              u.person_id,
+              u.is_active,
+              COALESCE(ARRAY_AGG(DISTINCT LOWER(r.name)) FILTER (WHERE r.name IS NOT NULL), ARRAY[]::text[]) AS roles
+       FROM users u
+       LEFT JOIN user_roles ur ON ur.user_id = u.id
+       LEFT JOIN roles r ON r.id = ur.role_id
+       WHERE u.id = $1
+       GROUP BY u.id, u.person_id, u.is_active`,
+      [req.params.id]
+    );
+
+    if (existingLookup.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const existingUser = existingLookup.rows[0];
+    const existingRoles = existingUser.roles || [];
+    const isCurrentlyAdmin = existingRoles.includes('admin');
+    const nextRoleName = role === undefined ? (existingRoles[0] || 'viewer') : String(role).trim().toLowerCase();
+
+    const selectedRole = await getRoleIdByName(nextRoleName);
     if (!selectedRole) {
+      await client.query('ROLLBACK');
       return badRequest(res, 'role must reference an existing role.');
     }
 
-    client = await pool.connect();
-    await client.query('BEGIN');
-    const updated = await client.query(
+    const isDemotingFromAdmin = isCurrentlyAdmin && String(selectedRole.name || '').toLowerCase() !== 'admin';
+    if (isDemotingFromAdmin) {
+      const adminCountResult = await client.query(
+        `SELECT COUNT(DISTINCT ur.user_id) AS admin_count
+         FROM user_roles ur
+         JOIN roles r ON r.id = ur.role_id
+         WHERE LOWER(r.name) = 'admin'`
+      );
+      const adminCount = Number(adminCountResult.rows[0]?.admin_count || 0);
+      if (adminCount <= 1) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'At least one admin must remain. Add another admin before changing this role.' });
+      }
+    }
+
+    const resolvedPersonId = personId === undefined ? existingUser.person_id : (personId || null);
+    const resolvedIsActive = isActive === undefined ? existingUser.is_active : (isActive !== false);
+
+    await client.query(
       `UPDATE users
        SET email = $1,
            display_name = $2,
            person_id = $3,
            is_active = $4
        WHERE id = $5`,
-      [String(email).trim().toLowerCase(), String(displayName).trim(), personId || null, isActive !== false, req.params.id]
+      [String(email).trim().toLowerCase(), String(displayName).trim(), resolvedPersonId, resolvedIsActive, req.params.id]
     );
-
-    if (updated.rowCount === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'User not found.' });
-    }
 
     await client.query(`DELETE FROM user_roles WHERE user_id = $1`, [req.params.id]);
     await client.query(

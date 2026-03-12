@@ -453,7 +453,7 @@
           return `<div class="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
             <h2 class="text-3xl font-bold">${i18n.t('auth.register.title')}</h2>
             <p class="mt-2 text-slate-300">${i18n.t('auth.register.subtitle')}</p>
-            <div class="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">Complete all 4 fields below to create the first administrator account.</div>
+            <div class="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">${i18n.t('auth.register.requirementsHint')}</div>
             <form id="initial-register-form" class="mt-4 rounded-xl border border-slate-800 bg-slate-800 p-4">
               <div class="grid gap-3 md:grid-cols-2">
                 <label class="block text-sm text-slate-300">${i18n.t('auth.register.displayName')}
@@ -525,20 +525,20 @@
 
       function inviteFlowView() {
         const profile = state.inviteFlow.profile || {};
-        const title = profile.displayName ? `Welcome, ${profile.displayName}` : 'Welcome to Projectory';
-        const subtitle = profile.email ? `Set your password to activate ${profile.email}.` : 'Set your password to activate your account.';
-        const busyLabel = state.inviteFlow.submitting ? 'Setting password…' : 'Set password and continue';
+        const title = profile.displayName ? i18n.t('auth.invite.welcomeNamed', { name: profile.displayName }) : i18n.t('auth.invite.welcome');
+        const subtitle = profile.email ? i18n.t('auth.invite.subtitleNamed', { email: profile.email }) : i18n.t('auth.invite.subtitle');
+        const busyLabel = state.inviteFlow.submitting ? i18n.t('auth.invite.submitBusy') : i18n.t('auth.invite.submit');
         const errorHtml = state.inviteFlow.error ? `<p class="mt-3 text-sm text-rose-300">${state.inviteFlow.error}</p>` : '';
 
         return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-800 p-8 shadow-2xl">
           <h2 class="text-3xl font-bold">${title}</h2>
           <p class="mt-2 text-slate-300">${subtitle}</p>
-          <p class="mt-1 text-xs text-slate-500">Invite token: ${state.inviteFlow.token ? 'loaded' : 'missing'}</p>
+          <p class="mt-1 text-xs text-slate-500">${i18n.t('auth.invite.tokenState', { state: state.inviteFlow.token ? i18n.t('common.loaded') : i18n.t('common.missing') })}</p>
           <form id="invite-activate-form" class="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-            <label class="mb-3 block text-sm text-slate-300">New password
+            <label class="mb-3 block text-sm text-slate-300" >${i18n.t('auth.login.password')}
               <input id="invite-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
             </label>
-            <label class="mb-3 block text-sm text-slate-300">Confirm password
+            <label class="mb-3 block text-sm text-slate-300" >${i18n.t('auth.register.confirmPassword')}
               <input id="invite-password-confirm" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
             </label>
             <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${state.inviteFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
@@ -557,7 +557,7 @@
           });
           state.inviteFlow.profile = payload?.user || null;
         } catch (error) {
-          state.inviteFlow.error = error.message || 'Invite could not be loaded.';
+          state.inviteFlow.error = error.message || i18n.t('auth.invite.loadError');
           state.inviteFlow.profile = null;
         } finally {
           state.inviteFlow.loading = false;
@@ -830,7 +830,7 @@
               await api('/api/configuration', { method: 'PUT', body: JSON.stringify({ trades: undoTrades, levels: undoLevels, priorities: undoPriorities, projectStatuses: undoProjectStatuses }) });
               await loadData({ forceAppData });
               render();
-              showMessage('Configuration change reverted.');
+              showMessage(i18n.t('admin.configuration.messages.reverted'));
             } catch (error) {
               showMessage(`Undo failed: ${error.message}`, 'error');
             }
@@ -1067,15 +1067,15 @@
       }
 
       function personLeaverBadge(person) {
-        return person.is_leaver ? '<span class="ml-2 rounded border border-amber-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">Leaver</span>' : '';
+        return person.is_leaver ? `<span class="ml-2 rounded border border-amber-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">${i18n.t('people.flags.leaver')}</span>` : '';
       }
 
       function personHiddenBadge(person) {
-        return person.is_hidden ? '<span class="ml-2 rounded border border-slate-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">Hidden</span>' : '';
+        return person.is_hidden ? `<span class="ml-2 rounded border border-slate-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">${i18n.t('people.flags.hidden')}</span>` : '';
       }
 
       function leaverRunIcon(isLeaver) {
-        return isLeaver ? ' <span class="iconify inline-block align-[-1px]" data-icon="mdi:run" aria-label="Leaver"></span>' : '';
+        return isLeaver ? ` <span class="iconify inline-block align-[-1px]" data-icon="mdi:run" aria-label="${i18n.t('people.flags.leaver')}"></span>` : '';
       }
 
       function formatWorkloadDuration(percentage, workingHours) {
@@ -1279,7 +1279,7 @@ function clientsView() {
             const isSelected = normalizedSelected === hex.toLowerCase();
             const selectedClass = isSelected ? 'ring-2 ring-[#00d8ff] ring-offset-1 ring-offset-slate-900' : 'ring-1 ring-slate-700';
             const swatchStyle = option.style || `background:${hex};`;
-            return `<button type="button" class="h-5 w-5 rounded-full ${selectedClass}" style="${swatchStyle}" data-config-action="pick-color" data-kind="${kind}" data-item-key="${itemKey}" data-color="${hex}" title="${hex}" aria-label="Select color ${hex}"></button>`;
+            return `<button type="button" class="h-5 w-5 rounded-full ${selectedClass}" style="${swatchStyle}" data-config-action="pick-color" data-kind="${kind}" data-item-key="${itemKey}" data-color="${hex}" title="${hex}" aria-label="${i18n.t('admin.configuration.selectColorAria', { color: hex })}"></button>`;
           }).join('');
           return `<div class="grid grid-cols-4 gap-2">${swatches}</div>`;
         }
@@ -1324,14 +1324,14 @@ function clientsView() {
             })
             .join('');
 
-          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-config-action="add-item" data-kind="${kind}">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="w-8 p-2"></th><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">Color</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
+          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-config-action="add-item" data-kind="${kind}">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="w-8 p-2"></th><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">${i18n.t('common.color')}</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
         }
 
         const colorPickerModal = state.configurationColorPicker?.open
-          ? `<div class="fixed inset-0 z-40 flex items-center justify-center bg-black/60" data-config-action="color-modal-overlay"><div class="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">Select color</h4><button type="button" class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-config-action="close-color-modal">Close</button></div>${renderColorSwatchGrid(state.configurationColorPicker.kind, state.configurationColorPicker.itemKey, state.configurationColorPicker.selectedHex)}</div></div>`
+          ? `<div class="fixed inset-0 z-40 flex items-center justify-center bg-black/60" data-config-action="color-modal-overlay"><div class="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${i18n.t('admin.configuration.selectColor')}</h4><button type="button" class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-config-action="close-color-modal">${i18n.t('common.close')}</button></div>${renderColorSwatchGrid(state.configurationColorPicker.kind, state.configurationColorPicker.itemKey, state.configurationColorPicker.selectedHex)}</div></div>`
           : '';
 
-        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">Manage static catalogs, client priorities and project statuses.</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'), { sort: true })}${renderCard('priorities', 'Priorities', { color: true, sort: true })}${renderCard('projectStatuses', 'Project Statuses', { color: true, sort: true })}</div>${colorPickerModal}</div>`;
+        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">${i18n.t('admin.configuration.subtitle')}</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'), { sort: true })}${renderCard('priorities', i18n.t('configuration.priorities'), { color: true, sort: true })}${renderCard('projectStatuses', i18n.t('configuration.projectStatuses'), { color: true, sort: true })}</div>${colorPickerModal}</div>`;
       }
 
       window.addConfigurationItem = addConfigurationItem;
@@ -1352,18 +1352,18 @@ function clientsView() {
         const bootstrapAdminId = adminUserIds.length ? Math.min(...adminUserIds) : null;
         const userRows = (state.adminUsers || []).map((user) => {
           const statusLabel = String(user.status || 'unknown').replace(/_/g, ' ');
-          const inviteMeta = user.latestInvitedAt ? `<div class="text-[11px] text-slate-500">Invited: ${user.latestInvitedAt}</div>` : '';
+          const inviteMeta = user.latestInvitedAt ? `<div class="text-[11px] text-slate-500">${i18n.t('admin.access.messages.invitedAt', { timestamp: user.latestInvitedAt })}</div>` : '';
           const userRoles = (user.roles || []).map((role) => String(role).toLowerCase());
           const isBootstrapAdmin = userRoles.includes('admin') && Number(user.id) === bootstrapAdminId;
           const inviteButton = isBootstrapAdmin
             ? ''
-            : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="inviteAdminUserFromAccessTab(${Number(user.id)})">Invite</button>`;
-          const revokeButton = user.canRevokeInvite && !isBootstrapAdmin ? `<button class="rounded border border-amber-500/50 px-2 py-1 text-xs text-amber-300 hover:bg-slate-800" onclick="revokeInviteFromAccessTab(${Number(user.id)})">Revoke Invite</button>` : '';
+            : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="inviteAdminUserFromAccessTab(${Number(user.id)})">${i18n.t('admin.access.actions.invite')}</button>`;
+          const revokeButton = user.canRevokeInvite && !isBootstrapAdmin ? `<button class="rounded border border-amber-500/50 px-2 py-1 text-xs text-amber-300 hover:bg-slate-800" onclick="revokeInviteFromAccessTab(${Number(user.id)})">${i18n.t('admin.access.actions.revokeInvite')}</button>` : '';
           const deleteDisabled = adminCount < 2;
           const deleteButton = deleteDisabled
-            ? `<button class="rounded border border-rose-500/30 px-2 py-1 text-xs text-rose-300/40 cursor-not-allowed" disabled title="Add a second admin before deleting users">Delete</button>`
-            : `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800" onclick="deleteAdminUserFromAccessTab(${Number(user.id)})">Delete</button>`;
-          return `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td><td class="p-2 text-slate-300"><div class="capitalize">${statusLabel}</div>${inviteMeta}</td><td class="p-2 text-right"><div class="flex flex-wrap justify-end gap-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" onclick="openAdminUserEditModal(${Number(user.id)})">Edit</button>${inviteButton}${revokeButton}${deleteButton}</div></td></tr>`;
+            ? `<button class="rounded border border-rose-500/30 px-2 py-1 text-xs text-rose-300/40 cursor-not-allowed" disabled title="${i18n.t('admin.access.messages.requireSecondAdmin')}">${i18n.t('common.delete')}</button>`
+            : `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800" onclick="deleteAdminUserFromAccessTab(${Number(user.id)})">${i18n.t('common.delete')}</button>`;
+          return `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td><td class="p-2 text-slate-300"><div class="capitalize">${statusLabel}</div>${inviteMeta}</td><td class="p-2 text-right"><div class="flex flex-wrap justify-end gap-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" onclick="openAdminUserEditModal(${Number(user.id)})">${i18n.t('common.edit')}</button>${inviteButton}${revokeButton}${deleteButton}</div></td></tr>`;
         }).join('');
         const auditRows = (state.auditEntries || []).slice(0, 20).map((entry) => `<tr class="border-t border-slate-800"><td class="p-2 text-xs text-slate-300">${entry.created_at || ''}</td><td class="p-2 text-xs">${entry.action || ''}</td><td class="p-2 text-xs text-slate-300">${entry.actor_role || '—'}</td><td class="p-2 text-xs text-slate-300">${entry.entity_type || '—'} ${entry.entity_id || ''}</td></tr>`).join('');
         const smtp = state.smtpSettings || {};
@@ -1403,7 +1403,7 @@ function clientsView() {
               </label>
               <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800 md:col-start-5" onclick="createAdminUserFromAccessTab()">${i18n.t('admin.access.actions.createUser')}</button>
             </div>
-            <div class="overflow-x-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.access.table.name')}</th><th class="p-2">${i18n.t('admin.access.table.email')}</th><th class="p-2">${i18n.t('admin.access.table.roles')}</th><th class="p-2">${i18n.t('admin.access.table.person')}</th><th class="p-2">Status</th><th class="p-2 text-right">Actions</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-slate-400" colspan="6">${i18n.t('admin.access.table.empty')}</td></tr>`}</tbody></table></div>
+            <div class="overflow-x-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.access.table.name')}</th><th class="p-2">${i18n.t('admin.access.table.email')}</th><th class="p-2">${i18n.t('admin.access.table.roles')}</th><th class="p-2">${i18n.t('admin.access.table.person')}</th><th class="p-2">${i18n.t('common.status')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-slate-400" colspan="6">${i18n.t('admin.access.table.empty')}</td></tr>`}</tbody></table></div>
           </div>
 
           <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
@@ -1481,7 +1481,7 @@ function clientsView() {
         const user = (state.adminUsers || []).find((entry) => Number(entry.id) === Number(userId));
         const modal = document.getElementById('admin-user-modal');
         if (!user || !modal) {
-          showMessage('User not found.', 'error');
+          showMessage(i18n.t('admin.access.messages.userNotFound'), 'error');
           return;
         }
 
@@ -1494,14 +1494,38 @@ function clientsView() {
             }))
             .filter((person) => Number.isInteger(person.id) && person.id > 0 && person.name)
             .sort((a, b) => a.name.localeCompare(b.name));
-          personSelect.innerHTML = `<option value="">Unlinked</option>${options.map((person) => `<option value="${person.id}">${person.name}</option>`).join('')}`;
+          personSelect.innerHTML = `<option value="">${i18n.t('admin.access.fields.unlinked')}</option>${options.map((person) => `<option value="${person.id}">${person.name}</option>`).join('')}`;
         }
 
         document.getElementById('admin-user-edit-id').value = String(user.id);
         document.getElementById('admin-user-edit-name').value = String(user.displayName || '');
         document.getElementById('admin-user-edit-email').value = String(user.email || '');
-        document.getElementById('admin-user-edit-role').value = String((user.roles || [])[0] || 'viewer').toLowerCase();
+        const roleSelect = document.getElementById('admin-user-edit-role');
+        const personSelectForEdit = document.getElementById('admin-user-edit-person');
+        const userIsAdmin = (user.roles || []).map((role) => String(role).toLowerCase()).includes('admin');
+        const adminCount = (state.adminUsers || []).filter((entry) => (entry.roles || []).map((role) => String(role).toLowerCase()).includes('admin')).length;
+        const singleAdminMode = adminCount <= 1;
+
+        if (roleSelect) {
+          roleSelect.value = String((user.roles || [])[0] || 'viewer').toLowerCase();
+          roleSelect.disabled = singleAdminMode;
+          roleSelect.title = singleAdminMode ? i18n.t('admin.access.messages.roleEditRequiresMultipleAdmins') : '';
+          if (!singleAdminMode && userIsAdmin) {
+            const demoteDisabled = adminCount <= 1;
+            roleSelect.querySelectorAll('option').forEach((option) => {
+              const nextRole = String(option.value || '').toLowerCase();
+              option.disabled = demoteDisabled && nextRole !== 'admin';
+            });
+          } else {
+            roleSelect.querySelectorAll('option').forEach((option) => { option.disabled = false; });
+          }
+        }
+
         document.getElementById('admin-user-edit-person').value = user.personId ? String(user.personId) : '';
+        if (personSelectForEdit) {
+          personSelectForEdit.disabled = singleAdminMode;
+          personSelectForEdit.title = singleAdminMode ? i18n.t('admin.access.messages.singleAdminNameEmailOnly') : '';
+        }
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -1520,16 +1544,18 @@ function clientsView() {
           const id = Number(document.getElementById('admin-user-edit-id')?.value || 0);
           const displayName = String(document.getElementById('admin-user-edit-name')?.value || '').trim();
           const email = String(document.getElementById('admin-user-edit-email')?.value || '').trim();
-          const roleInput = String(document.getElementById('admin-user-edit-role')?.value || 'viewer').trim().toLowerCase();
-          const personValue = String(document.getElementById('admin-user-edit-person')?.value || '').trim();
+          const roleElement = document.getElementById('admin-user-edit-role');
+          const personElement = document.getElementById('admin-user-edit-person');
+          const roleInput = String(roleElement?.value || 'viewer').trim().toLowerCase();
+          const personValue = String(personElement?.value || '').trim();
 
           await api(`/api/admin/users/${id}`, {
             method: 'PUT',
             body: JSON.stringify({
               displayName,
               email,
-              role: roleInput,
-              personId: personValue ? Number(personValue) : null,
+              role: roleElement?.disabled ? undefined : roleInput,
+              personId: personElement?.disabled ? undefined : (personValue ? Number(personValue) : null),
               isActive: true
             })
           });
@@ -1537,7 +1563,7 @@ function clientsView() {
           await loadAdminAccessData();
           closeAdminUserEditModal();
           render();
-          showMessage('User updated.');
+          showMessage(i18n.t('admin.access.messages.userUpdated'));
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -1556,15 +1582,15 @@ function clientsView() {
           if (!user) return;
           const adminCount = (state.adminUsers || []).filter((entry) => (entry.roles || []).map((role) => String(role).toLowerCase()).includes('admin')).length;
           if (adminCount < 2) {
-            showMessage('Add a second admin before deleting users.', 'error');
+            showMessage(i18n.t('admin.access.messages.requireSecondAdmin'), 'error');
             return;
           }
-          if (!window.confirm(`Delete user ${user.displayName} (${user.email})?`)) return;
+          if (!window.confirm(i18n.t('admin.access.messages.confirmDeleteUser', { name: user.displayName, email: user.email }))) return;
 
           await api(`/api/admin/users/${Number(userId)}`, { method: 'DELETE' });
           await loadAdminAccessData();
           render();
-          showMessage('User deleted.');
+          showMessage(i18n.t('admin.access.messages.userDeleted'));
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -1578,7 +1604,7 @@ function clientsView() {
           });
           await loadAdminAccessData();
           render();
-          showMessage('Invite sent.');
+          showMessage(i18n.t('admin.access.messages.inviteSent'));
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -1591,7 +1617,7 @@ function clientsView() {
           await api(`/api/admin/users/${Number(userId)}/invite/revoke`, { method: 'POST' });
           await loadAdminAccessData();
           render();
-          showMessage('Invite revoked.');
+          showMessage(i18n.t('admin.access.messages.inviteRevoked'));
         } catch (error) {
           showMessage(error.message, 'error');
         }
@@ -1653,7 +1679,7 @@ function clientsView() {
         const viewerPersonId = currentPersonId();
 
         if (projects.length === 0) {
-          return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-300">No projects available yet. Ask an admin to create one first.</div>`;
+          return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-300">${i18n.t('clientTeams.emptyState')}</div>`;
         }
 
         const hasSelectedProject = state.selectedProjectId && projects.some((project) => String(project.id) === String(state.selectedProjectId));
@@ -1922,7 +1948,7 @@ function clientsView() {
 
           return `<div ${containerId ? `id="${containerId}"` : ''} class="rounded border border-slate-700 bg-slate-950/60 p-3">
             <h4 class="mb-2 text-sm font-semibold text-slate-200">${tierLabel}</h4>
-            <div class="flex flex-wrap gap-2">${entries || '<span class="text-xs text-slate-400">None</span>'}</div>
+            <div class="flex flex-wrap gap-2">${entries || `<span class="text-xs text-slate-400">${i18n.t('common.none')}</span>`}</div>
           </div>`;
         }
 
@@ -2006,7 +2032,7 @@ function clientsView() {
                     return `<button class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignmentLabel}</button>`;
                   })
                   .join('')
-              : viewerMode ? `<span class="text-slate-400">—</span>` : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff]" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>Assign</button>`;
+              : viewerMode ? `<span class="text-slate-400">—</span>` : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff]" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('assign.assign')}</button>`;
             const actionItems = viewerMode ? [] : [
               `<button class="w-full rounded border border-slate-600 px-2 py-1 text-left text-xs hover:bg-slate-800" onclick='openChallengeModal(${JSON.stringify(challenge)})'>${i18n.t('common.edit')}</button>`,
               `<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteChallenge(${challenge.id})'>${i18n.t('common.delete')}</button>`
@@ -2052,7 +2078,7 @@ function clientsView() {
                 <span>/</span>
                 <span class="font-semibold text-slate-100">${selectedProject.name} (${selectedProject.client_name})</span>
               </div>
-              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">Status</span><div class="flex h-9 items-center">${statusControl}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">${i18n.t('common.status')}</span><div class="flex h-9 items-center">${statusControl}</div></div>
               <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.priority')}</span><div class="flex h-9 items-center">${priorityControl}</div></div>
               <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.budget')}</span><div class="flex h-9 items-center px-1 text-xs font-semibold text-slate-100">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
             </div>
@@ -2115,7 +2141,7 @@ function filteredPeople() {
           .map(
             (person) => `<label class="mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-900">
               <input type="radio" name="assign-person" value="${person.id}" ${String(state.assignModal.selectedPersonId) === String(person.id) ? 'checked' : ''} />
-              <span>${person.first_name} ${person.last_name}${person.is_leaver ? " <span class=\"ml-1 rounded border border-amber-500/60 px-1 py-0.5 text-[10px] uppercase tracking-wide text-amber-300\">Leaver</span>" : ""} <span class="text-xs text-slate-400">(${person.trade_name})</span></span>
+              <span>${person.first_name} ${person.last_name}${person.is_leaver ? ` <span class="ml-1 rounded border border-amber-500/60 px-1 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">${i18n.t('people.flags.leaver')}</span>` : ""} <span class="text-xs text-slate-400">(${person.trade_name})</span></span>
             </label>`
           )
           .join('');
@@ -2501,7 +2527,7 @@ function filteredPeople() {
         const nextStatus = String(document.getElementById('project-status-select')?.value || '').toLowerCase();
         const statusItem = (state.meta.projectStatuses || []).find((item) => String(item.key) === nextStatus);
         if (!statusItem) {
-          showMessage('Invalid status selected.', 'error');
+          showMessage(i18n.t('projectStatus.invalid'), 'error');
           return;
         }
 
@@ -2909,7 +2935,7 @@ function filteredPeople() {
         document.getElementById('unassign-cancel')?.addEventListener('click', closeUnassignModal);
         document.getElementById('unassign-confirm')?.addEventListener('click', async () => {
           if (state.unassignModal.selectedAssignmentIds.length === 0) {
-            showMessage('Select at least one assignee to unassign.', 'warning');
+            showMessage(i18n.t('assign.selectAtLeastOneToUnassign'), 'warning');
             return;
           }
 
@@ -2941,7 +2967,7 @@ function filteredPeople() {
         document.getElementById('assign-confirm')?.addEventListener('click', async () => {
           if (state.assignSubmitting) return;
           if (!state.assignModal.selectedPersonId || !state.assignModal.challengeId) {
-            showMessage('Please select a person to assign.', 'error');
+            showMessage(i18n.t('assign.selectPerson'), 'error');
             return;
           }
 
@@ -2967,7 +2993,7 @@ function filteredPeople() {
 
             const existing = state.projectsPayload.assignments.find((assignment) => String(assignment.id) === String(state.assignModal.assignmentId));
             if (!existing) {
-              showMessage('Current assignment could not be found.', 'error');
+              showMessage(i18n.t('assign.currentNotFound'), 'error');
               return;
             }
 
@@ -3162,7 +3188,7 @@ function filteredPeople() {
         if (isViewerMode() || isTeammateMode()) return;
         const client = state.clients.find((entry) => String(entry.id) === String(clientId));
         if (!client) {
-          showMessage('Client not found.', 'error');
+          showMessage(i18n.t('clients.notFound'), 'error');
           return;
         }
 
@@ -3305,16 +3331,16 @@ function filteredPeople() {
 
         const person = state.people.find((item) => String(item.id) === String(state.peopleOverviewModal.personId));
         if (!person) {
-          document.getElementById('people-overview-modal-title').textContent = 'Person assignments';
-          document.getElementById('people-overview-modal-body').innerHTML = '<p class="text-slate-300">No assignments found.</p>';
+          document.getElementById('people-overview-modal-title').textContent = i18n.t('peopleOverview.modal.title');
+          document.getElementById('people-overview-modal-body').innerHTML = `<p class="text-slate-300">${i18n.t('peopleOverview.modal.noAssignmentsFound')}</p>`;
           return;
         }
 
         const assignments = state.projectsPayload.assignments.filter((assignment) => String(assignment.person_id) === String(person.id));
-        document.getElementById('people-overview-modal-title').textContent = `${person.first_name} ${person.last_name} · Assignments`;
+        document.getElementById('people-overview-modal-title').textContent = i18n.t('peopleOverview.modal.titleNamed', { name: `${person.first_name} ${person.last_name}`.trim() });
 
         if (assignments.length === 0) {
-          document.getElementById('people-overview-modal-body').innerHTML = '<p class="text-slate-300">No assignments for this person.</p>';
+          document.getElementById('people-overview-modal-body').innerHTML = `<p class="text-slate-300">${i18n.t('peopleOverview.modal.noAssignmentsForPerson')}</p>`;
           return;
         }
 
@@ -3453,7 +3479,7 @@ function filteredPeople() {
       window.deleteChallenge = async function deleteChallenge(id) {
         const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(id));
         if (!challenge) {
-          showMessage('Challenge not found.', 'error');
+          showMessage(i18n.t('challenge.notFound'), 'error');
           return;
         }
 
@@ -3462,7 +3488,7 @@ function filteredPeople() {
           await loadData();
           render();
 
-          showMessage('Challenge deleted.', 'warning', {
+          showMessage(i18n.t('challenge.deleted'), 'warning', {
             actionLabel: 'Undo',
             onAction: async () => {
               try {
@@ -3475,7 +3501,7 @@ function filteredPeople() {
                 });
                 await loadData();
                 render();
-                showMessage('Challenge restored.');
+                showMessage(i18n.t('challenge.restored'));
               } catch (error) {
                 showMessage(`Undo failed: ${error.message}`, 'error');
               }
