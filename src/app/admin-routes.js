@@ -1,5 +1,19 @@
+const expressRateLimit = require('express-rate-limit');
+
+function createAdminDbRouteRateLimitMiddleware() {
+  return expressRateLimit({
+    windowMs: Number(process.env.ADMIN_DB_ROUTE_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+    max: Number(process.env.ADMIN_DB_ROUTE_RATE_LIMIT_MAX || 60),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many admin requests. Please wait before trying again.' }
+  });
+}
+
 function registerAdminRoutes(deps) {
   const { app, requirePermission, PERMISSIONS, pool, handleDbError, badRequest, isValidEmail, getRoleIdByName, getAdminUserIds, adminUserManagementRouteRateLimitMiddleware, createOpaqueToken, hashOpaqueToken, replaceUserProjectScope, sendSmtpTestEmail, adminAuditRouteRateLimitMiddleware, createUserInvite, resolveSmtpSettingsRow, sendSmtpEmail, buildInviteEmailBody, resolveBootstrapAdminId, redactSmtpSettings, encryptSmtpPassword } = deps;
+
+  const adminDbRouteRateLimitMiddleware = createAdminDbRouteRateLimitMiddleware();
 
 app.get('/api/admin/users', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
   try {
@@ -224,7 +238,7 @@ app.delete('/api/admin/users/:id', adminUserManagementRouteRateLimitMiddleware, 
   }
 });
 
-app.post('/api/admin/users/:id/invite', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.post('/api/admin/users/:id/invite', adminDbRouteRateLimitMiddleware, adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const expiresHours = Number(req.body?.expiresHours || 72);
   if (!Number.isFinite(expiresHours) || expiresHours < 1 || expiresHours > 168) {
     return badRequest(res, 'expiresHours must be between 1 and 168.');
@@ -289,7 +303,7 @@ app.post('/api/admin/users/:id/invite', adminUserManagementRouteRateLimitMiddlew
 });
 
 
-app.post('/api/admin/users/:id/invite/revoke', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.post('/api/admin/users/:id/invite/revoke', adminDbRouteRateLimitMiddleware, adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
     const revoked = await pool.query(
       `UPDATE user_invites
@@ -311,7 +325,7 @@ app.post('/api/admin/users/:id/invite/revoke', adminUserManagementRouteRateLimit
 });
 
 
-app.get('/api/admin/users/:id/project-access', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.get('/api/admin/users/:id/project-access', adminDbRouteRateLimitMiddleware, adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT project_id
@@ -330,7 +344,7 @@ app.get('/api/admin/users/:id/project-access', adminUserManagementRouteRateLimit
   }
 });
 
-app.put('/api/admin/users/:id/project-access', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.put('/api/admin/users/:id/project-access', adminDbRouteRateLimitMiddleware, adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const projectIds = Array.isArray(req.body?.projectIds) ? req.body.projectIds : null;
   if (!projectIds) {
     return badRequest(res, 'projectIds must be an array.');
@@ -354,7 +368,7 @@ app.put('/api/admin/users/:id/project-access', adminUserManagementRouteRateLimit
   }
 });
 
-app.get('/api/admin/smtp-settings', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
+app.get('/api/admin/smtp-settings', adminDbRouteRateLimitMiddleware, adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT host, port, username, password, from_email, secure, enabled
@@ -369,7 +383,7 @@ app.get('/api/admin/smtp-settings', adminUserManagementRouteRateLimitMiddleware,
   }
 });
 
-app.put('/api/admin/smtp-settings', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.put('/api/admin/smtp-settings', adminDbRouteRateLimitMiddleware, adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const { host, port, username, password, fromEmail, secure, enabled } = req.body || {};
 
   if (enabled && (!host || !port || !fromEmail)) {
@@ -410,7 +424,7 @@ app.put('/api/admin/smtp-settings', adminUserManagementRouteRateLimitMiddleware,
 
 
 
-app.post('/api/admin/smtp-settings/test-email', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.post('/api/admin/smtp-settings/test-email', adminDbRouteRateLimitMiddleware, adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const toEmail = String(req.body?.toEmail || '').trim();
   const dryRun = Boolean(req.body?.dryRun);
 
@@ -453,7 +467,7 @@ app.post('/api/admin/smtp-settings/test-email', adminUserManagementRouteRateLimi
   }
 });
 
-app.get('/api/admin/audit', requirePermission(PERMISSIONS.ADMIN_ACCESS), adminAuditRouteRateLimitMiddleware, async (req, res) => {
+app.get('/api/admin/audit', adminDbRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), adminAuditRouteRateLimitMiddleware, async (req, res) => {
   const limit = Math.max(1, Math.min(Number.parseInt(req.query.limit || '100', 10) || 100, 500));
   const actorUserId = req.query.actorUserId ? Number.parseInt(req.query.actorUserId, 10) : null;
   const entityType = String(req.query.entityType || '').trim();
