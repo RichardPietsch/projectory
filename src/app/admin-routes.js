@@ -224,7 +224,7 @@ app.delete('/api/admin/users/:id', adminUserManagementRouteRateLimitMiddleware, 
   }
 });
 
-app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.post('/api/admin/users/:id/invite', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const expiresHours = Number(req.body?.expiresHours || 72);
   if (!Number.isFinite(expiresHours) || expiresHours < 1 || expiresHours > 168) {
     return badRequest(res, 'expiresHours must be between 1 and 168.');
@@ -289,7 +289,7 @@ app.post('/api/admin/users/:id/invite', requirePermission(PERMISSIONS.ADMIN_ACCE
 });
 
 
-app.post('/api/admin/users/:id/invite/revoke', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.post('/api/admin/users/:id/invite/revoke', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
     const revoked = await pool.query(
       `UPDATE user_invites
@@ -311,7 +311,7 @@ app.post('/api/admin/users/:id/invite/revoke', requirePermission(PERMISSIONS.ADM
 });
 
 
-app.get('/api/admin/users/:id/project-access', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.get('/api/admin/users/:id/project-access', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT project_id
@@ -330,7 +330,7 @@ app.get('/api/admin/users/:id/project-access', requirePermission(PERMISSIONS.ADM
   }
 });
 
-app.put('/api/admin/users/:id/project-access', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.put('/api/admin/users/:id/project-access', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const projectIds = Array.isArray(req.body?.projectIds) ? req.body.projectIds : null;
   if (!projectIds) {
     return badRequest(res, 'projectIds must be an array.');
@@ -354,7 +354,7 @@ app.put('/api/admin/users/:id/project-access', requirePermission(PERMISSIONS.ADM
   }
 });
 
-app.get('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
+app.get('/api/admin/smtp-settings', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT host, port, username, password, from_email, secure, enabled
@@ -369,7 +369,7 @@ app.get('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS),
   }
 });
 
-app.put('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.put('/api/admin/smtp-settings', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const { host, port, username, password, fromEmail, secure, enabled } = req.body || {};
 
   if (enabled && (!host || !port || !fromEmail)) {
@@ -410,7 +410,7 @@ app.put('/api/admin/smtp-settings', requirePermission(PERMISSIONS.ADMIN_ACCESS),
 
 
 
-app.post('/api/admin/smtp-settings/test-email', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
+app.post('/api/admin/smtp-settings/test-email', adminUserManagementRouteRateLimitMiddleware, requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   const toEmail = String(req.body?.toEmail || '').trim();
   const dryRun = Boolean(req.body?.dryRun);
 
