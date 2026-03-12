@@ -20,6 +20,7 @@ const { createRateLimitRuntime } = require('./rate-limits');
 const { registerObservabilityRoutes } = require('./observability-routes');
 const { buildAuthHandlers } = require('./auth-handlers');
 const { registerAdminRoutes } = require('./admin-routes');
+const { createCsrfRuntime } = require('./csrf');
 
 // Single Express app serving API + static frontend.
 const app = express();
@@ -488,6 +489,8 @@ registerCoreMiddlewareStack({
 });
 
 const AUTH_SESSION_COOKIE = 'projectory_session';
+const CSRF_RUNTIME_SECRET = String(process.env.AUTH_CSRF_SECRET || '').trim() || crypto.randomBytes(32).toString('hex');
+const csrfRuntime = createCsrfRuntime({ secret: CSRF_RUNTIME_SECRET });
 const AUTH_SESSION_TTL_HOURS = Number(process.env.AUTH_SESSION_TTL_HOURS || 12);
 const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES || 30);
 const SMTP_PASSWORD_PREFIX = 'enc:v1:';
@@ -502,7 +505,7 @@ function validateRuntimeEnvironment() {
     return;
   }
 
-  const requiredNames = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'SMTP_PASSWORD_ENCRYPTION_KEY'];
+  const requiredNames = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'SMTP_PASSWORD_ENCRYPTION_KEY', 'AUTH_CSRF_SECRET'];
   const missing = requiredNames.filter((name) => !String(process.env[name] || '').trim());
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables for non-local runtime: ${missing.join(', ')}.`);
@@ -1300,6 +1303,8 @@ app.use(async (req, _res, next) => {
   next();
 });
 
+app.use(csrfRuntime.requireSessionCsrf);
+
 // Audit middleware: records mutating API actions for admin traceability.
 app.use((req, res, next) => {
   res.on('finish', () => {
@@ -1497,6 +1502,7 @@ registerAuthRoutes({
   handlers: authHandlers
 });
 
+app.get('/api/auth/csrf-token', bootstrapStatusRouteRateLimitMiddleware, csrfRuntime.issueTokenHandler);
 
 registerAdminRoutes({
   app,
