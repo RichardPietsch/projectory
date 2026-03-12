@@ -173,8 +173,8 @@ test('request lifecycle logs redact sensitive headers/body fields', async () => 
       })
       .find((entry) => entry && entry.event === 'request.start' && entry.path === '/api/auth/login');
 
-    assert.equal(requestStart.requestHeaders.authorization, '[REDACTED]');
-    assert.equal(requestStart.requestBody.password, '[REDACTED]');
+    assert.equal(requestStart.requestHeaders.authorization, undefined);
+    assert.equal(requestStart.requestBody.password, undefined);
   } finally {
     server.close();
     pool.query = originalQuery;
