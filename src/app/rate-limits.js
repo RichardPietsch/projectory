@@ -186,6 +186,7 @@ function createRateLimitRuntime({ pool, expressRateLimit, env, onRateLimitEvent 
   const exportConfigRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'export-config', max: Number(env.EXPORT_CONFIG_RATE_LIMIT_MAX || 30), windowMs: Number(env.EXPORT_CONFIG_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000), message: 'Too many configuration export requests. Please wait before trying again.' });
   const exportRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'export', max: Number(env.EXPORT_RATE_LIMIT_MAX || 20), windowMs: Number(env.EXPORT_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000), message: 'Too many export requests. Please wait before trying again.' });
   const importRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'import-scoped', max: Number(env.IMPORT_RATE_LIMIT_MAX || 3), windowMs: Number(env.IMPORT_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000), message: 'Too many import requests. Please wait before trying again.', keyGenerator: (req) => `${String(req.ip || req.socket?.remoteAddress || 'unknown')}|${String(req.auth?.userId || req.auth?.email || 'anonymous').trim().toLowerCase() || 'anonymous'}|${String(req.params?.scope || 'unknown').trim().toLowerCase()}` });
+  const importRouteExpressRateLimitMiddleware = expressRateLimit({ windowMs: Number(env.IMPORT_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000), max: Number(env.IMPORT_RATE_LIMIT_MAX || 3), standardHeaders: true, legacyHeaders: false, message: { error: 'Too many import requests. Please wait before trying again.' } });
   const importPreviewRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'import-preview', max: Number(env.IMPORT_PREVIEW_RATE_LIMIT_MAX || 12), windowMs: Number(env.IMPORT_PREVIEW_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000), message: 'Too many import preview requests. Please wait before trying again.' });
   const importConfigRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'import-config', max: Number(env.IMPORT_CONFIG_RATE_LIMIT_MAX || 4), windowMs: Number(env.IMPORT_CONFIG_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000), message: 'Too many configuration import requests. Please wait before trying again.' });
   const projectsMutationRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'projects-mutation', max: Number(env.PROJECTS_MUTATION_RATE_LIMIT_MAX || 120), windowMs: Number(env.PROJECTS_MUTATION_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000), message: 'Too many project mutation requests. Please wait before trying again.' });
@@ -208,6 +209,7 @@ function createRateLimitRuntime({ pool, expressRateLimit, env, onRateLimitEvent 
     exportConfigRouteRateLimitMiddleware,
     exportRouteRateLimitMiddleware,
     importRouteRateLimitMiddleware,
+    importRouteExpressRateLimitMiddleware,
     importPreviewRouteRateLimitMiddleware,
     importConfigRouteRateLimitMiddleware,
     projectsMutationRouteRateLimitMiddleware,

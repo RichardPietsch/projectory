@@ -476,6 +476,7 @@ const {
   exportConfigRouteRateLimitMiddleware,
   exportRouteRateLimitMiddleware,
   importRouteRateLimitMiddleware,
+  importRouteExpressRateLimitMiddleware,
   importPreviewRouteRateLimitMiddleware,
   importConfigRouteRateLimitMiddleware,
   projectsMutationRouteRateLimitMiddleware,
@@ -1901,7 +1902,7 @@ app.post('/api/import/:scope/preview', requirePermission(PERMISSIONS.IMPORT_RUN)
   }
 });
 
-app.post('/api/import/:scope', requirePermission(PERMISSIONS.IMPORT_RUN), importRouteRateLimitMiddleware, async (req, res) => {
+app.post('/api/import/:scope', requirePermission(PERMISSIONS.IMPORT_RUN), importRouteExpressRateLimitMiddleware, importRouteRateLimitMiddleware, async (req, res) => {
   const scope = normalizePortabilityScope(req.params.scope);
   if (!scope) return badRequest(res, 'Unsupported import scope.');
   const data = req.body?.data;
@@ -2704,7 +2705,7 @@ app.post('/api/import/config', requirePermission(PERMISSIONS.IMPORT_RUN), import
   }
 });
 
-app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), importRouteRateLimitMiddleware, async (req, res) => {
+app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), importRouteExpressRateLimitMiddleware, importRouteRateLimitMiddleware, async (req, res) => {
   const payload = req.body?.data;
 
   if (!payload) {
