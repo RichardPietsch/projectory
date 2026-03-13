@@ -207,7 +207,7 @@ test('runtime env validation fails in non-local when required secrets are missin
 });
 
 test('runtime env validation blocks placeholder DB credentials in non-local runtime', async () => {
-  await withEnv({ NODE_ENV: 'staging', AUTH_LOCAL_DEV: 'false', DB_HOST: 'db.example', DB_PORT: '5432', DB_NAME: 'projectory', DB_USER: 'projectory_local_user', DB_PASSWORD: 'projectory_local_password', SMTP_PASSWORD_ENCRYPTION_KEY: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }, async () => {
+  await withEnv({ NODE_ENV: 'staging', AUTH_LOCAL_DEV: 'false', DB_HOST: 'db.example', DB_PORT: '5432', DB_NAME: 'projectory', DB_USER: 'projectory_local_user', DB_PASSWORD: 'projectory_local_password', SMTP_PASSWORD_ENCRYPTION_KEY: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', AUTH_CSRF_SECRET: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', TRUST_PROXY: '1' }, async () => {
     assert.throws(() => validateRuntimeEnvironment(), /Unsafe database credentials detected for non-local runtime/);
   });
 });

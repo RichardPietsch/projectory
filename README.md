@@ -96,6 +96,9 @@ Use the provided examples as a starting point:
 - Non-local runtime is validated at startup and fails fast when required credentials/secrets are missing.
 - `AUTH_MODE` must remain `session` outside local development.
 - `SMTP_PASSWORD_ENCRYPTION_KEY` is required in non-local runtime and must be a strong secret (minimum 32 characters).
+- `AUTH_CSRF_SECRET` is required in non-local runtime and must be a strong secret (minimum 32 characters).
+- `TRUST_PROXY` must be configured in non-local runtime for reverse-proxy-safe session handling.
+- Session cookies are always emitted with `Secure` in non-local runtime and cannot be disabled via `AUTH_COOKIE_SECURE=false`.
 
 ## First-run example dataset
 
@@ -150,6 +153,12 @@ Headers for local role simulation (only when explicitly enabled):
 Additional auth env defaults:
 - `AUTH_MODE` defaults to `session`.
 - `AUTH_DEFAULT_ROLE` is only used when local header simulation is enabled; otherwise requests default to `viewer` until session auth is established.
+- Session cookie policy:
+  - local/dev: `HttpOnly; SameSite=Lax` (no `Secure` to preserve localhost ergonomics)
+  - non-local: `HttpOnly; SameSite=Lax; Secure` (enforced)
+- Reverse proxy policy:
+  - set `TRUST_PROXY` explicitly in staging/production (for example `1` behind a single ingress hop)
+  - startup blocks non-local runtime when `TRUST_PROXY` is unset/false
 
 Password policy defaults are now stronger than length-only and are configurable for phased rollout:
 - `PASSWORD_MIN_LENGTH` (default `12`)

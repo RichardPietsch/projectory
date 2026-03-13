@@ -26,6 +26,31 @@ const { createCsrfRuntime } = require('./csrf');
 const app = express();
 const port = process.env.PORT || 3000;
 
+function parseTrustProxySetting(rawValue) {
+  const value = String(rawValue || '').trim();
+  if (!value) return false;
+
+  const lowered = value.toLowerCase();
+  if (lowered === 'true' || lowered === '*') return true;
+  if (lowered === 'false') return false;
+  if (/^\d+$/.test(value)) return Number.parseInt(value, 10);
+  if (['loopback', 'linklocal', 'uniquelocal'].includes(lowered)) return lowered;
+  if (value.includes(',')) {
+    return value.split(',').map((entry) => entry.trim()).filter(Boolean);
+  }
+  return value;
+}
+
+function shouldUseSecureSessionCookie() {
+  return !isLocalDevRuntime();
+}
+
+function resolveTrustProxySetting() {
+  return parseTrustProxySetting(process.env.TRUST_PROXY);
+}
+
+app.set('trust proxy', resolveTrustProxySetting());
+
 function resolveDatabaseConfig() {
   const localDev = isLocalDevRuntime();
   return {
@@ -518,6 +543,15 @@ function validateRuntimeEnvironment() {
   if (String(process.env.SMTP_PASSWORD_ENCRYPTION_KEY || '').trim().length < 32) {
     throw new Error('SMTP_PASSWORD_ENCRYPTION_KEY must be set to a strong secret (minimum 32 characters) in non-local runtime.');
   }
+
+
+  if (resolveTrustProxySetting() === false) {
+    throw new Error('TRUST_PROXY must be configured for non-local runtime to ensure secure proxy-aware session handling.');
+  }
+
+  if (String(process.env.AUTH_COOKIE_SECURE || '').trim().toLowerCase() === 'false') {
+    throw new Error('AUTH_COOKIE_SECURE=false is not allowed in non-local runtime.');
+  }
 }
 
 function buildSessionOnlyFallbackAuth(previousAuth = {}) {
@@ -667,12 +701,12 @@ function parseCookieHeader(rawCookieHeader) {
 
 function serializeSessionCookie(sessionId, expiresAt) {
   const maxAgeSeconds = Math.max(1, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
-  const secureAttribute = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  const secureAttribute = shouldUseSecureSessionCookie() ? '; Secure' : '';
   return `${AUTH_SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secureAttribute}`;
 }
 
 function clearSessionCookie() {
-  const secureAttribute = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  const secureAttribute = shouldUseSecureSessionCookie() ? '; Secure' : '';
   return `${AUTH_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureAttribute}`;
 }
 
@@ -2764,5 +2798,10 @@ module.exports = {
   clearRequestRateLimitBuckets,
   clearAuthAttemptBuckets,
   clearMetrics,
-  cleanupAuthLifecycleArtifacts
+  cleanupAuthLifecycleArtifacts,
+  parseTrustProxySetting,
+  resolveTrustProxySetting,
+  shouldUseSecureSessionCookie,
+  serializeSessionCookie,
+  clearSessionCookie
 };
