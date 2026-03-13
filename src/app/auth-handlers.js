@@ -26,7 +26,10 @@ function buildAuthHandlers(deps) {
     createPasswordResetToken,
     resolveSmtpSettingsRow,
     sendSmtpEmail,
-    buildForgotPasswordEmailBody
+    buildForgotPasswordEmailBody,
+    parseCookieHeader,
+    AUTH_SESSION_COOKIE,
+    clearSessionCookie
   } = deps;
 
 const authMeHandler = (req, res) => {

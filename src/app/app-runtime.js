@@ -1560,7 +1560,10 @@ const authHandlers = buildAuthHandlers({
   createPasswordResetToken,
   resolveSmtpSettingsRow,
   sendSmtpEmail,
-  buildForgotPasswordEmailBody
+  buildForgotPasswordEmailBody,
+  parseCookieHeader,
+  AUTH_SESSION_COOKIE,
+  clearSessionCookie
 });
 
 registerAuthRoutes({
