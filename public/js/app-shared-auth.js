@@ -1,3 +1,6 @@
+const state = window.ProjectoryState.createInitialState();
+const i18n = window.ProjectoryI18n;
+
       function splitInlineArgs(argsString) {
         const args = [];
         let current = '';
