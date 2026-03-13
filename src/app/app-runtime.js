@@ -87,6 +87,7 @@ const metricsState = {
   requestDurationSumMs: new Map(),
   requestErrorsTotal: new Map(),
   authFailuresTotal: new Map(),
+  rateLimitHitsTotal: new Map(),
   dbQueryDurationBuckets: new Map(),
   dbQueryDurationCount: 0,
   dbQueryDurationSumMs: 0,
@@ -197,6 +198,16 @@ function renderPrometheusMetrics() {
     'Authentication failure/security events by type.',
     metricsState.authFailuresTotal,
     (key) => `type="${escapePrometheusLabel(key)}"`
+  ));
+
+  sections.push(serializeCounterMetric(
+    'projectory_rate_limit_hits_total',
+    'Rate-limit events by policy scope and outcome.',
+    metricsState.rateLimitHitsTotal,
+    (key) => {
+      const [scope, outcome, method, path] = key.split('|');
+      return `scope="${escapePrometheusLabel(scope)}",outcome="${escapePrometheusLabel(outcome)}",method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}"`;
+    }
   ));
 
   const dbDuration = ['# HELP projectory_db_query_duration_ms Database query duration in milliseconds.', '# TYPE projectory_db_query_duration_ms histogram'];
@@ -432,7 +443,26 @@ function sendAuthThrottle(res, message, retryAfterMs) {
 
 
 
-const rateLimitRuntime = createRateLimitRuntime({ pool, expressRateLimit, env: process.env });
+const rateLimitRuntime = createRateLimitRuntime({
+  pool,
+  expressRateLimit,
+  env: process.env,
+  onRateLimitEvent: ({ scope, outcome, method, path, actorKey }) => {
+    incrementCounter(
+      metricsState.rateLimitHitsTotal,
+      `${String(scope || 'unknown')}|${String(outcome || 'unknown')}|${String(method || 'GET').toUpperCase()}|${normalizeMetricPath(path || '/unknown')}`,
+      1
+    );
+
+    emitStructuredLog('warn', 'rate_limit.event', {
+      scope: String(scope || 'unknown'),
+      outcome: String(outcome || 'unknown'),
+      method: String(method || 'GET').toUpperCase(),
+      path: String(path || ''),
+      actorHash: obfuscateSecurityKey(actorKey || 'unknown')
+    });
+  }
+});
 const {
   clearRequestRateLimitBuckets,
   requestRateLimitMiddleware,
@@ -446,6 +476,11 @@ const {
   exportConfigRouteRateLimitMiddleware,
   exportRouteRateLimitMiddleware,
   importRouteRateLimitMiddleware,
+  importPreviewRouteRateLimitMiddleware,
+  importConfigRouteRateLimitMiddleware,
+  projectsMutationRouteRateLimitMiddleware,
+  assignmentsMutationRouteRateLimitMiddleware,
+  configurationMutationRouteRateLimitMiddleware,
   adminAuditRouteRateLimitMiddleware,
   adminUserManagementRouteRateLimitMiddleware,
   spaShellRouteRateLimitMiddleware
@@ -1599,7 +1634,9 @@ registerModuleRoutes(app, {
   getChallengeProjectId,
   getAssignmentProjectContext,
   getPersonProjectTotalQuantity,
-  distributeProjectQuantityAcrossAssignments
+  distributeProjectQuantityAcrossAssignments,
+  projectsMutationRouteRateLimitMiddleware,
+  assignmentsMutationRouteRateLimitMiddleware
 });
 
 // Legacy project/challenge/assignment endpoints are registered via src/modules/projects.
@@ -1842,7 +1879,7 @@ app.get('/api/export/:scope', requirePermission(PERMISSIONS.EXPORT_RUN), exportR
   }
 });
 
-app.post('/api/import/:scope/preview', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+app.post('/api/import/:scope/preview', requirePermission(PERMISSIONS.IMPORT_RUN), importPreviewRouteRateLimitMiddleware, async (req, res) => {
   const scope = normalizePortabilityScope(req.params.scope);
   if (!scope) return badRequest(res, 'Unsupported import scope.');
   const format = String(req.body?.format || '').toLowerCase();
@@ -2171,7 +2208,7 @@ async function applyConfigurationCatalog({ trades, levels, priorities, projectSt
   }
 }
 
-app.put('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), configurationRouteRateLimitMiddleware, async (req, res) => {
+app.put('/api/configuration', requirePermission(PERMISSIONS.ADMIN_ACCESS), configurationRouteRateLimitMiddleware, configurationMutationRouteRateLimitMiddleware, async (req, res) => {
   try {
     await applyConfigurationCatalog({ trades: req.body?.trades, levels: req.body?.levels, priorities: req.body?.priorities, projectStatuses: req.body?.projectStatuses });
     return res.json({ ok: true });
@@ -2590,7 +2627,7 @@ function summarizeImportPayload(payload) {
   };
 }
 
-app.post('/api/import/preview', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+app.post('/api/import/preview', requirePermission(PERMISSIONS.IMPORT_RUN), importPreviewRouteRateLimitMiddleware, async (req, res) => {
   const format = String(req.body?.format || '').toLowerCase();
 
   try {
@@ -2626,7 +2663,7 @@ app.post('/api/import/preview', requirePermission(PERMISSIONS.IMPORT_RUN), async
   }
 });
 
-app.post('/api/import/config/preview', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+app.post('/api/import/config/preview', requirePermission(PERMISSIONS.IMPORT_RUN), importPreviewRouteRateLimitMiddleware, async (req, res) => {
   const format = String(req.body?.format || '').toLowerCase();
 
   try {
@@ -2655,7 +2692,7 @@ app.post('/api/import/config/preview', requirePermission(PERMISSIONS.IMPORT_RUN)
   }
 });
 
-app.post('/api/import/config', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+app.post('/api/import/config', requirePermission(PERMISSIONS.IMPORT_RUN), importConfigRouteRateLimitMiddleware, async (req, res) => {
   try {
     const summary = await applyConfigurationCatalog({
       trades: req.body?.data?.trades,
@@ -2667,7 +2704,7 @@ app.post('/api/import/config', requirePermission(PERMISSIONS.IMPORT_RUN), async 
   }
 });
 
-app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), async (req, res) => {
+app.post('/api/import', requirePermission(PERMISSIONS.IMPORT_RUN), importRouteRateLimitMiddleware, async (req, res) => {
   const payload = req.body?.data;
 
   if (!payload) {

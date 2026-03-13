@@ -15,7 +15,9 @@ function registerProjectsRoutes(app, deps) {
     getChallengeProjectId,
     getAssignmentProjectContext,
     getPersonProjectTotalQuantity,
-    distributeProjectQuantityAcrossAssignments
+    distributeProjectQuantityAcrossAssignments,
+    projectsMutationRouteRateLimitMiddleware,
+    assignmentsMutationRouteRateLimitMiddleware
   } = deps;
 
   app.get('/api/projects', requirePermission(PERMISSIONS.PROJECTS_READ), async (req, res) => {
@@ -31,7 +33,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.post('/api/projects', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  app.post('/api/projects', requirePermission(PERMISSIONS.PROJECTS_WRITE), projectsMutationRouteRateLimitMiddleware, async (req, res) => {
     if (isScopedTeammate(req.auth)) {
       return res.status(403).json({ error: 'Forbidden.' });
     }
@@ -45,7 +47,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.put('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  app.put('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), projectsMutationRouteRateLimitMiddleware, async (req, res) => {
     if (isScopedTeammate(req.auth)) {
       return res.status(403).json({ error: 'Forbidden.' });
     }
@@ -60,7 +62,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.delete('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  app.delete('/api/projects/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), projectsMutationRouteRateLimitMiddleware, async (req, res) => {
     if (isScopedTeammate(req.auth)) {
       return res.status(403).json({ error: 'Forbidden.' });
     }
@@ -74,7 +76,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.post('/api/projects/:projectId/challenges', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  app.post('/api/projects/:projectId/challenges', requirePermission(PERMISSIONS.PROJECTS_WRITE), projectsMutationRouteRateLimitMiddleware, async (req, res) => {
     if (!canAccessProjectById(req.auth, req.params.projectId)) {
       return res.status(403).json({ error: 'Forbidden.' });
     }
@@ -88,7 +90,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.put('/api/challenges/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  app.put('/api/challenges/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), projectsMutationRouteRateLimitMiddleware, async (req, res) => {
     try {
       const projectId = await getChallengeProjectId(req.params.id);
       if (projectId === null) return res.status(404).json({ error: 'Challenge not found.' });
@@ -103,7 +105,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.delete('/api/challenges/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), async (req, res) => {
+  app.delete('/api/challenges/:id', requirePermission(PERMISSIONS.PROJECTS_WRITE), projectsMutationRouteRateLimitMiddleware, async (req, res) => {
     try {
       const projectId = await getChallengeProjectId(req.params.id);
       if (projectId === null) return res.status(404).json({ error: 'Challenge not found.' });
@@ -117,7 +119,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.post('/api/assignments', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), async (req, res) => {
+  app.post('/api/assignments', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), assignmentsMutationRouteRateLimitMiddleware, async (req, res) => {
     if (!canAccessProjectById(req.auth, req.body?.projectId)) {
       return res.status(403).json({ error: 'Forbidden.' });
     }
@@ -135,7 +137,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.put('/api/assignments/:id', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), async (req, res) => {
+  app.put('/api/assignments/:id', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), assignmentsMutationRouteRateLimitMiddleware, async (req, res) => {
     try {
       const assignmentContext = await getAssignmentProjectContext(req.params.id);
       if (!assignmentContext) return res.status(404).json({ error: 'Assignment not found.' });
@@ -150,7 +152,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.put('/api/projects/:projectId/people/:personId/quantity', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), async (req, res) => {
+  app.put('/api/projects/:projectId/people/:personId/quantity', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), assignmentsMutationRouteRateLimitMiddleware, async (req, res) => {
     const quantity = Number(req.body.quantity);
     if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100) {
       return badRequest(res, 'quantity must be an integer between 0 and 100.');
@@ -180,7 +182,7 @@ function registerProjectsRoutes(app, deps) {
     }
   });
 
-  app.delete('/api/assignments/:id', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), async (req, res) => {
+  app.delete('/api/assignments/:id', requirePermission(PERMISSIONS.ASSIGNMENTS_WRITE), assignmentsMutationRouteRateLimitMiddleware, async (req, res) => {
     try {
       const assignmentContext = await getAssignmentProjectContext(req.params.id);
       if (!assignmentContext) return res.status(404).json({ error: 'Assignment not found.' });

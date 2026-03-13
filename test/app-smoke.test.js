@@ -402,6 +402,183 @@ test('POST /api/import/:scope returns 429 when scoped import rate limit is excee
   }
 });
 
+
+
+test('POST /api/import returns 429 when bulk import limiter is exceeded', async () => {
+  const originalConnect = pool.connect;
+  const originalQuery = pool.query;
+  let importRateChecks = 0;
+
+  pool.query = async (sql) => {
+    const text = String(sql || '');
+    if (text.includes('INSERT INTO rate_limit_buckets')) {
+      importRateChecks += 1;
+      return {
+        rowCount: 1,
+        rows: [{ count: importRateChecks, window_start_ms: Date.now() }]
+      };
+    }
+    if (text.includes('DELETE FROM rate_limit_buckets')) return { rowCount: 0, rows: [] };
+    if (text.includes('FROM trades')) return { rowCount: 1, rows: [{ id: 1, name: 'UX' }] };
+    if (text.includes('FROM levels')) return { rowCount: 1, rows: [{ id: 1, name: 'JUNIOR' }] };
+    return { rowCount: 0, rows: [] };
+  };
+
+  const fakeClient = {
+    async query(sql) {
+      const text = String(sql || '');
+      if (text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK') return { rowCount: 0, rows: [] };
+      if (text.includes('DELETE FROM assignments')) return { rowCount: 0, rows: [] };
+      if (text.includes('DELETE FROM challenges')) return { rowCount: 0, rows: [] };
+      if (text.includes('DELETE FROM projects')) return { rowCount: 0, rows: [] };
+      if (text.includes('DELETE FROM people')) return { rowCount: 0, rows: [] };
+      if (text.includes('DELETE FROM clients')) return { rowCount: 0, rows: [] };
+      if (text.includes('INSERT INTO clients')) return { rowCount: 1, rows: [] };
+      if (text.includes('INSERT INTO projects')) return { rowCount: 1, rows: [] };
+      if (text.includes('INSERT INTO people')) return { rowCount: 1, rows: [] };
+      if (text.includes('INSERT INTO challenges')) return { rowCount: 1, rows: [] };
+      if (text.includes('INSERT INTO assignments')) return { rowCount: 1, rows: [] };
+      if (text.includes('SELECT setval(pg_get_serial_sequence')) return { rowCount: 1, rows: [{ setval: 1 }] };
+      return { rowCount: 0, rows: [] };
+    },
+    release() {}
+  };
+  pool.connect = async () => fakeClient;
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    clearRequestRateLimitBuckets();
+
+    const payload = {
+      data: {
+        clients: [],
+        projects: [],
+        people: [{ id: 1, first_name: 'A', last_name: 'B', trade_id: 1, level_id: 1, status: 'active', working_hours: 40 }],
+        challenges: [],
+        assignments: []
+      }
+    };
+
+    const first = await fetch(`http://127.0.0.1:${port}/api/import`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify(payload)
+    });
+    assert.equal(first.status, 200);
+
+    const blocked = await fetch(`http://127.0.0.1:${port}/api/import`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify(payload)
+    });
+    assert.equal(blocked.status, 429);
+    const body = await blocked.json();
+    assert.equal(body.error, 'Too many import requests. Please wait before trying again.');
+  } finally {
+    server.close();
+    pool.connect = originalConnect;
+    pool.query = originalQuery;
+  }
+});
+
+
+test('POST /api/import/preview returns 429 when import preview limiter is exceeded and emits metrics', async () => {
+  clearMetrics();
+  const originalQuery = pool.query;
+  let importPreviewRateChecks = 0;
+
+  pool.query = async (sql) => {
+    const text = String(sql || '');
+    if (text.includes('INSERT INTO rate_limit_buckets')) {
+      importPreviewRateChecks += 1;
+      return {
+        rowCount: 1,
+        rows: [{ count: importPreviewRateChecks, window_start_ms: Date.now() }]
+      };
+    }
+    if (text.includes('DELETE FROM rate_limit_buckets')) return { rowCount: 0, rows: [] };
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    clearRequestRateLimitBuckets();
+
+    const first = await fetch(`http://127.0.0.1:${port}/api/import/preview`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ format: 'yaml' })
+    });
+    assert.equal(first.status, 400);
+
+    const blocked = await fetch(`http://127.0.0.1:${port}/api/import/preview`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ format: 'yaml' })
+    });
+    assert.equal(blocked.status, 429);
+
+    const metricsResponse = await fetch(`http://127.0.0.1:${port}/metrics`);
+    assert.equal(metricsResponse.status, 200);
+    const metrics = await metricsResponse.text();
+    assert.equal(metrics.includes('projectory_rate_limit_hits_total{scope="import-preview",outcome="blocked"'), true);
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+    clearMetrics();
+  }
+});
+
+
+test('POST /api/assignments returns 429 when assignment mutation limiter is exceeded', async () => {
+  const originalQuery = pool.query;
+  let assignmentRateChecks = 0;
+
+  pool.query = async (sql) => {
+    const text = String(sql || '');
+    if (text.includes('INSERT INTO rate_limit_buckets')) {
+      assignmentRateChecks += 1;
+      return {
+        rowCount: 1,
+        rows: [{ count: assignmentRateChecks, window_start_ms: Date.now() }]
+      };
+    }
+    if (text.includes('DELETE FROM rate_limit_buckets')) return { rowCount: 0, rows: [] };
+    return { rowCount: 0, rows: [] };
+  };
+
+  const server = app.listen(0);
+  const port = server.address().port;
+
+  try {
+    clearRequestRateLimitBuckets();
+
+    const first = await fetch(`http://127.0.0.1:${port}/api/assignments`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({})
+    });
+    assert.equal(first.status, 400);
+
+    const blocked = await fetch(`http://127.0.0.1:${port}/api/assignments`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({})
+    });
+    assert.equal(blocked.status, 429);
+    const body = await blocked.json();
+    assert.equal(body.error, 'Too many assignment mutation requests. Please wait before trying again.');
+  } finally {
+    server.close();
+    pool.query = originalQuery;
+  }
+});
+
+
 test('GET /health rate limit window resets after configured interval', async () => {
   const originalQuery = pool.query;
   pool.query = async () => ({ rows: [{ ok: 1 }] });

@@ -71,6 +71,7 @@ Prometheus text format endpoint with core golden-signal and auth/DB diagnostics:
 - `projectory_auth_failures_total{type}`
 - `projectory_db_query_duration_ms_*` (histogram)
 - `projectory_db_query_errors_total`
+- `projectory_rate_limit_hits_total{scope,outcome,method,path}`
 
 ## Baseline alerting thresholds
 
@@ -103,3 +104,25 @@ Recommended filters/groupings:
 - `status`
 - `method`
 - environment / deployment version labels from the scrape target
+
+
+## Endpoint abuse-control policy map
+
+The following high-cost and mutable routes have explicit endpoint-level limiter policies (in addition to global request safeguards).
+
+| Route class | Routes | Limiter scope key | Environment variables |
+| --- | --- | --- | --- |
+| Export payload generation | `GET /api/export`, `GET /api/export/:scope` | `export` | `EXPORT_RATE_LIMIT_MAX`, `EXPORT_RATE_LIMIT_WINDOW_MS` |
+| Export configuration snapshot | `GET /api/export/config` | `export-config` | `EXPORT_CONFIG_RATE_LIMIT_MAX`, `EXPORT_CONFIG_RATE_LIMIT_WINDOW_MS` |
+| Scoped import execution | `POST /api/import/:scope` | `import-scoped` | `IMPORT_RATE_LIMIT_MAX`, `IMPORT_RATE_LIMIT_WINDOW_MS` |
+| Import previews (legacy + scoped) | `POST /api/import/preview`, `POST /api/import/config/preview`, `POST /api/import/:scope/preview` | `import-preview` | `IMPORT_PREVIEW_RATE_LIMIT_MAX`, `IMPORT_PREVIEW_RATE_LIMIT_WINDOW_MS` |
+| Import configuration apply paths | `POST /api/import`, `POST /api/import/config` | `import-config` | `IMPORT_CONFIG_RATE_LIMIT_MAX`, `IMPORT_CONFIG_RATE_LIMIT_WINDOW_MS` |
+| Admin audit queries | `GET /api/admin/audit` | `admin-audit` | `ADMIN_AUDIT_RATE_LIMIT_MAX`, `ADMIN_AUDIT_RATE_LIMIT_WINDOW_MS` |
+| Admin configuration read | `GET /api/configuration` | `admin-configuration` | `ADMIN_CONFIGURATION_RATE_LIMIT_MAX`, `ADMIN_CONFIGURATION_RATE_LIMIT_WINDOW_MS` |
+| Admin configuration writes | `PUT /api/configuration` | `admin-configuration-mutation` | `ADMIN_CONFIGURATION_MUTATION_RATE_LIMIT_MAX`, `ADMIN_CONFIGURATION_MUTATION_RATE_LIMIT_WINDOW_MS` |
+| Project/challenge mutations | `POST/PUT/DELETE /api/projects*`, `POST /api/projects/:projectId/challenges`, `PUT/DELETE /api/challenges/:id` | `projects-mutation` | `PROJECTS_MUTATION_RATE_LIMIT_MAX`, `PROJECTS_MUTATION_RATE_LIMIT_WINDOW_MS` |
+| Assignment mutations | `POST/PUT/DELETE /api/assignments*`, `PUT /api/projects/:projectId/people/:personId/quantity` | `assignments-mutation` | `ASSIGNMENTS_MUTATION_RATE_LIMIT_MAX`, `ASSIGNMENTS_MUTATION_RATE_LIMIT_WINDOW_MS` |
+
+Notes:
+- Existing `admin` user-management limiter behavior is intentionally unchanged.
+- The metrics stream emits `projectory_rate_limit_hits_total` whenever a limiter blocks with HTTP 429.

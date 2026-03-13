@@ -1,4 +1,4 @@
-function createRateLimitRuntime({ pool, expressRateLimit, env }) {
+function createRateLimitRuntime({ pool, expressRateLimit, env, onRateLimitEvent = null }) {
   const requestRateBuckets = new Map();
   const routeRateLimitBuckets = new Map();
   const RATE_LIMIT_BUCKET_SWEEP_INTERVAL_MS = 30000;
@@ -85,6 +85,16 @@ function createRateLimitRuntime({ pool, expressRateLimit, env }) {
     return seconds > 0 ? seconds : 1;
   }
 
+
+  function emitRateLimitEvent(payload) {
+    if (typeof onRateLimitEvent !== 'function') return;
+    try {
+      onRateLimitEvent(payload);
+    } catch (_error) {
+      // Swallow telemetry hook failures to avoid impacting request handling.
+    }
+  }
+
   function getRateLimitConfig() {
     const isProduction = String(env.NODE_ENV || '').trim().toLowerCase() === 'production';
     const defaultMax = isProduction ? 120 : 10000;
@@ -117,7 +127,15 @@ function createRateLimitRuntime({ pool, expressRateLimit, env }) {
         );
 
         if (!rateState.allowed) {
-          res.setHeader('Retry-After', String(toRetryAfterSeconds(rateState.retryAfterMs)));
+          const retryAfterSeconds = toRetryAfterSeconds(rateState.retryAfterMs);
+          emitRateLimitEvent({
+            scope: keyPrefix,
+            outcome: 'blocked',
+            method: String(req.method || 'GET').toUpperCase(),
+            path: String(req.path || ''),
+            actorKey
+          });
+          res.setHeader('Retry-After', String(retryAfterSeconds));
           return res.status(429).json({ error: message });
         }
 
@@ -136,7 +154,15 @@ function createRateLimitRuntime({ pool, expressRateLimit, env }) {
       sweepExpiredRateLimitBuckets(Date.now(), windowMs);
       const rateState = await consumeDistributedRateLimitBucket('request-global', ipKey, windowMs, max, requestRateBuckets);
       if (!rateState.allowed) {
-        res.setHeader('Retry-After', String(toRetryAfterSeconds(rateState.retryAfterMs)));
+        const retryAfterSeconds = toRetryAfterSeconds(rateState.retryAfterMs);
+        emitRateLimitEvent({
+          scope: 'request-global',
+          outcome: 'blocked',
+          method: String(req.method || 'GET').toUpperCase(),
+          path: String(req.path || ''),
+          actorKey: ipKey
+        });
+        res.setHeader('Retry-After', String(retryAfterSeconds));
         return res.status(429).json({ error: 'Too many requests.' });
       }
       return next();
@@ -160,6 +186,11 @@ function createRateLimitRuntime({ pool, expressRateLimit, env }) {
   const exportConfigRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'export-config', max: Number(env.EXPORT_CONFIG_RATE_LIMIT_MAX || 30), windowMs: Number(env.EXPORT_CONFIG_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000), message: 'Too many configuration export requests. Please wait before trying again.' });
   const exportRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'export', max: Number(env.EXPORT_RATE_LIMIT_MAX || 20), windowMs: Number(env.EXPORT_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000), message: 'Too many export requests. Please wait before trying again.' });
   const importRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'import-scoped', max: Number(env.IMPORT_RATE_LIMIT_MAX || 3), windowMs: Number(env.IMPORT_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000), message: 'Too many import requests. Please wait before trying again.', keyGenerator: (req) => `${String(req.ip || req.socket?.remoteAddress || 'unknown')}|${String(req.auth?.userId || req.auth?.email || 'anonymous').trim().toLowerCase() || 'anonymous'}|${String(req.params?.scope || 'unknown').trim().toLowerCase()}` });
+  const importPreviewRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'import-preview', max: Number(env.IMPORT_PREVIEW_RATE_LIMIT_MAX || 12), windowMs: Number(env.IMPORT_PREVIEW_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000), message: 'Too many import preview requests. Please wait before trying again.' });
+  const importConfigRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'import-config', max: Number(env.IMPORT_CONFIG_RATE_LIMIT_MAX || 4), windowMs: Number(env.IMPORT_CONFIG_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000), message: 'Too many configuration import requests. Please wait before trying again.' });
+  const projectsMutationRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'projects-mutation', max: Number(env.PROJECTS_MUTATION_RATE_LIMIT_MAX || 120), windowMs: Number(env.PROJECTS_MUTATION_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000), message: 'Too many project mutation requests. Please wait before trying again.' });
+  const assignmentsMutationRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'assignments-mutation', max: Number(env.ASSIGNMENTS_MUTATION_RATE_LIMIT_MAX || 180), windowMs: Number(env.ASSIGNMENTS_MUTATION_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000), message: 'Too many assignment mutation requests. Please wait before trying again.' });
+  const configurationMutationRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'admin-configuration-mutation', max: Number(env.ADMIN_CONFIGURATION_MUTATION_RATE_LIMIT_MAX || 30), windowMs: Number(env.ADMIN_CONFIGURATION_MUTATION_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000), message: 'Too many configuration update requests. Please wait before trying again.' });
   const adminAuditRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'admin-audit', max: Number(env.ADMIN_AUDIT_RATE_LIMIT_MAX || 30), windowMs: Number(env.ADMIN_AUDIT_RATE_LIMIT_WINDOW_MS || 60 * 1000), message: 'Too many audit log requests. Please wait before trying again.' });
   const adminUserManagementRouteRateLimitMiddleware = expressRateLimit({ windowMs: Number(env.ADMIN_USER_MANAGEMENT_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000), max: Number(env.ADMIN_USER_MANAGEMENT_RATE_LIMIT_MAX || 60), standardHeaders: true, legacyHeaders: false, message: { error: 'Too many admin user management requests. Please wait before trying again.' } });
   const spaShellRouteRateLimitMiddleware = rateLimit({ keyPrefix: 'spa-shell', max: Number(env.SPA_SHELL_RATE_LIMIT_MAX || 240), windowMs: Number(env.SPA_SHELL_RATE_LIMIT_WINDOW_MS || 60000), message: 'Too many page requests. Please slow down.' });
@@ -177,6 +208,11 @@ function createRateLimitRuntime({ pool, expressRateLimit, env }) {
     exportConfigRouteRateLimitMiddleware,
     exportRouteRateLimitMiddleware,
     importRouteRateLimitMiddleware,
+    importPreviewRouteRateLimitMiddleware,
+    importConfigRouteRateLimitMiddleware,
+    projectsMutationRouteRateLimitMiddleware,
+    assignmentsMutationRouteRateLimitMiddleware,
+    configurationMutationRouteRateLimitMiddleware,
     adminAuditRouteRateLimitMiddleware,
     adminUserManagementRouteRateLimitMiddleware,
     spaShellRouteRateLimitMiddleware,

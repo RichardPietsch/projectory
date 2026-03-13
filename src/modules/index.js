@@ -44,7 +44,9 @@ function registerModuleRoutes(app, deps) {
     getChallengeProjectId: deps.getChallengeProjectId,
     getAssignmentProjectContext: deps.getAssignmentProjectContext,
     getPersonProjectTotalQuantity: deps.getPersonProjectTotalQuantity,
-    distributeProjectQuantityAcrossAssignments: deps.distributeProjectQuantityAcrossAssignments
+    distributeProjectQuantityAcrossAssignments: deps.distributeProjectQuantityAcrossAssignments,
+    projectsMutationRouteRateLimitMiddleware: deps.projectsMutationRouteRateLimitMiddleware,
+    assignmentsMutationRouteRateLimitMiddleware: deps.assignmentsMutationRouteRateLimitMiddleware
   });
 }
 
