@@ -9,7 +9,11 @@ function run(command, options = {}) {
 }
 
 function hasFileChanged(files, fileName) {
-  return files.split('\n').map((entry) => entry.trim()).filter(Boolean).includes(fileName);
+  return files
+    .split('\n')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .includes(fileName);
 }
 
 function fail(message, remediation = []) {
@@ -22,6 +26,52 @@ function fail(message, remediation = []) {
   process.exit(1);
 }
 
+function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map((entry) => stableStringify(entry)).join(',')}]`;
+  if (value && typeof value === 'object') {
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function readPackageJsonAtRef(ref) {
+  const content = run(`git show ${ref}:package.json`);
+  return JSON.parse(content);
+}
+
+function hasLockRelevantPackageJsonChanges(baseRef) {
+  const lockRelevantKeys = [
+    'dependencies',
+    'devDependencies',
+    'optionalDependencies',
+    'peerDependencies',
+    'bundledDependencies',
+    'bundleDependencies',
+    'overrides'
+  ];
+
+  try {
+    const basePkg = readPackageJsonAtRef(`origin/${baseRef}`);
+    const headPkg = readPackageJsonAtRef('HEAD');
+
+    return lockRelevantKeys.some(
+      (key) => stableStringify(basePkg[key]) !== stableStringify(headPkg[key])
+    );
+  } catch {
+    const packageDiff = run(`git diff --unified=0 origin/${baseRef}...HEAD -- package.json`);
+    if (!packageDiff) return false;
+
+    return packageDiff
+      .split('\n')
+      .some((line) =>
+        /^(\+|-)\s*"(dependencies|devDependencies|optionalDependencies|peerDependencies|bundledDependencies|bundleDependencies|overrides)"\s*:/.test(
+          line
+        )
+      );
+  }
+}
+
 try {
   const baseRef = String(process.env.GITHUB_BASE_REF || '').trim();
   if (baseRef) {
@@ -29,14 +79,11 @@ try {
     const packageChanged = hasFileChanged(changedFiles, 'package.json');
     const lockChanged = hasFileChanged(changedFiles, 'package-lock.json');
 
-    if (packageChanged && !lockChanged) {
-      fail(
-        'package.json changed in this PR but package-lock.json did not.',
-        [
-          'Run: npm install',
-          'Commit the updated package-lock.json alongside package.json changes.'
-        ]
-      );
+    if (packageChanged && !lockChanged && hasLockRelevantPackageJsonChanges(baseRef)) {
+      fail('package.json dependency metadata changed in this PR but package-lock.json did not.', [
+        'Run: npm install',
+        'Commit the updated package-lock.json alongside package.json dependency changes.'
+      ]);
     }
   }
 
@@ -44,19 +91,15 @@ try {
 
   const lockDiff = run('git diff --name-only -- package-lock.json');
   if (lockDiff) {
-    fail(
-      'package-lock.json is out of sync with package.json (lockfile would change after install).',
-      [
-        'Run: npm install',
-        'Commit the resulting package-lock.json update.'
-      ]
-    );
+    fail('package-lock.json is out of sync with package.json (lockfile would change after install).', [
+      'Run: npm install',
+      'Commit the resulting package-lock.json update.'
+    ]);
   }
 
   console.log('Dependency/lockfile consistency check passed.');
 } catch (error) {
-  fail(
-    `Unable to complete lockfile consistency check: ${String(error?.message || error)}`,
-    ['Verify git history is available and npm can run in this environment.']
-  );
+  fail(`Unable to complete lockfile consistency check: ${String(error?.message || error)}`, [
+    'Verify git history is available and npm can run in this environment.'
+  ]);
 }
