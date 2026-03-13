@@ -16,7 +16,9 @@
     "lint:boundaries": "node scripts/ci-lint-check.js && npm run test:architecture",
     "test:architecture": "node scripts/architecture-fitness-check.js",
     "ops:readiness-check": "node scripts/check-operational-readiness.js",
-    "frontend:i18n:check": "node scripts/check-frontend-i18n.js"
+    "frontend:i18n:check": "node scripts/check-frontend-i18n.js",
+    "ci:deps:lockfile": "node scripts/check-lockfile-sync.js",
+    "ci:deps:repeatability": "node scripts/check-npm-ci-repeatability.js"
   },
   "dependencies": {
     "express": "^4.19.2",

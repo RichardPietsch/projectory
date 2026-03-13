@@ -27,6 +27,12 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Dependency lockfile/package sync guard
+        run: npm run ci:deps:lockfile
+
+      - name: Fresh-workspace npm ci repeatability guard
+        run: npm run ci:deps:repeatability
+
       - name: Install dependencies
         run: npm ci --no-fund
 
@@ -83,12 +89,15 @@ jobs:
       - name: Build quality/security summary
         if: always()
         run: |
+          mkdir -p ci-artifacts
           {
             echo "# Quality & Security Summary"
             echo ""
             echo "- Lint: see lint.txt"
             echo "- Formatting: see format.txt"
             echo "- Locale keys: see locale-check.txt"
+            echo "- Dependency lockfile check: see step logs (Dependency lockfile/package sync guard)"
+            echo "- npm ci repeatability: see step logs (Fresh-workspace npm ci repeatability guard)"
             echo "- Dependency scan: see dependency-scan.txt and npm-audit.json"
             echo "- Filesystem vuln scan: see trivy-fs.sarif"
             echo "- Secret scan: see gitleaks.sarif and gitleaks step logs"
