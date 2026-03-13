@@ -1,4 +1,5 @@
-      const state = window.ProjectoryState.createInitialState();
+      window.ProjectoryAppState = window.ProjectoryAppState || window.ProjectoryState.createInitialState();
+      const state = window.ProjectoryAppState;
       const i18n = window.ProjectoryI18n;
       const onboardingTour = window.ProjectoryOnboardingTour;
 

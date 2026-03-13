@@ -1,5 +1,6 @@
-const state = window.ProjectoryState.createInitialState();
-const i18n = window.ProjectoryI18n;
+window.ProjectoryAppState = window.ProjectoryAppState || window.ProjectoryState.createInitialState();
+const sharedState = window.ProjectoryAppState;
+const sharedI18n = window.ProjectoryI18n;
 
       function splitInlineArgs(argsString) {
         const args = [];
@@ -194,7 +195,7 @@ const i18n = window.ProjectoryI18n;
 
       function getProjectStatusPresentation(status) {
         const normalized = String(status || 'in_progress').toLowerCase();
-        const configured = (state.meta.projectStatuses || []).find((item) => String(item.key) === normalized);
+        const configured = (sharedState.meta.projectStatuses || []).find((item) => String(item.key) === normalized);
         if (configured) {
           return { key: configured.key, rank: Number(configured.sortOrder || 999), label: configured.label || configured.key, colorHex: configured.colorHex || '#64748B' };
         }
@@ -248,7 +249,7 @@ const i18n = window.ProjectoryI18n;
         { hex: '#6C16F2' },
         { hex: '#B401FE' }
       ];
-      state.configurationColorPicker = { open: false, kind: '', itemKey: '', selectedHex: '' };
+      sharedState.configurationColorPicker = { open: false, kind: '', itemKey: '', selectedHex: '' };
 
       function getPriorityPresetFromHex(colorHex) {
         const normalizedHex = String(colorHex || '').trim().toLowerCase();
@@ -290,7 +291,7 @@ const i18n = window.ProjectoryI18n;
       const { api } = window.ProjectoryApi;
 
       function currentRole() {
-        return String(state.auth?.role || 'admin').toLowerCase();
+        return String(sharedState.auth?.role || 'admin').toLowerCase();
       }
 
       function isViewerMode() {
@@ -310,7 +311,7 @@ const i18n = window.ProjectoryI18n;
       }
 
       function currentPersonId() {
-        const personId = state.auth?.personId;
+        const personId = sharedState.auth?.personId;
         return personId === null || personId === undefined || personId === '' ? '' : String(personId);
       }
 
@@ -319,81 +320,81 @@ const i18n = window.ProjectoryI18n;
       }
 
       function needsLoginScreen() {
-        return Boolean(state.authRequired);
+        return Boolean(sharedState.authRequired);
       }
 
       function loginScreenView() {
-        if (state.initialRegistration.required) {
-          const registerBusy = state.initialRegistration.submitting
-            ? i18n.t('auth.register.submitBusy')
-            : i18n.t('auth.register.submit');
-          const registerError = state.initialRegistration.error
-            ? `<p class="mt-2 text-xs text-rose-300">${state.initialRegistration.error}</p>`
+        if (sharedState.initialRegistration.required) {
+          const registerBusy = sharedState.initialRegistration.submitting
+            ? sharedI18n.t('auth.register.submitBusy')
+            : sharedI18n.t('auth.register.submit');
+          const registerError = sharedState.initialRegistration.error
+            ? `<p class="mt-2 text-xs text-rose-300">${sharedState.initialRegistration.error}</p>`
             : '';
 
           return `<div class="mx-auto mt-8 max-w-3xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
-            <h2 class="text-3xl font-bold">${i18n.t('auth.register.title')}</h2>
-            <p class="mt-2 text-slate-300">${i18n.t('auth.register.subtitle')}</p>
-            <div class="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">${i18n.t('auth.register.requirementsHint')}</div>
+            <h2 class="text-3xl font-bold">${sharedI18n.t('auth.register.title')}</h2>
+            <p class="mt-2 text-slate-300">${sharedI18n.t('auth.register.subtitle')}</p>
+            <div class="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">${sharedI18n.t('auth.register.requirementsHint')}</div>
             <form id="initial-register-form" class="mt-4 rounded-xl border border-slate-800 bg-slate-800 p-4">
               <div class="grid gap-3 md:grid-cols-2">
-                <label class="block text-sm text-slate-300">${i18n.t('auth.register.displayName')}
+                <label class="block text-sm text-slate-300">${sharedI18n.t('auth.register.displayName')}
                   <input id="register-display-name" type="text" class="mt-1 w-full rounded bg-slate-950 p-2" required />
                 </label>
-                <label class="block text-sm text-slate-300">${i18n.t('auth.login.email')}
-                  <input id="register-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
+                <label class="block text-sm text-slate-300">${sharedI18n.t('auth.login.email')}
+                  <input id="register-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.email')}" required />
                 </label>
-                <label class="block text-sm text-slate-300">${i18n.t('auth.login.password')}
-                  <input id="register-password" type="password" minlength="12" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.password')}" required />
+                <label class="block text-sm text-slate-300">${sharedI18n.t('auth.login.password')}
+                  <input id="register-password" type="password" minlength="12" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.password')}" required />
                 </label>
-                <label class="block text-sm text-slate-300">${i18n.t('auth.register.confirmPassword')}
+                <label class="block text-sm text-slate-300">${sharedI18n.t('auth.register.confirmPassword')}
                   <input id="register-password-confirm" type="password" minlength="12" class="mt-1 w-full rounded bg-slate-950 p-2" required />
                 </label>
               </div>
-              <button type="submit" class="mt-4 rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${state.initialRegistration.submitting ? 'disabled' : ''}>${registerBusy}</button>
+              <button type="submit" class="mt-4 rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${sharedState.initialRegistration.submitting ? 'disabled' : ''}>${registerBusy}</button>
               ${registerError}
             </form>
           </div>`;
         }
 
-        const forgotBusy = state.forgotPassword.submitting ? i18n.t('auth.forgot.submitBusy') : i18n.t('auth.forgot.submit');
-        const forgotError = state.forgotPassword.error ? `<p class="mt-2 text-xs text-rose-300">${state.forgotPassword.error}</p>` : '';
-        const forgotSuccess = state.forgotPassword.submitted
-          ? `<p class="mt-2 text-xs text-emerald-300">${i18n.t('auth.forgot.success')}</p>`
+        const forgotBusy = sharedState.forgotPassword.submitting ? sharedI18n.t('auth.forgot.submitBusy') : sharedI18n.t('auth.forgot.submit');
+        const forgotError = sharedState.forgotPassword.error ? `<p class="mt-2 text-xs text-rose-300">${sharedState.forgotPassword.error}</p>` : '';
+        const forgotSuccess = sharedState.forgotPassword.submitted
+          ? `<p class="mt-2 text-xs text-emerald-300">${sharedI18n.t('auth.forgot.success')}</p>`
           : '';
 
         return `<div class="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
           <div class="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
-              <h2 class="text-3xl font-bold">${i18n.t('auth.login.title')}</h2>
-              <p class="mt-2 text-slate-300">${i18n.t('auth.login.subtitle')}</p>
+              <h2 class="text-3xl font-bold">${sharedI18n.t('auth.login.title')}</h2>
+              <p class="mt-2 text-slate-300">${sharedI18n.t('auth.login.subtitle')}</p>
               <ul class="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-400">
-                <li>${i18n.t('auth.login.bullet.permissions')}</li>
-                <li>${i18n.t('auth.login.bullet.session')}</li>
-                <li>${i18n.t('auth.login.bullet.audit')}</li>
+                <li>${sharedI18n.t('auth.login.bullet.permissions')}</li>
+                <li>${sharedI18n.t('auth.login.bullet.session')}</li>
+                <li>${sharedI18n.t('auth.login.bullet.audit')}</li>
               </ul>
             </div>
             <div class="space-y-4">
               <form id="login-form" class="rounded-xl border border-slate-800 bg-slate-800 p-4">
-                <h3 class="mb-3 text-lg font-semibold">${i18n.t('auth.login.formTitle')}</h3>
-                <label class="mb-2 block text-sm text-slate-300">${i18n.t('auth.login.email')}
-                  <input id="login-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
+                <h3 class="mb-3 text-lg font-semibold">${sharedI18n.t('auth.login.formTitle')}</h3>
+                <label class="mb-2 block text-sm text-slate-300">${sharedI18n.t('auth.login.email')}
+                  <input id="login-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.email')}" required />
                 </label>
-                <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.login.password')}
-                  <input id="login-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.password')}" required />
+                <label class="mb-3 block text-sm text-slate-300">${sharedI18n.t('auth.login.password')}
+                  <input id="login-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.password')}" required />
                 </label>
                 <div class="flex gap-2">
-                  <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950">${i18n.t('auth.login.submit')}</button>
+                  <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950">${sharedI18n.t('auth.login.submit')}</button>
                 </div>
               </form>
 
               <form id="forgot-password-form" class="rounded-xl border border-slate-800 bg-slate-800 p-4">
-                <h3 class="mb-2 text-sm font-semibold text-slate-200">${i18n.t('auth.forgot.title')}</h3>
-                <label class="block text-sm text-slate-300">${i18n.t('auth.forgot.emailLabel')}
-                  <input id="forgot-password-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${i18n.t('auth.login.placeholders.email')}" required />
+                <h3 class="mb-2 text-sm font-semibold text-slate-200">${sharedI18n.t('auth.forgot.title')}</h3>
+                <label class="block text-sm text-slate-300">${sharedI18n.t('auth.forgot.emailLabel')}
+                  <input id="forgot-password-email" type="email" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.email')}" required />
                 </label>
                 <div class="mt-3">
-                  <button type="submit" class="rounded border border-slate-600 px-3 py-2 text-xs hover:bg-slate-800 disabled:opacity-60" ${state.forgotPassword.submitting ? 'disabled' : ''}>${forgotBusy}</button>
+                  <button type="submit" class="rounded border border-slate-600 px-3 py-2 text-xs hover:bg-slate-800 disabled:opacity-60" ${sharedState.forgotPassword.submitting ? 'disabled' : ''}>${forgotBusy}</button>
                 </div>
                 ${forgotSuccess}
                 ${forgotError}
@@ -405,43 +406,43 @@ const i18n = window.ProjectoryI18n;
 
 
       function inviteFlowView() {
-        const profile = state.inviteFlow.profile || {};
-        const title = profile.displayName ? i18n.t('auth.invite.welcomeNamed', { name: profile.displayName }) : i18n.t('auth.invite.welcome');
-        const subtitle = profile.email ? i18n.t('auth.invite.subtitleNamed', { email: profile.email }) : i18n.t('auth.invite.subtitle');
-        const busyLabel = state.inviteFlow.submitting ? i18n.t('auth.invite.submitBusy') : i18n.t('auth.invite.submit');
-        const errorHtml = state.inviteFlow.error ? `<p class="mt-3 text-sm text-rose-300">${state.inviteFlow.error}</p>` : '';
+        const profile = sharedState.inviteFlow.profile || {};
+        const title = profile.displayName ? sharedI18n.t('auth.invite.welcomeNamed', { name: profile.displayName }) : sharedI18n.t('auth.invite.welcome');
+        const subtitle = profile.email ? sharedI18n.t('auth.invite.subtitleNamed', { email: profile.email }) : sharedI18n.t('auth.invite.subtitle');
+        const busyLabel = sharedState.inviteFlow.submitting ? sharedI18n.t('auth.invite.submitBusy') : sharedI18n.t('auth.invite.submit');
+        const errorHtml = sharedState.inviteFlow.error ? `<p class="mt-3 text-sm text-rose-300">${sharedState.inviteFlow.error}</p>` : '';
 
         return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-800 p-8 shadow-2xl">
           <h2 class="text-3xl font-bold">${title}</h2>
           <p class="mt-2 text-slate-300">${subtitle}</p>
-          <p class="mt-1 text-xs text-slate-500">${i18n.t('auth.invite.tokenState', { state: state.inviteFlow.token ? i18n.t('common.loaded') : i18n.t('common.missing') })}</p>
+          <p class="mt-1 text-xs text-slate-500">${sharedI18n.t('auth.invite.tokenState', { state: sharedState.inviteFlow.token ? sharedI18n.t('common.loaded') : sharedI18n.t('common.missing') })}</p>
           <form id="invite-activate-form" class="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-            <label class="mb-3 block text-sm text-slate-300" >${i18n.t('auth.login.password')}
+            <label class="mb-3 block text-sm text-slate-300" >${sharedI18n.t('auth.login.password')}
               <input id="invite-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
             </label>
-            <label class="mb-3 block text-sm text-slate-300" >${i18n.t('auth.register.confirmPassword')}
+            <label class="mb-3 block text-sm text-slate-300" >${sharedI18n.t('auth.register.confirmPassword')}
               <input id="invite-password-confirm" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
             </label>
-            <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${state.inviteFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
+            <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${sharedState.inviteFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
           </form>
           ${errorHtml}
         </div>`;
       }
 
       async function loadInviteFlow(token) {
-        state.inviteFlow.loading = true;
-        state.inviteFlow.error = '';
+        sharedState.inviteFlow.loading = true;
+        sharedState.inviteFlow.error = '';
         try {
           const payload = await api('/api/auth/invite-preview', {
             method: 'POST',
             body: JSON.stringify({ token })
           });
-          state.inviteFlow.profile = payload?.user || null;
+          sharedState.inviteFlow.profile = payload?.user || null;
         } catch (error) {
-          state.inviteFlow.error = error.message || i18n.t('auth.invite.loadError');
-          state.inviteFlow.profile = null;
+          sharedState.inviteFlow.error = error.message || sharedI18n.t('auth.invite.loadError');
+          sharedState.inviteFlow.profile = null;
         } finally {
-          state.inviteFlow.loading = false;
+          sharedState.inviteFlow.loading = false;
         }
       }
 
@@ -450,55 +451,55 @@ const i18n = window.ProjectoryI18n;
         const password = String(document.getElementById('invite-password')?.value || '');
         const confirm = String(document.getElementById('invite-password-confirm')?.value || '');
         if (!password || password !== confirm) {
-          state.inviteFlow.error = 'Passwords do not match.';
+          sharedState.inviteFlow.error = 'Passwords do not match.';
           render();
           return;
         }
 
-        state.inviteFlow.submitting = true;
-        state.inviteFlow.error = '';
+        sharedState.inviteFlow.submitting = true;
+        sharedState.inviteFlow.error = '';
         render();
         try {
           const result = await api('/api/auth/accept-invite', {
             method: 'POST',
-            body: JSON.stringify({ token: state.inviteFlow.token, password })
+            body: JSON.stringify({ token: sharedState.inviteFlow.token, password })
           });
 
-          state.inviteFlow.active = false;
-          state.inviteFlow.token = '';
-          state.inviteFlow.profile = null;
-          state.inviteFlow.submitting = false;
-          state.authRequired = true;
+          sharedState.inviteFlow.active = false;
+          sharedState.inviteFlow.token = '';
+          sharedState.inviteFlow.profile = null;
+          sharedState.inviteFlow.submitting = false;
+          sharedState.authRequired = true;
           showMessage(`Password set for ${result?.email || 'your account'}. Please log in.`);
           window.history.replaceState({}, '', '/teams');
           render();
         } catch (error) {
-          state.inviteFlow.submitting = false;
-          state.inviteFlow.error = error.message || 'Invite activation failed.';
+          sharedState.inviteFlow.submitting = false;
+          sharedState.inviteFlow.error = error.message || 'Invite activation failed.';
           render();
         }
       };
 
 
       function resetPasswordFlowView() {
-        const busyLabel = state.resetPasswordFlow.submitting ? i18n.t('auth.reset.submitBusy') : i18n.t('auth.reset.submit');
-        const errorHtml = state.resetPasswordFlow.error ? `<p class="mt-3 text-sm text-rose-300">${state.resetPasswordFlow.error}</p>` : '';
-        const doneHtml = state.resetPasswordFlow.done ? `<p class="mt-3 text-sm text-emerald-300">${i18n.t('auth.reset.success')}</p>` : '';
+        const busyLabel = sharedState.resetPasswordFlow.submitting ? sharedI18n.t('auth.reset.submitBusy') : sharedI18n.t('auth.reset.submit');
+        const errorHtml = sharedState.resetPasswordFlow.error ? `<p class="mt-3 text-sm text-rose-300">${sharedState.resetPasswordFlow.error}</p>` : '';
+        const doneHtml = sharedState.resetPasswordFlow.done ? `<p class="mt-3 text-sm text-emerald-300">${sharedI18n.t('auth.reset.success')}</p>` : '';
 
         return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-slate-800 bg-slate-800 p-8 shadow-2xl">
-          <h2 class="text-3xl font-bold">${i18n.t('auth.reset.title')}</h2>
-          <p class="mt-2 text-slate-300">${i18n.t('auth.reset.subtitle')}</p>
-          <p class="mt-1 text-xs text-slate-500">${i18n.t('auth.reset.tokenStatus', { status: state.resetPasswordFlow.token ? i18n.t('auth.reset.tokenLoaded') : i18n.t('auth.reset.tokenMissing') })}</p>
+          <h2 class="text-3xl font-bold">${sharedI18n.t('auth.reset.title')}</h2>
+          <p class="mt-2 text-slate-300">${sharedI18n.t('auth.reset.subtitle')}</p>
+          <p class="mt-1 text-xs text-slate-500">${sharedI18n.t('auth.reset.tokenStatus', { status: sharedState.resetPasswordFlow.token ? sharedI18n.t('auth.reset.tokenLoaded') : sharedI18n.t('auth.reset.tokenMissing') })}</p>
           <form id="reset-password-form" class="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-            <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.reset.newPassword')}
+            <label class="mb-3 block text-sm text-slate-300">${sharedI18n.t('auth.reset.newPassword')}
               <input id="reset-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
             </label>
-            <label class="mb-3 block text-sm text-slate-300">${i18n.t('auth.reset.confirmPassword')}
+            <label class="mb-3 block text-sm text-slate-300">${sharedI18n.t('auth.reset.confirmPassword')}
               <input id="reset-password-confirm" type="password" class="mt-1 w-full rounded bg-slate-950 p-2" minlength="12" required />
             </label>
             <div class="flex items-center gap-3">
-              <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${state.resetPasswordFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
-              <a href="/teams" class="text-xs text-sky-300 hover:text-sky-200">${i18n.t('auth.reset.backToLogin')}</a>
+              <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60" ${sharedState.resetPasswordFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
+              <a href="/teams" class="text-xs text-sky-300 hover:text-sky-200">${sharedI18n.t('auth.reset.backToLogin')}</a>
             </div>
           </form>
           ${doneHtml}
@@ -510,26 +511,26 @@ const i18n = window.ProjectoryI18n;
         event?.preventDefault();
         const email = String(document.getElementById('forgot-password-email')?.value || '').trim();
         if (!email) {
-          state.forgotPassword.error = i18n.t('auth.forgot.emailRequired');
+          sharedState.forgotPassword.error = sharedI18n.t('auth.forgot.emailRequired');
           render();
           return;
         }
 
-        state.forgotPassword.submitting = true;
-        state.forgotPassword.submitted = false;
-        state.forgotPassword.error = '';
+        sharedState.forgotPassword.submitting = true;
+        sharedState.forgotPassword.submitted = false;
+        sharedState.forgotPassword.error = '';
         render();
         try {
           await api('/api/auth/forgot-password', {
             method: 'POST',
             body: JSON.stringify({ email })
           });
-          state.forgotPassword.submitting = false;
-          state.forgotPassword.submitted = true;
+          sharedState.forgotPassword.submitting = false;
+          sharedState.forgotPassword.submitted = true;
           render();
         } catch (error) {
-          state.forgotPassword.submitting = false;
-          state.forgotPassword.error = error.message || i18n.t('auth.forgot.genericError');
+          sharedState.forgotPassword.submitting = false;
+          sharedState.forgotPassword.error = error.message || sharedI18n.t('auth.forgot.genericError');
           render();
         }
       };
@@ -539,28 +540,28 @@ const i18n = window.ProjectoryI18n;
         const password = String(document.getElementById('reset-password')?.value || '');
         const confirm = String(document.getElementById('reset-password-confirm')?.value || '');
         if (!password || password !== confirm) {
-          state.resetPasswordFlow.error = i18n.t('auth.reset.passwordsMismatch');
+          sharedState.resetPasswordFlow.error = sharedI18n.t('auth.reset.passwordsMismatch');
           render();
           return;
         }
 
-        state.resetPasswordFlow.submitting = true;
-        state.resetPasswordFlow.error = '';
+        sharedState.resetPasswordFlow.submitting = true;
+        sharedState.resetPasswordFlow.error = '';
         render();
         try {
           await api('/api/auth/reset-password', {
             method: 'POST',
-            body: JSON.stringify({ token: state.resetPasswordFlow.token, password })
+            body: JSON.stringify({ token: sharedState.resetPasswordFlow.token, password })
           });
-          state.resetPasswordFlow.submitting = false;
-          state.resetPasswordFlow.done = true;
-          state.authRequired = true;
-          showMessage(i18n.t('auth.reset.success'));
+          sharedState.resetPasswordFlow.submitting = false;
+          sharedState.resetPasswordFlow.done = true;
+          sharedState.authRequired = true;
+          showMessage(sharedI18n.t('auth.reset.success'));
           window.history.replaceState({}, '', '/teams');
           render();
         } catch (error) {
-          state.resetPasswordFlow.submitting = false;
-          state.resetPasswordFlow.error = error.message || i18n.t('auth.reset.genericError');
+          sharedState.resetPasswordFlow.submitting = false;
+          sharedState.resetPasswordFlow.error = error.message || sharedI18n.t('auth.reset.genericError');
           render();
         }
       };
@@ -573,28 +574,28 @@ const i18n = window.ProjectoryI18n;
         const confirm = String(document.getElementById('register-password-confirm')?.value || '');
 
         if (password !== confirm) {
-          state.initialRegistration.error = i18n.t('auth.reset.passwordsMismatch');
+          sharedState.initialRegistration.error = sharedI18n.t('auth.reset.passwordsMismatch');
           render();
           return;
         }
 
-        state.initialRegistration.submitting = true;
-        state.initialRegistration.error = '';
+        sharedState.initialRegistration.submitting = true;
+        sharedState.initialRegistration.error = '';
         render();
         try {
           await api('/api/auth/register-initial-admin', {
             method: 'POST',
             body: JSON.stringify({ displayName, email, password })
           });
-          state.initialRegistration.submitting = false;
-          state.initialRegistration.required = false;
+          sharedState.initialRegistration.submitting = false;
+          sharedState.initialRegistration.required = false;
           await loadData({ forceAppData: true });
-          state.authRequired = false;
-          showMessage(i18n.t('auth.register.success'));
+          sharedState.authRequired = false;
+          showMessage(sharedI18n.t('auth.register.success'));
           render();
         } catch (error) {
-          state.initialRegistration.submitting = false;
-          state.initialRegistration.error = error.message || i18n.t('auth.register.genericError');
+          sharedState.initialRegistration.submitting = false;
+          sharedState.initialRegistration.error = error.message || sharedI18n.t('auth.register.genericError');
           await loadData();
           render();
         }
