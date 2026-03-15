@@ -78,13 +78,25 @@ jobs:
           vuln-type: os,library
           trivyignores: .trivyignore
 
-      - name: Secret scan (gitleaks)
-        id: gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --source . --no-git --redact --report-format sarif --report-path ci-artifacts/gitleaks.sarif
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install gitleaks CLI
+        run: |
+          set -euo pipefail
+          GITLEAKS_VERSION="8.24.3"
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Secret scan (gitleaks CLI, fail on findings)
+        run: |
+          set -euo pipefail
+          gitleaks detect \
+            --source . \
+            --no-git \
+            --redact \
+            --report-format sarif \
+            --report-path ci-artifacts/gitleaks.sarif \
+            --exit-code 1
 
       - name: Build quality/security summary
         if: always()
