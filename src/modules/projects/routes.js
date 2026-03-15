@@ -1,4 +1,3 @@
-const projectsRepo = require('./repo');
 const projectsService = require('./service');
 
 function registerProjectsRoutes(app, deps) {
@@ -68,8 +67,8 @@ function registerProjectsRoutes(app, deps) {
     }
 
     try {
-      const result = await projectsRepo.deleteProject(pool, req.params.id);
-      if (result.rowCount === 0) return res.status(404).json({ error: 'Project not found.' });
+      const result = await projectsService.deleteProject(pool, req.params.id);
+      if (result.notFound) return res.status(404).json({ error: 'Project not found.' });
       return res.json({ ok: true });
     } catch (error) {
       return handleDbError(res, error);
@@ -111,8 +110,8 @@ function registerProjectsRoutes(app, deps) {
       if (projectId === null) return res.status(404).json({ error: 'Challenge not found.' });
       if (!canAccessProjectById(req.auth, projectId)) return res.status(403).json({ error: 'Forbidden.' });
 
-      const result = await projectsRepo.deleteChallenge(pool, req.params.id);
-      if (result.rowCount === 0) return res.status(404).json({ error: 'Challenge not found.' });
+      const result = await projectsService.deleteChallenge(pool, req.params.id);
+      if (result.notFound) return res.status(404).json({ error: 'Challenge not found.' });
       return res.json({ ok: true });
     } catch (error) {
       return handleDbError(res, error);

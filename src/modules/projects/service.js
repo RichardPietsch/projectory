@@ -99,6 +99,16 @@ async function updateProject(pool, id, payload, { requireMonth, normalizeProject
   return { value: { rowCount: result.rowCount } };
 }
 
+
+async function deleteProject(pool, id) {
+  const result = await projectsRepo.deleteProject(pool, id);
+  if (result.rowCount === 0) {
+    return { notFound: true };
+  }
+
+  return { value: { ok: true } };
+}
+
 async function createChallenge(pool, payload) {
   const { projectId, title, description } = payload;
   if (!projectId || !title || !String(title).trim()) {
@@ -125,6 +135,16 @@ async function updateChallenge(pool, id, payload) {
   });
 
   return { value: { rowCount: result.rowCount } };
+}
+
+
+async function deleteChallenge(pool, id) {
+  const result = await projectsRepo.deleteChallenge(pool, id);
+  if (result.rowCount === 0) {
+    return { notFound: true };
+  }
+
+  return { value: { ok: true } };
 }
 
 async function createAssignment(pool, payload, helpers) {
@@ -237,6 +257,8 @@ module.exports = {
   updateProject,
   createChallenge,
   updateChallenge,
+  deleteProject,
+  deleteChallenge,
   createAssignment,
   updateAssignment,
   updatePersonProjectQuantity,

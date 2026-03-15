@@ -3,9 +3,6 @@ const path = require('node:path');
 
 const ROOT = process.cwd();
 const SRC_MODULES_DIR = path.join(ROOT, 'src', 'modules');
-const LEGACY_ALLOWED_EDGES = new Set([
-  'src/modules/projects/routes.js -> src/modules/projects/repo.js'
-]);
 
 function walk(dir, files = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -70,9 +67,6 @@ function runFitnessChecks() {
 
       const sameModule = context.moduleName === target.moduleName;
       const edge = `${context.relative} -> ${rel(resolved)}`;
-      if (LEGACY_ALLOWED_EDGES.has(edge)) {
-        continue;
-      }
 
       if (!sameModule) {
         issues.push(`${edge} is forbidden: cross-module imports are not allowed between domain module layers.`);
