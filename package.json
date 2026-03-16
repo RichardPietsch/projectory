@@ -13,13 +13,14 @@
     "format:check": "node scripts/ci-format-check.js",
     "locale:check": "node scripts/check-locale-keys.js && npm run frontend:i18n:check",
     "lint:eslint": "eslint src scripts test test-utils public/js --max-warnings 0",
-    "lint:boundaries": "node scripts/ci-lint-check.js && npm run test:architecture",
+    "lint:boundaries": "node scripts/ci-lint-check.js && npm run test:architecture && npm run lint:dom-safety",
     "test:architecture": "node scripts/architecture-fitness-check.js",
     "ops:readiness-check": "node scripts/check-operational-readiness.js",
     "frontend:i18n:check": "node scripts/check-frontend-i18n.js",
     "ci:deps:lockfile": "node scripts/check-lockfile-sync.js",
     "ci:deps:repeatability": "node scripts/check-npm-ci-repeatability.js",
-    "release:readiness-check": "node scripts/check-release-readiness.js && npm run ops:readiness-check"
+    "release:readiness-check": "node scripts/check-release-readiness.js && npm run ops:readiness-check",
+    "lint:dom-safety": "node scripts/check-frontend-dom-safety.js"
   },
   "dependencies": {
     "express": "^4.19.2",
