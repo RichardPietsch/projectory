@@ -158,6 +158,68 @@
       window.setAdminTab = function setAdminTab(tabId) { if (!canAccessAdmin()) return; state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
       window.closeAdminStandalone = function closeAdminStandalone() { state.showAdmin = false; navigateFromState(); render(); };
 
+      function createHomeTabButton({ id, label, count, active, onClick }) {
+        const safeDom = window.ProjectorySafeDom || {};
+        const button = document.createElement('button');
+        button.className = `inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${active ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}`;
+        button.id = id;
+        button.addEventListener('click', onClick);
+
+        const labelSpan = document.createElement('span');
+        if (typeof safeDom.setText === 'function') {
+          safeDom.setText(labelSpan, label);
+        } else {
+          labelSpan.textContent = label;
+        }
+
+        const countSpan = document.createElement('span');
+        countSpan.className = 'rounded-full bg-current/15 px-2 py-0.5 text-xs';
+        if (typeof safeDom.setText === 'function') {
+          safeDom.setText(countSpan, String(count));
+        } else {
+          countSpan.textContent = String(count);
+        }
+
+        button.appendChild(labelSpan);
+        button.appendChild(countSpan);
+        return button;
+      }
+
+      function renderHomeTabs(container) {
+        const tabsWrap = document.createElement('div');
+        tabsWrap.className = 'mb-4 border-b border-slate-800';
+
+        const nav = document.createElement('nav');
+        nav.className = '-mb-px flex gap-6';
+        nav.setAttribute('aria-label', 'Homepage tabs');
+
+        nav.appendChild(
+          createHomeTabButton({
+            id: 'onboarding-tab-client-teams',
+            label: i18n.t('home.clientTeams'),
+            count: state.projectsPayload.projects.length,
+            active: state.homeTab === 'client-teams',
+            onClick: () => window.setHomeTab('client-teams')
+          })
+        );
+
+        if (canViewPeopleOverview()) {
+          nav.appendChild(
+            createHomeTabButton({
+              id: 'onboarding-tab-people-overview',
+              label: i18n.t('home.peopleOverview'),
+              count: state.people.filter(personIsVisibleInNonAdmin).length,
+              active: state.homeTab === 'people-overview',
+              onClick: () => window.setHomeTab('people-overview')
+            })
+          );
+        }
+
+        tabsWrap.appendChild(nav);
+        container.appendChild(tabsWrap);
+      }
+
+
       window.loginFromSplash = async function loginFromSplash(event) {
         event?.preventDefault();
         try {
@@ -204,12 +266,11 @@
           document.getElementById('view').innerHTML = adminStandaloneView();
         } else {
         if (!canViewPeopleOverview() && state.homeTab === 'people-overview') state.homeTab = 'client-teams';
-        const peopleTab = canViewPeopleOverview()
-          ? `<button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'people-overview' ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-people-overview" onclick="setHomeTab('people-overview')"><span class="iconify text-base" data-icon="mdi:badge-account" aria-hidden="true"></span><span>${i18n.t('home.peopleOverview')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.people.filter(personIsVisibleInNonAdmin).length}</span></button>`
-          : '';
-        const homeTabs = `<div class="mb-4 border-b border-slate-800"><nav class="-mb-px flex gap-6" aria-label="Homepage tabs"><button class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${state.homeTab === 'client-teams' ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}" id="onboarding-tab-client-teams" onclick="setHomeTab('client-teams')"><span class="iconify text-base" data-icon="mdi:karate" aria-hidden="true"></span><span>${i18n.t('home.clientTeams')}</span><span class="rounded-full bg-current/15 px-2 py-0.5 text-xs">${state.projectsPayload.projects.length}</span></button>${peopleTab}</nav></div>`;
         const homeContent = state.homeTab === 'people-overview' && canViewPeopleOverview() ? peopleOverviewView() : ownershipView();
-        document.getElementById('view').innerHTML = homeTabs + homeContent;
+        const viewRoot = document.getElementById('view');
+        viewRoot.innerHTML = '';
+        renderHomeTabs(viewRoot);
+        viewRoot.insertAdjacentHTML('beforeend', homeContent);
 
         }
 

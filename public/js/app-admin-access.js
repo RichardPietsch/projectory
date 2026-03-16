@@ -773,7 +773,28 @@ function clientsView() {
             }))
             .filter((person) => Number.isInteger(person.id) && person.id > 0 && person.name)
             .sort((a, b) => a.name.localeCompare(b.name));
-          personSelect.innerHTML = `<option value="">${i18n.t('admin.access.fields.unlinked')}</option>${options.map((person) => `<option value="${person.id}">${person.name}</option>`).join('')}`;
+          const safeDom = window.ProjectorySafeDom || {};
+          if (typeof safeDom.clearChildren === 'function') {
+            safeDom.clearChildren(personSelect);
+          } else {
+            personSelect.textContent = '';
+          }
+
+          if (typeof safeDom.appendOption === 'function') {
+            safeDom.appendOption(personSelect, '', i18n.t('admin.access.fields.unlinked'), false);
+            options.forEach((person) => safeDom.appendOption(personSelect, person.id, person.name, false));
+          } else {
+            const unlinkedOption = document.createElement('option');
+            unlinkedOption.value = '';
+            unlinkedOption.textContent = i18n.t('admin.access.fields.unlinked');
+            personSelect.appendChild(unlinkedOption);
+            options.forEach((person) => {
+              const option = document.createElement('option');
+              option.value = String(person.id);
+              option.textContent = String(person.name || '');
+              personSelect.appendChild(option);
+            });
+          }
         }
 
         document.getElementById('admin-user-edit-id').value = String(user.id);

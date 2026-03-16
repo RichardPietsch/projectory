@@ -423,6 +423,101 @@
           ${projectPeopleOverview}`;
       }
 
+const safeDom = window.ProjectorySafeDom || {};
+
+      function populateSelectOptions(select, items, selected) {
+        if (!select) return;
+        if (typeof safeDom.clearChildren === 'function') {
+          safeDom.clearChildren(select);
+        } else {
+          select.textContent = '';
+        }
+
+        for (const item of items || []) {
+          const isSelected = String(selected) === String(item.id);
+          if (typeof safeDom.appendOption === 'function') {
+            safeDom.appendOption(select, item.id, item.name, isSelected);
+          } else {
+            const option = document.createElement('option');
+            option.value = String(item.id);
+            option.textContent = String(item.name || '');
+            option.selected = isSelected;
+            select.appendChild(option);
+          }
+        }
+      }
+
+      function renderAssignPeopleList(list, people) {
+        if (typeof safeDom.clearChildren === 'function') {
+          safeDom.clearChildren(list);
+        } else {
+          list.textContent = '';
+        }
+
+        if (people.length === 0) {
+          const empty = document.createElement('p');
+          empty.className = 'p-2 text-sm text-slate-400';
+          if (typeof safeDom.setText === 'function') {
+            safeDom.setText(empty, i18n.t('assign.noMatches'));
+          } else {
+            empty.textContent = i18n.t('assign.noMatches');
+          }
+          list.appendChild(empty);
+          state.assignModal.selectedPersonId = '';
+          return;
+        }
+
+        if (!people.some((person) => String(person.id) === String(state.assignModal.selectedPersonId))) {
+          state.assignModal.selectedPersonId = String(people[0].id);
+        }
+
+        for (const person of people) {
+          const label = document.createElement('label');
+          label.className = 'mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-900';
+
+          const input = document.createElement('input');
+          input.type = 'radio';
+          input.name = 'assign-person';
+          input.value = String(person.id);
+          input.checked = String(state.assignModal.selectedPersonId) === String(person.id);
+
+          const nameWrap = document.createElement('span');
+          nameWrap.appendChild(document.createTextNode(`${String(person.first_name || '')} ${String(person.last_name || '')}`.trim()));
+
+          if (person.is_leaver) {
+            const leaverBadge = document.createElement('span');
+            leaverBadge.className = 'ml-1 rounded border border-amber-500/60 px-1 py-0.5 text-[10px] uppercase tracking-wide text-amber-300';
+            if (typeof safeDom.setText === 'function') {
+              safeDom.setText(leaverBadge, i18n.t('people.flags.leaver'));
+            } else {
+              leaverBadge.textContent = i18n.t('people.flags.leaver');
+            }
+            nameWrap.appendChild(document.createTextNode(' '));
+            nameWrap.appendChild(leaverBadge);
+          }
+
+          const trade = document.createElement('span');
+          trade.className = 'text-xs text-slate-400';
+          if (typeof safeDom.setText === 'function') {
+            safeDom.setText(trade, `(${String(person.trade_name || '')})`);
+          } else {
+            trade.textContent = `(${String(person.trade_name || '')})`;
+          }
+
+          nameWrap.appendChild(document.createTextNode(' '));
+          nameWrap.appendChild(trade);
+          label.appendChild(input);
+          label.appendChild(nameWrap);
+          list.appendChild(label);
+        }
+
+        list.querySelectorAll('input[name="assign-person"]').forEach((input) => {
+          input.addEventListener('change', () => {
+            state.assignModal.selectedPersonId = input.value;
+          });
+        });
+      }
+
 function filteredPeople() {
         const search = state.assignModal.search.trim().toLowerCase();
         const isPersonAllowed = (person) => {
@@ -452,30 +547,7 @@ function filteredPeople() {
         const people = filteredPeople();
         const list = document.getElementById('assign-people-list');
 
-        if (people.length === 0) {
-          list.innerHTML = `<p class="p-2 text-sm text-slate-400">${i18n.t('assign.noMatches')}</p>`;
-          state.assignModal.selectedPersonId = '';
-          return;
-        }
-
-        if (!people.some((person) => String(person.id) === String(state.assignModal.selectedPersonId))) {
-          state.assignModal.selectedPersonId = String(people[0].id);
-        }
-
-        list.innerHTML = people
-          .map(
-            (person) => `<label class="mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-900">
-              <input type="radio" name="assign-person" value="${person.id}" ${String(state.assignModal.selectedPersonId) === String(person.id) ? 'checked' : ''} />
-              <span>${person.first_name} ${person.last_name}${person.is_leaver ? ` <span class="ml-1 rounded border border-amber-500/60 px-1 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">${i18n.t('people.flags.leaver')}</span>` : ""} <span class="text-xs text-slate-400">(${person.trade_name})</span></span>
-            </label>`
-          )
-          .join('');
-
-        list.querySelectorAll('input[name="assign-person"]').forEach((input) => {
-          input.addEventListener('change', () => {
-            state.assignModal.selectedPersonId = input.value;
-          });
-        });
+        renderAssignPeopleList(list, people);
       }
 
       async function handleMutation(action, successMessage) {
@@ -492,8 +564,10 @@ function filteredPeople() {
       function openAdminPersonModal(person = null) {
         const modal = document.getElementById('admin-person-modal');
         document.getElementById('admin-person-modal-title').textContent = person ? i18n.t('people.edit') : i18n.t('people.add');
-        document.getElementById('admin-person-trade').innerHTML = optionList(state.meta.trades, person?.trade_id);
-        document.getElementById('admin-person-level').innerHTML = optionList(state.meta.levels, person?.level_id);
+        const tradeSelect = document.getElementById('admin-person-trade');
+        const levelSelect = document.getElementById('admin-person-level');
+        populateSelectOptions(tradeSelect, state.meta.trades, person?.trade_id);
+        populateSelectOptions(levelSelect, state.meta.levels, person?.level_id);
         const form = document.getElementById('admin-person-form');
         form.id.value = person?.id || '';
         form.firstName.value = person?.first_name || '';
@@ -509,7 +583,8 @@ function filteredPeople() {
       function openAdminClientModal(client = null) {
         const modal = document.getElementById('admin-client-modal');
         document.getElementById('admin-client-modal-title').textContent = client ? i18n.t('clients.edit') : i18n.t('clients.add');
-        document.getElementById('admin-client-priority').innerHTML = optionList(state.meta.priorities, client?.priority_id);
+        const prioritySelect = document.getElementById('admin-client-priority');
+        populateSelectOptions(prioritySelect, state.meta.priorities, client?.priority_id);
         const form = document.getElementById('admin-client-form');
         form.id.value = client?.id || '';
         form.name.value = client?.name || '';
@@ -523,8 +598,26 @@ function filteredPeople() {
       function openAdminProjectModal(project = null) {
         const modal = document.getElementById('admin-project-modal');
         document.getElementById('admin-project-modal-title').textContent = project ? i18n.t('projects.edit') : i18n.t('projects.add');
-        document.getElementById('admin-project-client').innerHTML = optionList(state.clients, project?.client_id);
-        document.getElementById('admin-project-status').innerHTML = (state.meta.projectStatuses || []).map((item) => `<option value="${item.key}">${item.label}</option>`).join('');
+        const clientSelect = document.getElementById('admin-project-client');
+        populateSelectOptions(clientSelect, state.clients, project?.client_id);
+        const statusSelect = document.getElementById('admin-project-status');
+        if (statusSelect) {
+          if (typeof safeDom.clearChildren === 'function') {
+            safeDom.clearChildren(statusSelect);
+          } else {
+            statusSelect.textContent = '';
+          }
+          for (const item of state.meta.projectStatuses || []) {
+            if (typeof safeDom.appendOption === 'function') {
+              safeDom.appendOption(statusSelect, item.key, item.label, false);
+            } else {
+              const option = document.createElement('option');
+              option.value = String(item.key || '');
+              option.textContent = String(item.label || '');
+              statusSelect.appendChild(option);
+            }
+          }
+        }
         const form = document.getElementById('admin-project-form');
         form.id.value = project?.id || '';
         form.name.value = project?.name || '';
