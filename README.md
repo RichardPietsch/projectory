@@ -197,10 +197,10 @@ SLO/SLI baseline definitions, alert rules, dashboard JSON and remediation runboo
 - `ops/dashboards/projectory-slo-dashboard.json`
 - `docs/runbooks/slo-remediation.md`
 
-For release readiness validation of these artifacts:
+For release readiness validation of these artifacts and the codified rollout checklist:
 
 ```bash
-npm run ops:readiness-check
+npm run release:readiness-check
 ```
 
 
@@ -318,7 +318,7 @@ Dependency install policy in CI:
 
 Release-grade CI behavior:
 - Pull requests use fast gates for feedback speed (`quality-and-security`, `static-analysis`, `container-image-security`, `build-and-test`).
-- Pushes to `main` and `release/*` also require `release-db-contract-gate`, which runs migrations plus real-DB contract suites (`test/api-contract.db.test.js`, `test/db-integration.test.js`) against Postgres.
+- Pushes to `main` and `release/*` also require `release-db-contract-gate`, which preserves the DB migration + real-DB contract suites (`test/api-contract.db.test.js`, `test/db-integration.test.js`) and additionally enforces the public rollout checklist gate (`docs/release-readiness-checklist.md`) against Postgres-backed release validation.
 
 ---
 

@@ -25,3 +25,8 @@
 - Runbook: `docs/runbooks/slo-remediation.md`
 
 These artifacts are validated by `npm run ops:readiness-check` and included in release readiness gates.
+
+## Release go/no-go tie-in
+
+Public rollout is blocked unless `docs/release-readiness-checklist.md` is fully satisfied and validated by `npm run release:readiness-check` in CI.
+

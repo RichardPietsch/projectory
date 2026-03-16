@@ -348,9 +348,9 @@ jobs:
         run: |
           npm run migrate | tee ci-artifacts/release-db-migrate.txt
 
-      - name: Validate SLO operational readiness artifacts
+      - name: Validate release readiness checklist + SLO operational readiness
         run: |
-          npm run ops:readiness-check | tee ci-artifacts/release-slo-readiness.txt
+          npm run release:readiness-check | tee ci-artifacts/release-readiness.txt
 
       - name: Run real-DB contract suites (mandatory on release branches)
         run: |
@@ -363,7 +363,7 @@ jobs:
             echo "# Release DB Contract Gate Summary"
             echo ""
             echo "- Migrations: see release-db-migrate.txt"
-            echo "- SLO readiness artifacts: see release-slo-readiness.txt"
+            echo "- Release readiness checklist + SLO readiness: see release-readiness.txt"
             echo "- Real-DB contract suites: see release-db-contract-tests.txt"
             echo ""
             echo "This gate is mandatory on pushes to main/release/* branches."
