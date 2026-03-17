@@ -21,6 +21,10 @@ const { registerObservabilityRoutes } = require('./observability-routes');
 const { buildAuthHandlers } = require('./auth-handlers');
 const { registerAdminRoutes } = require('./admin-routes');
 const { createCsrfRuntime } = require('./csrf');
+const { applySecurityHeaders } = require('./security-headers');
+const { validateRuntimeEnvironment: validateRuntimeEnvironmentConfig } = require('./runtime-env-validation');
+const { createMetricsRuntime } = require('./metrics-runtime');
+const { buildInviteLink, buildPasswordResetLink } = require('./token-links');
 
 // Single Express app serving API + static frontend.
 const app = express();
@@ -47,6 +51,14 @@ function shouldUseSecureSessionCookie() {
 
 function resolveTrustProxySetting() {
   return parseTrustProxySetting(process.env.TRUST_PROXY);
+}
+
+function validateRuntimeEnvironment() {
+  return validateRuntimeEnvironmentConfig({
+    isLocalDevRuntime,
+    resolveTrustProxySetting,
+    env: process.env
+  });
 }
 
 app.set('trust proxy', resolveTrustProxySetting());
@@ -133,109 +145,20 @@ function clearAuthAttemptBuckets() {
   lastAuthAttemptSweepAt = 0;
 }
 
-function clearMetrics() {
-  for (const key of Object.keys(metricsState)) {
-    if (metricsState[key] instanceof Map) {
-      metricsState[key].clear();
-    } else {
-      metricsState[key] = 0;
-    }
-  }
-}
 
-function incrementCounter(map, key, value = 1) {
-  map.set(key, (map.get(key) || 0) + value);
-}
+const metricsRuntime = createMetricsRuntime({
+  metricsState,
+  metricDurationBucketsMs: METRIC_DURATION_BUCKETS_MS,
+  escapePrometheusLabel,
+  serializeCounterMetric
+});
 
-function observeDurationBuckets(map, keyPrefix, durationMs) {
-  const prefix = keyPrefix ? `${keyPrefix}|` : '';
-  for (const bucket of METRIC_DURATION_BUCKETS_MS) {
-    if (durationMs <= bucket) {
-      incrementCounter(map, `${prefix}le=${bucket}`);
-    }
-  }
-  incrementCounter(map, `${prefix}le=+Inf`);
-}
-
-
-function renderPrometheusMetrics() {
-  const sections = [];
-
-  sections.push(serializeCounterMetric(
-    'projectory_http_requests_total',
-    'Total HTTP requests handled.',
-    metricsState.requestsTotal,
-    (key) => {
-      const [method, path, status] = key.split('|');
-      return `method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}",status="${escapePrometheusLabel(status)}"`;
-    }
-  ));
-
-  sections.push(serializeCounterMetric(
-    'projectory_http_request_errors_total',
-    'HTTP 5xx responses.',
-    metricsState.requestErrorsTotal,
-    (key) => {
-      const [method, path] = key.split('|');
-      return `method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}"`;
-    }
-  ));
-
-  const reqDuration = ['# HELP projectory_http_request_duration_ms HTTP request duration in milliseconds.', '# TYPE projectory_http_request_duration_ms histogram'];
-  for (const [key, value] of metricsState.requestDurationBuckets.entries()) {
-    const [method, path, le] = key.split('|');
-    reqDuration.push(`projectory_http_request_duration_ms_bucket{method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}",le="${escapePrometheusLabel(le.replace('le=', ''))}"} ${value}`);
-  }
-  for (const [key, value] of metricsState.requestDurationCount.entries()) {
-    const [method, path] = key.split('|');
-    reqDuration.push(`projectory_http_request_duration_ms_count{method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}"} ${value}`);
-    reqDuration.push(`projectory_http_request_duration_ms_sum{method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}"} ${metricsState.requestDurationSumMs.get(key) || 0}`);
-  }
-  sections.push(reqDuration.join('\n'));
-
-  sections.push(serializeCounterMetric(
-    'projectory_auth_failures_total',
-    'Authentication failure/security events by type.',
-    metricsState.authFailuresTotal,
-    (key) => `type="${escapePrometheusLabel(key)}"`
-  ));
-
-  sections.push(serializeCounterMetric(
-    'projectory_rate_limit_hits_total',
-    'Rate-limit events by policy scope and outcome.',
-    metricsState.rateLimitHitsTotal,
-    (key) => {
-      const [scope, outcome, method, path] = key.split('|');
-      return `scope="${escapePrometheusLabel(scope)}",outcome="${escapePrometheusLabel(outcome)}",method="${escapePrometheusLabel(method)}",path="${escapePrometheusLabel(path)}"`;
-    }
-  ));
-
-  const dbDuration = ['# HELP projectory_db_query_duration_ms Database query duration in milliseconds.', '# TYPE projectory_db_query_duration_ms histogram'];
-  for (const [key, value] of metricsState.dbQueryDurationBuckets.entries()) {
-    dbDuration.push(`projectory_db_query_duration_ms_bucket{le="${escapePrometheusLabel(key.replace('le=', ''))}"} ${value}`);
-  }
-  dbDuration.push(`projectory_db_query_duration_ms_count ${metricsState.dbQueryDurationCount}`);
-  dbDuration.push(`projectory_db_query_duration_ms_sum ${metricsState.dbQueryDurationSumMs}`);
-  sections.push(dbDuration.join('\n'));
-
-  sections.push(`# HELP projectory_db_query_errors_total Database query failures.\n# TYPE projectory_db_query_errors_total counter\nprojectory_db_query_errors_total ${metricsState.dbQueryErrorsTotal}`);
-
-  sections.push(serializeCounterMetric(
-    'projectory_auth_lifecycle_cleanup_runs_total',
-    'Auth lifecycle cleanup runs by outcome.',
-    metricsState.authLifecycleCleanupRunsTotal,
-    (key) => `outcome="${escapePrometheusLabel(key)}"`
-  ));
-
-  sections.push(serializeCounterMetric(
-    'projectory_auth_lifecycle_cleanup_deleted_rows_total',
-    'Rows deleted by auth lifecycle cleanup, partitioned by artifact kind.',
-    metricsState.authLifecycleCleanupDeletedRowsTotal,
-    (key) => `kind="${escapePrometheusLabel(key)}"`
-  ));
-
-  return sections.join('\n\n') + '\n';
-}
+const {
+  incrementCounter,
+  observeDurationBuckets,
+  clearMetrics,
+  renderPrometheusMetrics
+} = metricsRuntime;
 
 const originalPoolQuery = pool.query.bind(pool);
 pool.query = async (...args) => {
@@ -491,10 +414,7 @@ function createRequestLifecycleLogger() {
   return (req, res, next) => {
     req.correlationId = getCorrelationIdFromHeader(req);
     res.setHeader('x-correlation-id', req.correlationId);
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+    applySecurityHeaders(res);
 
     const startedAt = Date.now();
     const normalizedPath = normalizeMetricPath(req.path);
@@ -560,35 +480,6 @@ const AUTH_LIFECYCLE_CLEANUP_INTERVAL_MS = Number(process.env.AUTH_LIFECYCLE_CLE
 const AUTH_SESSION_CLEANUP_RETENTION_HOURS = Number(process.env.AUTH_SESSION_CLEANUP_RETENTION_HOURS || 24);
 const PASSWORD_RESET_TOKEN_CLEANUP_RETENTION_HOURS = Number(process.env.PASSWORD_RESET_TOKEN_CLEANUP_RETENTION_HOURS || 168);
 const USER_INVITE_CLEANUP_RETENTION_HOURS = Number(process.env.USER_INVITE_CLEANUP_RETENTION_HOURS || 168);
-
-function validateRuntimeEnvironment() {
-  if (isLocalDevRuntime()) {
-    return;
-  }
-
-  const requiredNames = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'SMTP_PASSWORD_ENCRYPTION_KEY', 'AUTH_CSRF_SECRET'];
-  const missing = requiredNames.filter((name) => !String(process.env[name] || '').trim());
-  if (missing.length > 0) {
-    throw new Error(`Missing required environment variables for non-local runtime: ${missing.join(', ')}.`);
-  }
-
-  if (String(process.env.DB_USER).trim() === 'projectory_local_user' || String(process.env.DB_PASSWORD).trim() === 'projectory_local_password') {
-    throw new Error('Unsafe database credentials detected for non-local runtime. Replace DB_USER/DB_PASSWORD defaults.');
-  }
-
-  if (String(process.env.SMTP_PASSWORD_ENCRYPTION_KEY || '').trim().length < 32) {
-    throw new Error('SMTP_PASSWORD_ENCRYPTION_KEY must be set to a strong secret (minimum 32 characters) in non-local runtime.');
-  }
-
-
-  if (resolveTrustProxySetting() === false) {
-    throw new Error('TRUST_PROXY must be configured for non-local runtime to ensure secure proxy-aware session handling.');
-  }
-
-  if (String(process.env.AUTH_COOKIE_SECURE || '').trim().toLowerCase() === 'false') {
-    throw new Error('AUTH_COOKIE_SECURE=false is not allowed in non-local runtime.');
-  }
-}
 
 function buildSessionOnlyFallbackAuth(previousAuth = {}) {
   // Rollout safety: in strict session mode we never trust header role simulation.
@@ -1112,8 +1003,7 @@ async function createUserInvite(userId, invitedByUserId, expiresHours = 72) {
     [userId, tokenHash, String(expiresHours), invitedByUserId || null]
   );
 
-  const appBaseUrl = String(process.env.APP_BASE_URL || 'http://localhost:3000/').trim();
-  const inviteLink = `${appBaseUrl.replace(/\/$/, '')}/invite?token=${encodeURIComponent(token)}`;
+  const inviteLink = buildInviteLink(token, process.env);
 
   return {
     id: inserted.rows[0]?.id || null,
@@ -1149,8 +1039,7 @@ async function createPasswordResetToken(userId, requestedIp) {
     [userId, tokenHash, String(PASSWORD_RESET_TTL_MINUTES), requestedIp || null]
   );
 
-  const appBaseUrl = String(process.env.APP_BASE_URL || 'http://localhost:3000/').trim();
-  const resetLink = `${appBaseUrl.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(token)}`;
+  const resetLink = buildPasswordResetLink(token, process.env);
 
   return {
     token,

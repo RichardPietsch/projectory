@@ -37,6 +37,10 @@ As part of continued decomposition, `src/app.js` now orchestrates focused helper
 - `src/app/request-logging.js`: request logging diagnostics shaping (explicit header allowlist + minimal route-aware body summaries)
 - `src/app/auth-routes.js`: centralized auth route registration map (path-to-handler wiring with middleware placement)
 - `src/app/observability.js`: shared observability formatting helpers (metric path normalization, Prometheus label escaping, counter serialization)
+- `src/app/security-headers.js`: central response security header policy application (CSP, frame/content/referrer protections)
+- `src/app/runtime-env-validation.js`: non-local runtime safety gate for env/secrets/proxy/cookie settings
+- `src/app/metrics-runtime.js`: metrics state helpers and Prometheus serialization runtime
+- `src/app/token-links.js`: invite/reset link builders from app base URL policy
 
 `src/app.js` remains the entrypoint, but these modules establish stricter boundaries for future extraction of middleware stack, auth routes, admin/import-export routes, and additional observability surfaces.
 
