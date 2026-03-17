@@ -20,7 +20,8 @@
     "ci:deps:lockfile": "node scripts/check-lockfile-sync.js",
     "ci:deps:repeatability": "node scripts/check-npm-ci-repeatability.js",
     "release:readiness-check": "node scripts/check-release-readiness.js && npm run ops:readiness-check",
-    "lint:dom-safety": "node scripts/check-frontend-dom-safety.js"
+    "lint:dom-safety": "node scripts/check-frontend-dom-safety.js",
+    "test:prod-profile": "AUTH_LOCAL_DEV=false AUTH_MODE=session AUTH_ALLOW_HEADER_SIMULATION=false AUTH_DEFAULT_ROLE=viewer TRUST_PROXY=loopback AUTH_COOKIE_SECURE=true DB_HOST=127.0.0.1 DB_PORT=5432 DB_NAME=helloapp DB_USER=hello DB_PASSWORD=hello SMTP_PASSWORD_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef AUTH_CSRF_SECRET=0123456789abcdef0123456789abcdef node --test test/production-parity-profile.test.js test/csrf-middleware.test.js test/csrf-integration.test.js test/session-proxy-cookie-security.test.js"
   },
   "dependencies": {
     "express": "^4.19.2",

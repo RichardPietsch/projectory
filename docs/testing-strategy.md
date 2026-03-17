@@ -13,6 +13,17 @@ Projectory follows a pragmatic testing pyramid:
 
 These should be run continuously while developing and before each commit.
 
+### Production-parity session-only profile
+
+Run:
+
+- `npm run test:prod-profile`
+
+Purpose:
+- enforce session-only auth behavior with header simulation disabled
+- catch config masking between local hybrid defaults and production-safe runtime expectations
+- verify critical auth/session/csrf paths under non-local-style environment constraints
+
 ## 2) Test layers
 
 ### A) Mocked smoke/API tests (fast)
@@ -89,6 +100,7 @@ This keeps tests repeatable and makes failures actionable (API or schema regress
 ## 5) CI expectations
 
 - Pull request CI keeps fast checks enabled (`npm run lint:ci`, `npm run format:check`, `npm test`) for rapid feedback.
+- CI also runs `npm run test:prod-profile` in `build-and-test` to validate production-parity session-only behavior (AUTH_MODE=session, no header simulation).
 - `npm run lint:ci` is a unified lint workflow: ESLint static analysis (primary quality gate), architecture boundary checks, and frontend DOM safety checks that reject risky `innerHTML` assignments in `public/js/**` unless explicitly reviewed with a minimal allow marker (`dom-safety-allow`).
 - CI dependency installs use `npm ci` in Node jobs to enforce lockfile determinism and reduce supply-chain variance between runs.
 - Pushes to `main` and `release/*` have an additional **mandatory** `release-db-contract-gate` job that runs:
@@ -97,6 +109,7 @@ This keeps tests repeatable and makes failures actionable (API or schema regress
   - `node --test test/api-contract.db.test.js test/db-integration.test.js`
 - `npm run release:readiness-check` validates checklist control markers in `docs/release-readiness-checklist.md` plus required SLO/readiness artifacts and metric criteria.
 - This release gate fails the pipeline on any checklist/readiness/migration/contract regression and is required before release promotion.
+- Failures in `test:prod-profile` are expected to be actionable and usually indicate runtime safety drift (auth mode/simulation/csrf/session assumptions) rather than flaky infrastructure.
 - Migration runner behavior for CI is deterministic (lexical SQL order via `scripts/run-migrations.js`); rollback expectation is restore-from-backup or follow-up corrective migration.
 - Developers can still run the same gate locally with `RUN_DB_INTEGRATION=1 npm test` when validating DB-backed changes ahead of CI.
 - Any new high-risk auth/admin/import-export endpoint should be added to both:
