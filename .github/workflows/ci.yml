@@ -90,13 +90,42 @@ jobs:
       - name: Secret scan (gitleaks CLI, fail on findings)
         run: |
           set -euo pipefail
+          mkdir -p ci-artifacts
+
+          # Generate machine-readable reports first so we can print actionable diagnostics
+          # before enforcing the fail-on-findings gate.
+          gitleaks detect \
+            --source . \
+            --no-git \
+            --redact \
+            --report-format json \
+            --report-path ci-artifacts/gitleaks.json \
+            --exit-code 0
+
+          # Emit a concise finding summary into logs to make triage easier.
+          if [ -s ci-artifacts/gitleaks.json ] && [ "$(jq 'length' ci-artifacts/gitleaks.json)" -gt 0 ]; then
+            echo "Gitleaks findings (rule, file, line):"
+            jq -r '.[] | "- \(.RuleID) | \(.File):\(.StartLine)"' ci-artifacts/gitleaks.json
+          else
+            echo "No gitleaks findings."
+          fi
+
+          # Generate SARIF for GitHub code scanning integrations.
           gitleaks detect \
             --source . \
             --no-git \
             --redact \
             --report-format sarif \
             --report-path ci-artifacts/gitleaks.sarif \
-            --exit-code 1
+            --exit-code 0
+
+          # Enforce the security gate after reports/logs are published.
+          findings_count="$(jq 'length' ci-artifacts/gitleaks.json)"
+          if [ "$findings_count" -gt 0 ]; then
+            echo "Failing build: gitleaks found $findings_count potential secret(s)."
+            exit 1
+          fi
+
 
       - name: Build quality/security summary
         if: always()
@@ -112,7 +141,7 @@ jobs:
             echo "- npm ci repeatability: see step logs (Fresh-workspace npm ci repeatability guard)"
             echo "- Dependency scan: see dependency-scan.txt and npm-audit.json"
             echo "- Filesystem vuln scan: see trivy-fs.sarif"
-            echo "- Secret scan: see gitleaks.sarif and gitleaks step logs"
+            echo "- Secret scan: see gitleaks.json, gitleaks.sarif, and gitleaks step logs"
             echo ""
             echo "## Fast remediation"
             echo "- Lint: npm run lint:ci"
@@ -274,6 +303,10 @@ jobs:
         run: |
           npm test | tee ci-artifacts/tests.txt
 
+      - name: Run production-parity session-only profile tests
+        run: |
+          npm run test:prod-profile | tee ci-artifacts/tests-prod-profile.txt
+
       - name: Build test summary
         if: always()
         run: |
@@ -283,6 +316,7 @@ jobs:
             echo "- Migrations: see migrate.txt"
             echo "- Syntax: see syntax.txt"
             echo "- Tests: see tests.txt"
+            echo "- Production-parity session-only profile tests: see tests-prod-profile.txt"
           } > ci-artifacts/build-test-summary.md
           cat ci-artifacts/build-test-summary.md >> "$GITHUB_STEP_SUMMARY"
 
