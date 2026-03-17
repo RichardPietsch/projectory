@@ -348,13 +348,67 @@ jobs:
         run: |
           npm run migrate | tee ci-artifacts/release-db-migrate.txt
 
-      - name: Validate release readiness checklist + SLO operational readiness
+      - name: Validate SLO operational readiness artifacts
         run: |
-          npm run release:readiness-check | tee ci-artifacts/release-readiness.txt
+          npm run ops:readiness-check | tee ci-artifacts/release-readiness.txt
 
       - name: Run real-DB contract suites (mandatory on release branches)
         run: |
           node --test test/api-contract.db.test.js test/db-integration.test.js | tee ci-artifacts/release-db-contract-tests.txt
+
+      - name: Stamp release evidence markers
+        run: |
+          RELEASE_EVIDENCE_COMMIT_SHA="${GITHUB_SHA}"
+          RELEASE_EVIDENCE_GENERATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "RELEASE_EVIDENCE_GENERATED_AT=${RELEASE_EVIDENCE_GENERATED_AT}" >> "$GITHUB_ENV"
+
+          for file in ci-artifacts/release-db-migrate.txt ci-artifacts/release-readiness.txt ci-artifacts/release-db-contract-tests.txt; do
+            {
+              echo ""
+              echo "evidence_commit_sha=${RELEASE_EVIDENCE_COMMIT_SHA}"
+              echo "evidence_generated_at=${RELEASE_EVIDENCE_GENERATED_AT}"
+            } >> "$file"
+          done
+
+      - name: Build release evidence manifest (sha256 + timestamp + commit)
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const crypto = require('node:crypto');
+
+          const artifactDir = path.join(process.cwd(), 'ci-artifacts');
+          const files = [
+            'release-db-migrate.txt',
+            'release-readiness.txt',
+            'release-db-contract-tests.txt'
+          ];
+
+          const generatedAt = process.env.RELEASE_EVIDENCE_GENERATED_AT || new Date().toISOString();
+          const commitSha = process.env.GITHUB_SHA || '';
+
+          const manifest = {
+            generated_at: generatedAt,
+            commit_sha: commitSha,
+            files: {}
+          };
+
+          for (const fileName of files) {
+            const filePath = path.join(artifactDir, fileName);
+            const content = fs.readFileSync(filePath);
+            const sha = crypto.createHash('sha256').update(content).digest('hex');
+            manifest.files[fileName] = {
+              sha256: sha,
+              bytes: content.length
+            };
+          }
+
+          fs.writeFileSync(path.join(artifactDir, 'release-evidence-manifest.json'), JSON.stringify(manifest, null, 2));
+          NODE
+
+      - name: Validate release readiness checklist + evidence integrity
+        run: |
+          node scripts/check-release-readiness.js             --require-evidence             --evidence-dir ci-artifacts             --expected-commit "${GITHUB_SHA}"             --max-age-minutes 180 | tee -a ci-artifacts/release-readiness.txt
 
       - name: Build release DB gate summary
         if: always()
@@ -363,8 +417,10 @@ jobs:
             echo "# Release DB Contract Gate Summary"
             echo ""
             echo "- Migrations: see release-db-migrate.txt"
-            echo "- Release readiness checklist + SLO readiness: see release-readiness.txt"
+            echo "- Release readiness evidence check: see release-readiness.txt"
+            echo "- Evidence manifest: see release-evidence-manifest.json"
             echo "- Real-DB contract suites: see release-db-contract-tests.txt"
+            echo "- Evidence IDs (sha256): release-evidence-manifest.json"
             echo ""
             echo "This gate is mandatory on pushes to main/release/* branches."
           } > ci-artifacts/release-db-contract-summary.md

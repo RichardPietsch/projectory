@@ -31,11 +31,18 @@ All required controls must be checked (`[x]`) and their evidence artifacts must 
 - [x] [IR-01] SLO remediation runbook includes rollback and escalation guidance. (evidence: `docs/runbooks/slo-remediation.md`)
 - [x] [IR-02] Release gate tie-in forbids promotion while page-severity SLO alerts are active. (evidence: `docs/runbooks/slo-remediation.md`)
 
+
+## CI evidence integrity controls (required)
+
+- [x] [EVD-01] Release gate generates `ci-artifacts/release-evidence-manifest.json` with commit sha, generated timestamp, and sha256 hashes for required evidence files.
+- [x] [EVD-02] Required evidence files (`release-db-migrate.txt`, `release-readiness.txt`, `release-db-contract-tests.txt`) include matching `evidence_commit_sha` and `evidence_generated_at` markers.
+- [x] [EVD-03] Release readiness checker validates evidence freshness (max age), commit-sha match, and evidence hash integrity before promotion.
+
 ## SLO / readiness go-no-go criteria (required)
 
 A release is **NO-GO** unless all of the following are true:
 
-- [x] [GNG-01] `npm run ops:readiness-check` passes (SLO artifacts + metric wiring valid).
+- [x] [GNG-01] `npm run ops:readiness-check` passes (SLO artifacts + metric wiring valid), and CI evidence validation passes when run with `--require-evidence`.
 - [x] [GNG-02] No page-severity SLO alerts are firing at decision time.
 - [x] [GNG-03] `release-db-contract-gate` in CI is green, including migrations and real-DB contract suites.
 - [x] [GNG-04] This checklist remains fully checked for all required controls above.
