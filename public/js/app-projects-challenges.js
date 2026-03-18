@@ -172,7 +172,8 @@
                 title="Clear search"
               >✕</button>
             </div>
-            <table id="onboarding-project-overview-table" class="w-full table-fixed text-left text-sm">
+            <div class="overflow-x-auto">
+            <table id="onboarding-project-overview-table" class="min-w-[860px] w-full table-fixed text-left text-sm">
               <thead>
                 <tr class="text-slate-400">
                   <th class="w-[7%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
@@ -186,6 +187,7 @@
               </thead>
               <tbody>${projectRows}</tbody>
             </table>
+            </div>
           </div>`;
         }
 
@@ -1226,7 +1228,13 @@ function filteredPeople() {
       function bindHeaderActions() {
         if (state.listenersBound.header) return;
         state.listenersBound.header = true;
+        const responsiveShell = window.ProjectoryResponsiveShell || {};
+        document.getElementById('header-menu-toggle')?.addEventListener('click', () => {
+          if (typeof responsiveShell.toggleMobileMenu === 'function') responsiveShell.toggleMobileMenu();
+        });
+
         document.getElementById('app-logo-button')?.addEventListener('click', () => {
+          if (typeof responsiveShell.closeMobileMenu === 'function') responsiveShell.closeMobileMenu();
           state.showAdmin = false;
           state.homeTab = 'client-teams';
           state.selectedProjectId = '';
@@ -1236,12 +1244,16 @@ function filteredPeople() {
           render();
         });
 
-        document.getElementById('admin-toggle')?.addEventListener('click', () => {
+        const openAdminView = () => {
           if (!canAccessAdmin()) return;
+          if (typeof responsiveShell.closeMobileMenu === 'function') responsiveShell.closeMobileMenu();
           state.showAdmin = true;
           navigateFromState();
           render();
-        });
+        };
+
+        document.getElementById('admin-toggle')?.addEventListener('click', openAdminView);
+        document.getElementById('admin-toggle-mobile')?.addEventListener('click', openAdminView);
 
         document.getElementById('admin-close')?.addEventListener('click', () => {
           state.showAdmin = false;
@@ -1249,13 +1261,18 @@ function filteredPeople() {
           render();
         });
 
-        document.getElementById('locale-select')?.addEventListener('change', (event) => {
+        const handleLocaleChange = (event) => {
           i18n.setLocale(event.target.value);
+          if (typeof responsiveShell.syncHeaderControls === 'function') responsiveShell.syncHeaderControls();
           render();
-        });
+        };
 
-        document.getElementById('auth-logout')?.addEventListener('click', async () => {
+        document.getElementById('locale-select')?.addEventListener('change', handleLocaleChange);
+        document.getElementById('locale-select-mobile')?.addEventListener('change', handleLocaleChange);
+
+        const handleLogout = async () => {
           try {
+            if (typeof responsiveShell.closeMobileMenu === 'function') responsiveShell.closeMobileMenu();
             await api('/api/auth/logout', { method: 'POST' });
             await loadData();
             state.authRequired = true;
@@ -1268,7 +1285,15 @@ function filteredPeople() {
           } catch (error) {
             showMessage(error.message, 'error');
           }
+        };
+
+        document.getElementById('auth-logout')?.addEventListener('click', handleLogout);
+        document.getElementById('auth-logout-mobile')?.addEventListener('click', handleLogout);
+
+        window.addEventListener('resize', () => {
+          if (typeof responsiveShell.closeMobileMenuOnDesktop === 'function') responsiveShell.closeMobileMenuOnDesktop();
         });
+
       }
 
       function bindChallengeModalActions() {

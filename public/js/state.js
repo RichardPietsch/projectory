@@ -89,7 +89,8 @@
       forgotPassword: { submitting: false, submitted: false, error: '' },
       initialRegistration: { required: false, submitting: false, error: '' },
       resetPasswordFlow: { active: false, token: '', submitting: false, done: false, error: '' },
-      inviteFlow: { active: false, token: '', loading: false, submitting: false, profile: null, error: '' }
+      inviteFlow: { active: false, token: '', loading: false, submitting: false, profile: null, error: '' },
+      shell: { mobileMenuOpen: false }
     };
   }
 

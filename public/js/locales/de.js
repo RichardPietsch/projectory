@@ -5,6 +5,7 @@
     'header.openAdministration': 'Administration öffnen',
     'header.admin': 'Admin',
     'header.language': 'Sprache',
+    'header.menu': 'Menü',
     'locale.en': 'English',
     'locale.de': 'Deutsch',
     'locale.pseudo': 'Pseudo (akzentuiert)',

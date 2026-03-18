@@ -198,7 +198,7 @@
       function adminStandaloneView() {
         const tabs = adminTabs.map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-[#00d8ff] bg-[#00d8ff]/15 text-[#7cecff]' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setAdminTab('${tab.id}')">${i18n.t(tab.labelKey)}</button>`).join('');
         const body = state.adminTab === 'people' ? peopleView() : state.adminTab === 'clients' ? clientsView() : state.adminTab === 'projects' ? administrationProjectsView() : state.adminTab === 'access' ? accessManagementView() : configurationView();
-        return `<div class="space-y-4"><div class="flex items-center justify-between"><h2 id="admin-standalone-title" tabindex="-1" class="text-2xl font-bold">${i18n.t('admin.title')}</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" onclick="closeAdminStandalone()">${i18n.t('common.backToApp')}</button></div><div class="flex gap-2">${tabs}</div>${body}<footer class="mt-6 border-t border-slate-800 pt-4 text-sm text-slate-300"><div class="flex flex-wrap items-center gap-3"><button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.export')}</button><button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.import')}</button></div></footer></div>`;
+        return `<div class="space-y-4"><div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 id="admin-standalone-title" tabindex="-1" class="text-2xl font-bold">${i18n.t('admin.title')}</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800 sm:self-auto" onclick="closeAdminStandalone()">${i18n.t('common.backToApp')}</button></div><div class="overflow-x-auto"><div class="flex min-w-max gap-2">${tabs}</div></div>${body}<footer class="mt-6 border-t border-slate-800 pt-4 text-sm text-slate-300"><div class="flex flex-wrap items-center gap-3"><button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.export')}</button><button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.import')}</button></div></footer></div>`;
       }
 
       window.setAdminTab = function setAdminTab(tabId) { if (!canAccessAdmin()) return; state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
@@ -236,10 +236,10 @@
 
       function renderHomeTabs(container) {
         const tabsWrap = document.createElement('div');
-        tabsWrap.className = 'mb-4 border-b border-slate-800';
+        tabsWrap.className = 'mb-4 overflow-x-auto border-b border-slate-800';
 
         const nav = document.createElement('nav');
-        nav.className = '-mb-px flex gap-6';
+        nav.className = '-mb-px flex min-w-max gap-4 sm:gap-6';
         nav.setAttribute('aria-label', 'Homepage tabs');
         nav.setAttribute('role', 'tablist');
 
@@ -302,12 +302,21 @@
         const previousViewKind = lastRenderedViewKind;
         const currentViewKind = getViewKind();
 
+        const responsiveShell = window.ProjectoryResponsiveShell || {};
         const adminToggle = document.getElementById('admin-toggle');
         if (adminToggle) adminToggle.style.display = !needsLoginScreen() && canAccessAdmin() ? '' : 'none';
+        const adminToggleMobile = document.getElementById('admin-toggle-mobile');
+        if (adminToggleMobile) adminToggleMobile.style.display = !needsLoginScreen() && canAccessAdmin() ? '' : 'none';
         const onboardingToggle = document.getElementById('onboarding-demo-start');
         if (onboardingToggle) onboardingToggle.style.display = needsLoginScreen() ? 'none' : '';
+        const onboardingToggleMobile = document.getElementById('onboarding-demo-start-mobile');
+        if (onboardingToggleMobile) onboardingToggleMobile.style.display = needsLoginScreen() ? 'none' : '';
+        const logoutHidden = needsLoginScreen() || state.auth?.authSource !== 'session';
         const logoutButton = document.getElementById('auth-logout');
-        if (logoutButton) logoutButton.classList.toggle('hidden', needsLoginScreen() || state.auth?.authSource !== 'session');
+        if (logoutButton) logoutButton.classList.toggle('hidden', logoutHidden);
+        const logoutButtonMobile = document.getElementById('auth-logout-mobile');
+        if (logoutButtonMobile) logoutButtonMobile.classList.toggle('hidden', logoutHidden);
+        if (typeof responsiveShell.syncHeaderControls === 'function') responsiveShell.syncHeaderControls();
 
         if (state.inviteFlow?.active) {
           state.showAdmin = false;

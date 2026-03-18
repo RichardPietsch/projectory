@@ -126,7 +126,10 @@
           await loadData();
           const localeSelect = document.getElementById('locale-select');
           if (localeSelect) localeSelect.value = i18n.getLocale();
+          const localeSelectMobile = document.getElementById('locale-select-mobile');
+          if (localeSelectMobile) localeSelectMobile.value = i18n.getLocale();
           i18n.applyToDom(document);
+          window.ProjectoryResponsiveShell?.syncHeaderControls?.();
         renderOnboardingDemo();
 
           bindHeaderActions();
