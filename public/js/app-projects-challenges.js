@@ -103,36 +103,71 @@
               })
             : sortedProjects;
 
+          function renderPersonSummary(entries, emptyKey) {
+            if (!entries.length) return i18n.t(emptyKey);
+            return entries
+              .map((person) => {
+                const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
+                return `${selfRoleIcon(isSelf)}${person.name}${leaverRunIcon(person.isLeaver)}`;
+              })
+              .join(', ');
+          }
+
+          function renderOwnerPills(project) {
+            if (!project.ownerEntries.length) return `<span class="text-slate-400">${i18n.t('clientTeams.noOwnerAssigned')}</span>`;
+            return project.ownerEntries
+              .map((person) => {
+                const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
+                const ownerClass = isSelf
+                  ? 'border-blue-300 bg-blue-500 text-blue-50'
+                  : 'border-blue-400/70 bg-blue-600 text-blue-50';
+                return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${ownerClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
+              })
+              .join('');
+          }
+
+          function renderLeaderPills(project) {
+            if (!project.leaderEntries.length) return `<span class="text-slate-400">${i18n.t('clientTeams.noLeaderAssigned')}</span>`;
+            return project.leaderEntries
+              .map((person) => {
+                const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
+                const leaderClass = person.owner
+                  ? (isSelf
+                      ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100'
+                      : 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200')
+                  : (isSelf
+                      ? 'border-emerald-300 bg-emerald-500 text-emerald-50'
+                      : 'border-emerald-400/70 bg-emerald-600 text-emerald-50');
+                return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${leaderClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
+              })
+              .join('');
+          }
+
+          function clientTeamsSortOptionLabel(sortValue) {
+            const labels = {
+              status_desc: i18n.t('clientTeams.sort.statusDesc'),
+              status_asc: i18n.t('clientTeams.sort.statusAsc'),
+              product_asc: i18n.t('clientTeams.sort.productAsc'),
+              product_desc: i18n.t('clientTeams.sort.productDesc'),
+              client_asc: i18n.t('clientTeams.sort.clientAsc'),
+              client_desc: i18n.t('clientTeams.sort.clientDesc'),
+              budget_asc: i18n.t('clientTeams.sort.budgetAsc'),
+              budget_desc: i18n.t('clientTeams.sort.budgetDesc'),
+              priority_asc: i18n.t('clientTeams.sort.priorityAsc'),
+              priority_desc: i18n.t('clientTeams.sort.priorityDesc'),
+              owner_asc: i18n.t('clientTeams.sort.ownerAsc'),
+              owner_desc: i18n.t('clientTeams.sort.ownerDesc'),
+              leaders_asc: i18n.t('clientTeams.sort.leadersAsc'),
+              leaders_desc: i18n.t('clientTeams.sort.leadersDesc')
+            };
+            return labels[sortValue] || sortValue;
+          }
+
           const projectRows = filteredProjects
             .map((project) => {
               const hasCurrentUserAssignment = viewerPersonId && state.projectsPayload.assignments.some((assignment) => Number(assignment.project_id) === Number(project.id) && String(assignment.person_id) === viewerPersonId);
-              const ownerPills = project.ownerEntries.length
-                ? project.ownerEntries
-                    .map((person) => {
-                      const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
-                      const ownerClass = isSelf
-                        ? 'border-blue-300 bg-blue-500 text-blue-50'
-                        : 'border-blue-400/70 bg-blue-600 text-blue-50';
-                      return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${ownerClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
-                    })
-                    .join('')
-                : `<span class="text-slate-400">${i18n.t('clientTeams.noOwnerAssigned')}</span>`;
-              const leaderPills = project.leaderEntries.length
-                ? project.leaderEntries
-                    .map((person) => {
-                      const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
-                      const leaderClass = person.owner
-                        ? (isSelf
-                            ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100'
-                            : 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200')
-                        : (isSelf
-                            ? 'border-emerald-300 bg-emerald-500 text-emerald-50'
-                            : 'border-emerald-400/70 bg-emerald-600 text-emerald-50');
-                      return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${leaderClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
-                    })
-                    .join('')
-                : `<span class="text-slate-400">${i18n.t('clientTeams.noLeaderAssigned')}</span>`;
-
+              const ownerPills = renderOwnerPills(project);
+              const leaderPills = renderLeaderPills(project);
               const rowClass = hasCurrentUserAssignment
                 ? 'cursor-pointer border-t border-cyan-400/50 bg-cyan-500/10 hover:bg-cyan-500/20'
                 : 'cursor-pointer border-t border-slate-800 hover:bg-slate-800/40';
@@ -151,12 +186,74 @@
             })
             .join('');
 
+          const mobileCards = filteredProjects
+            .map((project) => {
+              const hasCurrentUserAssignment = viewerPersonId && state.projectsPayload.assignments.some((assignment) => Number(assignment.project_id) === Number(project.id) && String(assignment.person_id) === viewerPersonId);
+              const statusPresentation = getProjectStatusPresentation(project.status);
+              const priorityPresentation = getPriorityPresentation(project.priority_name, project.priority_color_hex);
+              const cardClass = hasCurrentUserAssignment
+                ? 'border-cyan-400/60 bg-cyan-500/10'
+                : 'border-slate-800 bg-slate-950/60';
+              return `<button type="button" class="w-full rounded-xl border p-4 text-left shadow-sm transition hover:border-slate-600 hover:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-[#00d8ff] ${cardClass}" onclick="openProjectDetail(${project.id})">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-base font-semibold text-slate-50">${project.name}</p>
+                    <p class="mt-1 truncate text-sm text-slate-400">${project.client_name}</p>
+                  </div>
+                  <div class="shrink-0">${renderPriorityPill(project.priority_name, project.priority_color_hex)}</div>
+                </div>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.status')}</p>
+                    <div class="mt-1 flex items-center gap-2 text-sm text-slate-200">
+                      ${renderProjectStatusPill(project.status, project.id)}
+                      <span class="min-w-0 break-words">${statusPresentation.label}</span>
+                    </div>
+                  </div>
+                  <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.budget')}</p>
+                    <p class="mt-1 break-words text-sm font-medium text-slate-100">${formatEuroWhole(project.budget_cents)}</p>
+                  </div>
+                  <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.owner')}</p>
+                    <p class="mt-1 break-words text-sm leading-6 text-slate-200">${renderPersonSummary(project.ownerEntries, 'clientTeams.noOwnerAssigned')}</p>
+                  </div>
+                  <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.leaders')}</p>
+                    <p class="mt-1 break-words text-sm leading-6 text-slate-200">${renderPersonSummary(project.leaderEntries, 'clientTeams.noLeaderAssigned')}</p>
+                  </div>
+                </div>
+                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                  <span class="font-semibold uppercase tracking-[0.16em] text-slate-500">${i18n.t('clientTeams.columns.priority')}</span>
+                  <span class="min-w-0 break-words text-slate-300">${priorityPresentation.label}</span>
+                </div>
+              </button>`;
+            })
+            .join('');
+
+          const sortOptions = [
+            'status_desc',
+            'status_asc',
+            'product_asc',
+            'product_desc',
+            'client_asc',
+            'client_desc',
+            'budget_desc',
+            'budget_asc',
+            'priority_asc',
+            'priority_desc',
+            'owner_asc',
+            'owner_desc',
+            'leaders_asc',
+            'leaders_desc'
+          ].map((sortValue) => `<option value="${sortValue}" ${state.clientTeamsSort === sortValue ? 'selected' : ''}>${clientTeamsSortOptionLabel(sortValue)}</option>`).join('');
+
           return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div class="mb-3">
               <h3 class="text-lg font-semibold">${i18n.t('clientTeams.title')}</h3>
               <p class="text-xs text-slate-400">${i18n.t('clientTeams.subtitle')}</p>
             </div>
-            <div class="mb-3 flex items-center gap-2">
+            <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 type="search"
                 id="client-teams-search-input"
@@ -165,6 +262,12 @@
                 placeholder="${i18n.t('clientTeams.searchPlaceholder')}"
                 class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm"
               />
+              <select
+                id="client-teams-sort-select"
+                onchange="setClientTeamsSort(this.value)"
+                class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm text-slate-200 sm:w-64"
+                aria-label="${i18n.t('clientTeams.sort.label')}"
+              >${sortOptions}</select>
               <button
                 class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800 ${state.clientTeamsSearch ? '' : 'opacity-50'}"
                 onclick="clearClientTeamsSearch()"
@@ -172,21 +275,22 @@
                 title="Clear search"
               >✕</button>
             </div>
-            <div class="overflow-x-auto">
-            <table id="onboarding-project-overview-table" class="min-w-[860px] w-full table-fixed text-left text-sm">
-              <thead>
-                <tr class="text-slate-400">
-                  <th class="w-[7%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="w-[23%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="w-[8%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="w-[11%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                  <th class="w-[30%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                </tr>
-              </thead>
-              <tbody>${projectRows}</tbody>
-            </table>
+            <div id="client-teams-mobile-list" class="space-y-3 md:hidden">${mobileCards}</div>
+            <div class="mt-4 hidden overflow-x-auto md:block">
+              <table id="onboarding-project-overview-table" class="min-w-[860px] w-full table-fixed text-left text-sm">
+                <thead>
+                  <tr class="text-slate-400">
+                    <th class="w-[7%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[23%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[8%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[11%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[30%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  </tr>
+                </thead>
+                <tbody>${projectRows}</tbody>
+              </table>
             </div>
           </div>`;
         }
@@ -1580,6 +1684,11 @@ function filteredPeople() {
         const asc = `${field}_asc`;
         const desc = `${field}_desc`;
         state.clientTeamsSort = state.clientTeamsSort === asc ? desc : asc;
+        render();
+      };
+
+      window.setClientTeamsSort = function setClientTeamsSort(value) {
+        state.clientTeamsSort = String(value || 'status_desc');
         render();
       };
 

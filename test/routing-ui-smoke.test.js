@@ -24,3 +24,10 @@ test('onboarding popover z-index stays above highlighted target', () => {
   assert.match(indexHtml, /id="onboarding-popover" class="fixed z-\[82\]/);
   assert.match(challengesSource, /'z-\[81\]'/);
 });
+
+
+test('client teams overview includes mobile card list and explicit sort select', () => {
+  assert.match(challengesSource, /id=\"client-teams-mobile-list\" class=\"space-y-3 md:hidden\"/);
+  assert.match(challengesSource, /id=\"client-teams-sort-select\"/);
+  assert.match(challengesSource, /window\.setClientTeamsSort = function setClientTeamsSort\(value\)/);
+});
