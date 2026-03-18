@@ -825,8 +825,8 @@ function clientsView() {
 
         document.getElementById('admin-user-edit-person').value = user.personId ? String(user.personId) : '';
         if (personSelectForEdit) {
-          personSelectForEdit.disabled = singleAdminMode;
-          personSelectForEdit.title = singleAdminMode ? i18n.t('admin.access.messages.singleAdminNameEmailOnly') : '';
+          personSelectForEdit.disabled = false;
+          personSelectForEdit.title = '';
         }
 
         modal.classList.remove('hidden');

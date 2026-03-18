@@ -980,7 +980,7 @@ function filteredPeople() {
 
       function clearOnboardingHighlight() {
         if (!onboardingDemo.highlightedElement) return;
-        onboardingDemo.highlightedElement.classList.remove('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[82]');
+        onboardingDemo.highlightedElement.classList.remove('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[81]');
         onboardingDemo.highlightedElement = null;
       }
 
@@ -1030,7 +1030,7 @@ function filteredPeople() {
 
         clearOnboardingHighlight();
         if (target) {
-          target.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[82]');
+          target.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[81]');
           onboardingDemo.highlightedElement = target;
         }
 

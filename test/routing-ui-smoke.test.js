@@ -17,3 +17,10 @@ test('people overview modal keyboard close + focus restore wiring exists', () =>
   assert.match(challengesSource, /closePeopleOverviewModal\(\)/);
   assert.match(challengesSource, /peopleOverviewFocusReturnTarget/);
 });
+
+
+test('onboarding popover z-index stays above highlighted target', () => {
+  const indexHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+  assert.match(indexHtml, /id="onboarding-popover" class="fixed z-\[82\]/);
+  assert.match(challengesSource, /'z-\[81\]'/);
+});
