@@ -38,3 +38,20 @@ test('project detail challenge overview includes mobile cards and explicit sort 
   assert.match(challengesSource, /id="challenge-sort-select"/);
   assert.match(challengesSource, /window\.setChallengesSort = function setChallengesSort\(value\)/);
 });
+
+
+test('admin list views include dedicated mobile card containers', () => {
+  const peopleSource = fs.readFileSync(path.join(__dirname, '../public/js/views-people.js'), 'utf8');
+  const clientsSource = fs.readFileSync(path.join(__dirname, '../public/js/views-clients.js'), 'utf8');
+  const adminProjectsSource = fs.readFileSync(path.join(__dirname, '../public/js/views-admin-projects.js'), 'utf8');
+  assert.match(peopleSource, /id="admin-people-mobile-list" class="space-y-3 md:hidden"/);
+  assert.match(clientsSource, /id="admin-clients-mobile-list" class="space-y-3 md:hidden"/);
+  assert.match(adminProjectsSource, /id="admin-projects-mobile-list" class="space-y-3 md:hidden"/);
+});
+
+test('admin CRUD modals use bottom-sheet friendly mobile layout classes', () => {
+  const indexHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+  assert.match(indexHtml, /id="admin-person-modal" class="fixed inset-0 z-50 hidden items-end justify-center/);
+  assert.match(indexHtml, /id="admin-client-modal" class="fixed inset-0 z-50 hidden items-end justify-center/);
+  assert.match(indexHtml, /id="admin-project-modal" class="fixed inset-0 z-50 hidden items-end justify-center/);
+});

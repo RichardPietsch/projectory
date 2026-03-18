@@ -279,10 +279,10 @@
     </div>
 
 
-    <div id="admin-person-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
-        <div class="mb-4 flex items-center justify-between"><h3 id="admin-person-modal-title" class="text-lg font-semibold" data-i18n="people.add">Add Person</h3><button id="admin-person-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
-        <form id="admin-person-form"><input type="hidden" name="id" />
+    <div id="admin-person-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/80 p-0 sm:items-center sm:p-4">
+      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-person-modal-title" class="text-lg font-semibold" data-i18n="people.add">Add Person</h3><button id="admin-person-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+        <form id="admin-person-form" class="space-y-3"><input type="hidden" name="id" />
           <label class="mb-2 block text-sm"><span data-i18n="people.firstName">First Name</span><input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm"><span data-i18n="people.lastName">Last Name</span><input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm"><span data-i18n="people.trade">Trade</span><select required name="tradeId" id="admin-person-trade" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
@@ -290,28 +290,28 @@
           <label class="mb-2 block text-sm"><span data-i18n="people.workingHours">Working Hours</span><input required name="workingHours" type="number" min="1" step="1" class="mt-1 w-full rounded bg-slate-950 p-2" value="40" /></label>
           <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isHidden" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Hidden in non-admin views (if unassigned)</label>
           <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isLeaver" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Mark as future leaver</label>
-          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-person-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="people.save">Save Person</button></div>
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-person-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="people.save">Save Person</button></div>
         </form>
       </div>
     </div>
 
-    <div id="admin-client-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
-        <div class="mb-4 flex items-center justify-between"><h3 id="admin-client-modal-title" class="text-lg font-semibold" data-i18n="clients.add">Add Client</h3><button id="admin-client-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
-        <form id="admin-client-form"><input type="hidden" name="id" />
+    <div id="admin-client-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/80 p-0 sm:items-center sm:p-4">
+      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-client-modal-title" class="text-lg font-semibold" data-i18n="clients.add">Add Client</h3><button id="admin-client-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+        <form id="admin-client-form" class="space-y-3"><input type="hidden" name="id" />
           <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm"><span data-i18n="clients.columns.location">Location</span><input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm"><span data-i18n="clients.columns.since">Since</span> (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm"><span data-i18n="clients.columns.priority">Priority</span><select required name="priorityId" id="admin-client-priority" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
-          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-client-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="clients.save">Save Client</button></div>
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-client-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="clients.save">Save Client</button></div>
         </form>
       </div>
     </div>
 
-    <div id="admin-project-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
-        <div class="mb-4 flex items-center justify-between"><h3 id="admin-project-modal-title" class="text-lg font-semibold" data-i18n="projects.add">Add Project</h3><button id="admin-project-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
-        <form id="admin-project-form"><input type="hidden" name="id" />
+    <div id="admin-project-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/80 p-0 sm:items-center sm:p-4">
+      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-project-modal-title" class="text-lg font-semibold" data-i18n="projects.add">Add Project</h3><button id="admin-project-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+        <form id="admin-project-form" class="space-y-3"><input type="hidden" name="id" />
           <label class="mb-2 block text-sm"><span data-i18n="projects.form.client">Client</span><select required name="clientId" id="admin-project-client" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
           <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">Status
@@ -320,7 +320,7 @@
           <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm">End (yyyy-mm)<input name="endMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
           <label class="mb-2 block text-sm"><span data-i18n="projects.form.budget">Budget in EUR</span><input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-project-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="projects.save">Save Project</button></div>
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-project-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="projects.save">Save Project</button></div>
         </form>
       </div>
     </div>
