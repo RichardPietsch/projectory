@@ -1,0 +1,58 @@
+groups:
+  - name: projectory-slo-alerts
+    interval: 30s
+    rules:
+      - alert: ProjectoryAvailabilitySLOBurn
+        expr: avg_over_time(up{job="projectory"}[5m]) < 0.995
+        for: 10m
+        labels:
+          severity: page
+          slo: availability
+        annotations:
+          summary: "Projectory availability below SLO target"
+          description: "Availability is below 99.5% over the last 5m. Check readiness, deployment health, and DB connectivity."
+          runbook: "docs/runbooks/slo-remediation.md#availability-slo"
+
+      - alert: ProjectoryHighErrorRate
+        expr: (sum(rate(projectory_http_request_errors_total[5m])) / clamp_min(sum(rate(projectory_http_requests_total[5m])), 0.001)) > 0.01
+        for: 10m
+        labels:
+          severity: page
+          slo: error_rate
+        annotations:
+          summary: "Projectory 5xx error rate above SLO threshold"
+          description: "5xx error rate is >1% over the last 5m."
+          runbook: "docs/runbooks/slo-remediation.md#error-rate-slo"
+
+      - alert: ProjectoryP95LatencyHigh
+        expr: histogram_quantile(0.95, sum by (le) (rate(projectory_http_request_duration_ms_bucket[5m]))) > 750
+        for: 15m
+        labels:
+          severity: ticket
+          slo: latency
+        annotations:
+          summary: "Projectory p95 latency above SLO threshold"
+          description: "p95 HTTP latency is above 750ms over the last 5m window."
+          runbook: "docs/runbooks/slo-remediation.md#latency-slo"
+
+      - alert: ProjectoryDBErrorRateHigh
+        expr: increase(projectory_db_query_errors_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: page
+          slo: db_health
+        annotations:
+          summary: "Projectory DB query errors detected"
+          description: "Database query errors increased in the last 5m."
+          runbook: "docs/runbooks/slo-remediation.md#db-health-slo"
+
+      - alert: ProjectoryDBP95LatencyHigh
+        expr: histogram_quantile(0.95, sum by (le) (rate(projectory_db_query_duration_ms_bucket[5m]))) > 250
+        for: 15m
+        labels:
+          severity: ticket
+          slo: db_health
+        annotations:
+          summary: "Projectory DB query p95 latency above threshold"
+          description: "DB p95 latency is above 250ms in the last 5m."
+          runbook: "docs/runbooks/slo-remediation.md#db-health-slo"
