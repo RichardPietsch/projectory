@@ -1745,14 +1745,31 @@ function filteredPeople() {
         });
       }
 
+      const routingA11yUtils = window.ProjectoryRoutingA11yUtils || {};
+      const modalCloseRequestedByKeyboard = routingA11yUtils.modalCloseRequestedByKeyboard || ((event) => Boolean(event && event.key === 'Escape'));
+      let peopleOverviewFocusReturnTarget = null;
+      let wasPeopleOverviewModalOpen = false;
+
       function renderPeopleOverviewModal() {
         const modal = document.getElementById('people-overview-modal');
         modal.classList.toggle('hidden', !state.peopleOverviewModal.open);
         modal.classList.toggle('flex', state.peopleOverviewModal.open);
 
         if (!state.peopleOverviewModal.open) {
+          if (wasPeopleOverviewModalOpen) {
+            const fallbackTarget = document.getElementById('onboarding-tab-people-overview') || document.getElementById('onboarding-tab-client-teams');
+            const focusTarget = peopleOverviewFocusReturnTarget && peopleOverviewFocusReturnTarget.isConnected ? peopleOverviewFocusReturnTarget : fallbackTarget;
+            if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus({ preventScroll: true });
+          }
+          wasPeopleOverviewModalOpen = false;
           return;
         }
+
+        if (!wasPeopleOverviewModalOpen) {
+          peopleOverviewFocusReturnTarget = document.activeElement && typeof document.activeElement.focus === 'function' ? document.activeElement : null;
+          document.getElementById('people-overview-modal-close')?.focus({ preventScroll: true });
+        }
+        wasPeopleOverviewModalOpen = true;
 
         const person = state.people.find((item) => String(item.id) === String(state.peopleOverviewModal.personId));
         if (!person) {
@@ -1839,6 +1856,12 @@ function filteredPeople() {
         if (state.listenersBound.peopleOverviewModal) return;
         state.listenersBound.peopleOverviewModal = true;
         document.getElementById('people-overview-modal-close')?.addEventListener('click', closePeopleOverviewModal);
+        document.addEventListener('keydown', (event) => {
+          if (!state.peopleOverviewModal.open) return;
+          if (!modalCloseRequestedByKeyboard(event)) return;
+          event.preventDefault();
+          closePeopleOverviewModal();
+        });
       }
 
       function renderChallengeModal() {
