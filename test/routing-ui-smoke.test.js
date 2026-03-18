@@ -31,3 +31,10 @@ test('client teams overview includes mobile card list and explicit sort select',
   assert.match(challengesSource, /id=\"client-teams-sort-select\"/);
   assert.match(challengesSource, /window\.setClientTeamsSort = function setClientTeamsSort\(value\)/);
 });
+
+
+test('project detail challenge overview includes mobile cards and explicit sort control', () => {
+  assert.match(challengesSource, /id="project-detail-challenge-mobile-list" class="space-y-3 lg:hidden"/);
+  assert.match(challengesSource, /id="challenge-sort-select"/);
+  assert.match(challengesSource, /window\.setChallengesSort = function setChallengesSort\(value\)/);
+});

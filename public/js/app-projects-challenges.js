@@ -435,54 +435,108 @@
           }
         });
 
+        function getChallengeDescriptionPreview(description) {
+          const trimmed = String(description || '').trim();
+          if (!trimmed) return '—';
+          return trimmed.length > 160 ? `${trimmed.slice(0, 157).trimEnd()}…` : trimmed;
+        }
+
+        function renderChallengeAssignees(challenge, assignments) {
+          if (!assignments.length) {
+            return viewerMode
+              ? `<span class="text-slate-400">—</span>`
+              : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff]" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('assign.assign')}</button>`;
+          }
+
+          return [...assignments]
+            .sort((a, b) => String(a.first_name || '').localeCompare(String(b.first_name || '')) || String(a.last_name || '').localeCompare(String(b.last_name || '')))
+            .map((assignment) => {
+              const personId = String(assignment.person_id);
+              const hasOwnerRole = ownerIds.has(personId);
+              const hasLeaderRole = leaderIds.has(personId);
+              const isSelf = viewerPersonId && personId === viewerPersonId;
+              const roleClass = assignment.is_owner
+                ? (isSelf ? 'border-blue-300 bg-blue-500 text-blue-50' : 'border-blue-400/70 bg-blue-600 text-blue-50')
+                : assignment.is_leader
+                  ? hasOwnerRole
+                    ? (isSelf ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100' : 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200')
+                    : (isSelf ? 'border-emerald-300 bg-emerald-500 text-emerald-50' : 'border-emerald-400/70 bg-emerald-600 text-emerald-50')
+                  : hasOwnerRole || hasLeaderRole
+                    ? (isSelf ? 'border-slate-300 border-dotted bg-slate-200/10 text-slate-100' : 'border-slate-500 border-dotted bg-transparent text-slate-300')
+                    : (isSelf ? 'border-slate-300 bg-slate-100 text-slate-900' : 'border-slate-500 bg-slate-700 text-slate-100');
+              const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
+              const assignmentLabel = `${selfRoleIcon(isSelf)}<span>${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</span>`;
+              if (viewerMode) {
+                return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${roleClass}">${assignmentLabel}</span>`;
+              }
+              return `<button class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignmentLabel}</button>`;
+            })
+            .join('');
+        }
+
+        function renderChallengeAssigneeSummary(assignments) {
+          if (!assignments.length) return viewerMode ? '—' : i18n.t('common.none');
+          return [...assignments]
+            .sort((a, b) => String(a.first_name || '').localeCompare(String(b.first_name || '')) || String(a.last_name || '').localeCompare(String(b.last_name || '')))
+            .map((assignment) => {
+              const isSelf = viewerPersonId && String(assignment.person_id) === viewerPersonId;
+              const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
+              return `${selfRoleIcon(isSelf)}${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})`;
+            })
+            .join(', ');
+        }
+
+        function createChallengeActionItems(challenge, assignments) {
+          if (viewerMode) return [];
+          const actionItems = [
+            `<button class="w-full rounded border border-slate-600 px-2 py-1 text-left text-xs hover:bg-slate-800" onclick='openChallengeModal(${JSON.stringify(challenge)})'>${i18n.t('common.edit')}</button>`,
+            `<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteChallenge(${challenge.id})'>${i18n.t('common.delete')}</button>`
+          ];
+
+          if (assignments.length >= 1) {
+            actionItems.push(`<button class="w-full rounded border border-[#00d8ff]/50 px-2 py-1 text-left text-xs text-[#00d8ff] hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('projectDetail.actions.addAssignee')}</button>`);
+          }
+
+          if (assignments.length === 1) {
+            actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteAssignment(${assignments[0].id})'>${i18n.t('projectDetail.actions.unassignNamed', { name: assignments[0].first_name })}</button>`);
+          } else if (assignments.length > 1) {
+            actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='openUnassignModal(${challenge.id})'>${i18n.t('projectDetail.actions.unassign')}</button>`);
+          }
+          return actionItems;
+        }
+
+        function renderChallengeActionsMenu(challenge, assignments, menuClass = 'absolute right-0 z-30 mt-1 w-52') {
+          if (viewerMode) return '';
+          const actionItems = createChallengeActionItems(challenge, assignments);
+          return `<details class="relative inline-block">
+            <summary class="list-none cursor-pointer rounded border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800"><span class="inline-flex items-center gap-1"><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M13 3h-2a2 2 0 0 0-2 2v1H8a2 2 0 0 0 0 4h1v1H8a2 2 0 0 0 0 4h1v1a2 2 0 0 0 2 2h2v-1a2 2 0 1 1 4 0v1h2a2 2 0 0 0 2-2v-2h-1a2 2 0 1 1 0-4h1V8a2 2 0 0 0-2-2h-2V5a2 2 0 0 0-2-2Z"/></svg><span>${i18n.t('projectDetail.actionsMenu')}</span></span></summary>
+            <div class="${menuClass} space-y-1 rounded border border-slate-700 bg-slate-900 p-2 shadow-xl">${actionItems.join('')}</div>
+          </details>`;
+        }
+
+        function getChallengePrimaryAction(challenge, assignments) {
+          if (viewerMode) return '';
+          const primaryLabel = assignments.length ? i18n.t('projectDetail.actions.addAssignee') : i18n.t('assign.assign');
+          return `<button class="rounded-lg border border-[#00d8ff]/50 bg-[#00d8ff]/10 px-3 py-2 text-sm font-medium text-[#7cecff] hover:bg-[#00d8ff]/20" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${primaryLabel}</button>`;
+        }
+
+        function challengeSortOptionLabel(sortValue) {
+          const labels = {
+            title_asc: i18n.t('projectDetail.challengeSort.titleAsc'),
+            title_desc: i18n.t('projectDetail.challengeSort.titleDesc'),
+            description_asc: i18n.t('projectDetail.challengeSort.descriptionAsc'),
+            description_desc: i18n.t('projectDetail.challengeSort.descriptionDesc'),
+            assignees_asc: i18n.t('projectDetail.challengeSort.assigneesAsc'),
+            assignees_desc: i18n.t('projectDetail.challengeSort.assigneesDesc')
+          };
+          return labels[sortValue] || sortValue;
+        }
+
         const challengeRows = sortedChallenges
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
-            const assignees = assignments.length
-              ? [...assignments]
-                  .sort((a, b) => String(a.first_name || '').localeCompare(String(b.first_name || '')) || String(a.last_name || '').localeCompare(String(b.last_name || '')))
-                  .map((assignment) => {
-                    const personId = String(assignment.person_id);
-                    const hasOwnerRole = ownerIds.has(personId);
-                    const hasLeaderRole = leaderIds.has(personId);
-                    const isSelf = viewerPersonId && personId === viewerPersonId;
-                    const roleClass = assignment.is_owner
-                      ? (isSelf ? 'border-blue-300 bg-blue-500 text-blue-50' : 'border-blue-400/70 bg-blue-600 text-blue-50')
-                      : assignment.is_leader
-                        ? hasOwnerRole
-                          ? (isSelf ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100' : 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200')
-                          : (isSelf ? 'border-emerald-300 bg-emerald-500 text-emerald-50' : 'border-emerald-400/70 bg-emerald-600 text-emerald-50')
-                        : hasOwnerRole || hasLeaderRole
-                          ? (isSelf ? 'border-slate-300 border-dotted bg-slate-200/10 text-slate-100' : 'border-slate-500 border-dotted bg-transparent text-slate-300')
-                          : (isSelf ? 'border-slate-300 bg-slate-100 text-slate-900' : 'border-slate-500 bg-slate-700 text-slate-100');
-                    const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
-                    const assignmentLabel = `${selfRoleIcon(isSelf)}<span>${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</span>`;
-                    if (viewerMode) {
-                      return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${roleClass}">${assignmentLabel}</span>`;
-                    }
-                    return `<button class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignmentLabel}</button>`;
-                  })
-                  .join('')
-              : viewerMode ? `<span class="text-slate-400">—</span>` : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff]" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('assign.assign')}</button>`;
-            const actionItems = viewerMode ? [] : [
-              `<button class="w-full rounded border border-slate-600 px-2 py-1 text-left text-xs hover:bg-slate-800" onclick='openChallengeModal(${JSON.stringify(challenge)})'>${i18n.t('common.edit')}</button>`,
-              `<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteChallenge(${challenge.id})'>${i18n.t('common.delete')}</button>`
-            ];
-
-            if (assignments.length >= 1) {
-              actionItems.push(`<button class="w-full rounded border border-[#00d8ff]/50 px-2 py-1 text-left text-xs text-[#00d8ff] hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('projectDetail.actions.addAssignee')}</button>`);
-            }
-
-            if (assignments.length === 1) {
-              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteAssignment(${assignments[0].id})'>${i18n.t('projectDetail.actions.unassignNamed', { name: assignments[0].first_name })}</button>`);
-            } else if (assignments.length > 1) {
-              actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='openUnassignModal(${challenge.id})'>${i18n.t('projectDetail.actions.unassign')}</button>`);
-            }
-
-            const actionsMenu = viewerMode ? '' : `<details class="relative inline-block">
-              <summary class="list-none cursor-pointer rounded border border-slate-600 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800"><span class="inline-flex items-center gap-1"><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M13 3h-2a2 2 0 0 0-2 2v1H8a2 2 0 0 0 0 4h1v1H8a2 2 0 0 0 0 4h1v1a2 2 0 0 0 2 2h2v-1a2 2 0 1 1 4 0v1h2a2 2 0 0 0 2-2v-2h-1a2 2 0 1 1 0-4h1V8a2 2 0 0 0-2-2h-2V5a2 2 0 0 0-2-2Z"/></svg><span>${i18n.t('projectDetail.actionsMenu')}</span></span></summary>
-              <div class="absolute right-0 z-30 mt-1 w-52 space-y-1 rounded border border-slate-700 bg-slate-900 p-2 shadow-xl">${actionItems.join('')}</div>
-            </details>`;
+            const assignees = renderChallengeAssignees(challenge, assignments);
+            const actionsMenu = renderChallengeActionsMenu(challenge, assignments);
 
             return `<tr class="border-t border-slate-800">
               <td class="p-2">${challenge.title}</td>
@@ -490,6 +544,28 @@
               <td class="p-2">${assignees}</td>
               <td class="p-2 text-right"><div class="flex justify-end">${actionsMenu}</div></td>
             </tr>`;
+          })
+          .join('');
+
+        const mobileChallengeCards = sortedChallenges
+          .map((challenge) => {
+            const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
+            const primaryAction = getChallengePrimaryAction(challenge, assignments);
+            const actionsMenu = renderChallengeActionsMenu(challenge, assignments, 'absolute right-0 z-30 mt-2 w-56');
+            return `<article class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-sm">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                  <h4 class="text-base font-semibold text-slate-100 break-words">${challenge.title}</h4>
+                  <p class="mt-2 text-sm leading-6 text-slate-300 break-words">${getChallengeDescriptionPreview(challenge.description)}</p>
+                </div>
+                ${viewerMode ? '' : `<div class="shrink-0">${actionsMenu}</div>`}
+              </div>
+              <div class="mt-3 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('challenge.columns.assignee')}</p>
+                <p class="mt-1 text-sm leading-6 text-slate-200 break-words">${renderChallengeAssigneeSummary(assignments)}</p>
+              </div>
+              ${viewerMode ? '' : `<div class="mt-3 flex flex-wrap items-center justify-between gap-3">${primaryAction}<span class="text-xs text-slate-500">${i18n.t('projectDetail.challengeMobile.secondaryHint')}</span></div>`}
+            </article>`;
           })
           .join('');
 
@@ -516,14 +592,25 @@
           </div>
 
           <div id="onboarding-challenge-overview" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div class="mb-3 flex items-start justify-between gap-3">
+            <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 class="text-lg font-semibold">${i18n.t('projectDetail.challengeOverview.title')}</h3>
                 <p class="text-xs text-slate-400">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
               </div>
               ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center gap-2 rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
             </div>
-            <table class="w-full table-fixed text-left text-sm"><thead><tr class="text-slate-400"><th class="w-[19%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[50%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[20%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[11%] p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
+            <div class="mb-3">
+              <select
+                id="challenge-sort-select"
+                onchange="setChallengesSort(this.value)"
+                class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm text-slate-200 sm:w-72"
+                aria-label="${i18n.t('projectDetail.challengeSort.label')}"
+              >${['title_asc','title_desc','description_asc','description_desc','assignees_asc','assignees_desc'].map((sortValue) => `<option value="${sortValue}" ${state.challengesSort === sortValue ? 'selected' : ''}>${challengeSortOptionLabel(sortValue)}</option>`).join('')}</select>
+            </div>
+            <div id="project-detail-challenge-mobile-list" class="space-y-3 lg:hidden">${mobileChallengeCards}</div>
+            <div class="hidden lg:block">
+              <table class="w-full table-fixed text-left text-sm"><thead><tr class="text-slate-400"><th class="w-[19%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[50%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[20%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[11%] p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
+            </div>
           </div>
 
           ${projectPeopleOverview}`;
@@ -1677,6 +1764,11 @@ function filteredPeople() {
         const asc = `${field}_asc`;
         const desc = `${field}_desc`;
         state.challengesSort = state.challengesSort === asc ? desc : asc;
+        render();
+      };
+
+      window.setChallengesSort = function setChallengesSort(value) {
+        state.challengesSort = String(value || 'title_asc');
         render();
       };
 
