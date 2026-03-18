@@ -1,0 +1,8 @@
+# Trivy ignore list for temporary, triaged exceptions.
+# Format examples:
+# CVE-2024-12345
+# GHSA-xxxx-xxxx-xxxx
+#
+# Policy:
+# - Every entry requires an issue/PR reference and expiry date in a comment.
+# - Critical vulnerabilities should be remediated quickly; ignore only as a short-lived exception.
