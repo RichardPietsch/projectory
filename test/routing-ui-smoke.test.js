@@ -13,7 +13,7 @@ test('home tab nav includes keyboard listener and tab semantics', () => {
 });
 
 test('people overview modal keyboard close + focus restore wiring exists', () => {
-  assert.match(challengesSource, /modalCloseRequestedByKeyboard\(event\)/);
+  assert.match(challengesSource, /shouldClosePeopleOverviewOnKeyboard\(event\)/);
   assert.match(challengesSource, /closePeopleOverviewModal\(\)/);
   assert.match(challengesSource, /peopleOverviewFocusReturnTarget/);
 });

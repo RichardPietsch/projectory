@@ -5,8 +5,8 @@
         return normalized;
       }
 
-      const routingA11yUtils = window.ProjectoryRoutingA11yUtils || {};
-      const resolveTabNavigationIndex = routingA11yUtils.resolveTabNavigationIndex || (() => -1);
+      const projectoryRoutingUiA11yUtils = window.ProjectoryRoutingA11yUtils || {};
+      const resolveTabNavigationIndex = projectoryRoutingUiA11yUtils.resolveTabNavigationIndex || (() => -1);
       let lastRenderedViewKind = null;
 
       function getViewKind() {
@@ -370,4 +370,8 @@
         }
         lastRenderedViewKind = currentViewKind;
       }
+
+      window.render = render;
+      window.applyAppRoute = applyAppRoute;
+      window.navigateFromState = navigateFromState;
 

@@ -1745,8 +1745,8 @@ function filteredPeople() {
         });
       }
 
-      const routingA11yUtils = window.ProjectoryRoutingA11yUtils || {};
-      const modalCloseRequestedByKeyboard = routingA11yUtils.modalCloseRequestedByKeyboard || ((event) => Boolean(event && event.key === 'Escape'));
+      const peopleOverviewA11yUtils = window.ProjectoryRoutingA11yUtils || {};
+      const shouldClosePeopleOverviewOnKeyboard = peopleOverviewA11yUtils.modalCloseRequestedByKeyboard || ((event) => Boolean(event && event.key === 'Escape'));
       let peopleOverviewFocusReturnTarget = null;
       let wasPeopleOverviewModalOpen = false;
 
@@ -1858,7 +1858,7 @@ function filteredPeople() {
         document.getElementById('people-overview-modal-close')?.addEventListener('click', closePeopleOverviewModal);
         document.addEventListener('keydown', (event) => {
           if (!state.peopleOverviewModal.open) return;
-          if (!modalCloseRequestedByKeyboard(event)) return;
+          if (!shouldClosePeopleOverviewOnKeyboard(event)) return;
           event.preventDefault();
           closePeopleOverviewModal();
         });
