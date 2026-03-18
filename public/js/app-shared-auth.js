@@ -316,7 +316,9 @@ const sharedI18n = window.ProjectoryI18n;
       }
 
       function selfRoleIcon(isSelf) {
-        return isSelf ? '<span class="iconify" data-icon="mdi:account-circle" aria-hidden="true"></span>' : '';
+        return isSelf
+          ? '<svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4 text-slate-200" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/></svg>'
+          : '';
       }
 
       function needsLoginScreen() {

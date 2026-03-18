@@ -205,12 +205,12 @@ npm run release:readiness-check
 
 
 
-### Frontend CDN hardening note
+### Frontend icon/CSP strategy
 
-- Runtime third-party script usage was reduced by removing the Iconify CDN dependency and replacing it with a local inline icon in the onboarding trigger.
-- Tailwind Play CDN is still used for now; CSP only allows `self` plus `https://cdn.tailwindcss.com` for scripts.
-- This reduces browser-time supply-chain exposure compared with multiple script CDNs while preserving current UI behavior.
-- Recommended next step: self-host a pinned frontend build artifact and remove Tailwind CDN entirely.
+- Iconify is intentionally **not** used at runtime; icon rendering is inline/local (SVG/Unicode) across the SPA shell and views.
+- Tailwind Play CDN is still used for now; CSP script sources are intentionally limited to `self` plus `https://cdn.tailwindcss.com`.
+- Because icon rendering is local, there is no additional icon CDN host in CSP, reducing browser-time supply-chain exposure.
+- Recommended next step: self-host a pinned frontend build artifact and remove Tailwind CDN entirely for stricter CSP.
 
 ### Distributed rate limiting
 

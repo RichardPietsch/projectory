@@ -354,7 +354,9 @@
       }
 
       function leaverRunIcon(isLeaver) {
-        return isLeaver ? ` <span class="iconify inline-block align-[-1px]" data-icon="mdi:run" aria-label="${i18n.t('people.flags.leaver')}"></span>` : '';
+        return isLeaver
+          ? ` <span class="inline-flex align-[-1px]" aria-label="${i18n.t('people.flags.leaver')}"><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M13.5 5.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-4 15.5 2.2-5.3 2.8 2.2V22H17v-5l-3.6-2.8.6-2.2 1.8 1.5h3.2v-2h-2.5l-2.2-1.8c-.7-.6-1.7-.8-2.6-.5L8.2 10.5 6 15.8V22h2.5v-4.2l1-2.1 1.3 1.1L9.5 21Z"/></svg></span>`
+          : '';
       }
 
       function formatWorkloadDuration(percentage, workingHours) {
