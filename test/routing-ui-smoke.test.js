@@ -55,3 +55,9 @@ test('admin CRUD modals use bottom-sheet friendly mobile layout classes', () => 
   assert.match(indexHtml, /id="admin-client-modal" class="fixed inset-0 z-50 hidden items-end justify-center/);
   assert.match(indexHtml, /id="admin-project-modal" class="fixed inset-0 z-50 hidden items-end justify-center/);
 });
+
+
+test('people overview detail keeps a dedicated mobile grouped-card container', () => {
+  assert.match(challengesSource, /id="people-overview-mobile-detail-list" class="space-y-4 md:hidden"/);
+  assert.match(challengesSource, /adjustProjectPersonQuantity\(\$\{projectId\}, \$\{person\.id\}, true\)/);
+});

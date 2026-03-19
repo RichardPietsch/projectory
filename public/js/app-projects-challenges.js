@@ -2023,10 +2023,11 @@ function filteredPeople() {
           grouped.get(key).push(assignment);
         }
 
-        const tableRows = Array.from(grouped.entries())
+        const detailGroups = Array.from(grouped.entries())
           .map(([projectId, projectAssignments]) => {
             const project = projectById.get(projectId);
             const projectName = project ? `${project.name} (${project.client_name})` : `Project ${projectId}`;
+            const adjustControl = isViewerMode() ? '' : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff] hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">${i18n.t('peopleOverview.adjustWorkload')}</button>`;
 
             const assignmentRows = projectAssignments
               .map((assignment) => {
@@ -2036,10 +2037,11 @@ function filteredPeople() {
                 const challengeDescription = challenge?.description || 'No description available.';
                 const quantity = Math.round(Number(assignment.quantity || 0));
                 const barColor = assignment.is_owner ? 'bg-blue-500' : assignment.is_leader ? 'bg-emerald-500' : 'bg-slate-100';
+                const challengePayload = JSON.stringify(challenge || { id: assignment.challenge_id, title: assignment.challenge_title, description: challengeDescription, project_id: assignment.project_id });
 
-                return `<tr class="border-t border-slate-800">
+                const tableRow = `<tr class="border-t border-slate-800">
                   <td class="p-2 pl-6">
-                    <button class="w-full text-left hover:opacity-90" onclick='openChallengeFromPeopleOverviewModal(${JSON.stringify(challenge || { id: assignment.challenge_id, title: assignment.challenge_title, description: challengeDescription, project_id: assignment.project_id })})'>
+                    <button class="w-full text-left hover:opacity-90" onclick='openChallengeFromPeopleOverviewModal(${challengePayload})'>
                       <div class="font-medium text-slate-100 underline decoration-slate-600 underline-offset-2">${assignment.challenge_title}</div>
                       <div class="text-slate-400">${challengeDescription}</div>
                     </button>
@@ -2050,16 +2052,38 @@ function filteredPeople() {
                     <div class="mt-1 ml-auto h-2 w-32 overflow-hidden rounded bg-slate-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
                   </td>
                 </tr>`;
-              })
-              .join('');
 
-            const adjustControl = isViewerMode() ? '' : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff] hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">${i18n.t('peopleOverview.adjustWorkload')}</button>`;
-            return `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2 font-semibold text-slate-100" colspan="2">${projectName}</td><td class="p-2 text-right">${adjustControl}</td></tr>${assignmentRows}`;
-          })
-          .join('');
+                const mobileCard = `<article class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-sm">
+                  <button class="w-full text-left" onclick='openChallengeFromPeopleOverviewModal(${challengePayload})'>
+                    <div class="text-base font-semibold text-slate-100 break-words underline decoration-slate-600 underline-offset-2">${assignment.challenge_title}</div>
+                    <p class="mt-2 text-sm leading-6 text-slate-400 break-words">${challengeDescription}</p>
+                  </button>
+                  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('assign.role')}</div>
+                      <div class="mt-1 font-semibold ${roleClass}">${roleLabel}</div>
+                    </div>
+                    <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('peopleOverview.columns.workload')}</div>
+                      <div class="mt-1 font-semibold text-slate-100">${quantity}% (${formatWorkloadDuration(quantity, person.working_hours)})</div>
+                      <div class="mt-2 h-2 overflow-hidden rounded bg-slate-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
+                    </div>
+                  </div>
+                </article>`;
+
+                return { tableRow, mobileCard };
+              });
+
+            const tableGroup = `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2 font-semibold text-slate-100" colspan="2">${projectName}</td><td class="p-2 text-right">${adjustControl}</td></tr>${assignmentRows.map((entry) => entry.tableRow).join('')}`;
+            const mobileGroup = `<section class="rounded-2xl border border-slate-700 bg-slate-900/70 p-3"><div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h4 class="text-sm font-semibold text-slate-100 break-words">${projectName}</h4>${adjustControl}</div><div class="space-y-3">${assignmentRows.map((entry) => entry.mobileCard).join('')}</div></section>`;
+            return { tableGroup, mobileGroup };
+          });
+
+        const tableRows = detailGroups.map((group) => group.tableGroup).join('');
+        const mobileGroups = detailGroups.map((group) => group.mobileGroup).join('');
 
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-        document.getElementById('people-overview-modal-body').innerHTML = `<table class="w-full text-left text-xs rounded border border-slate-700 overflow-hidden">
+        document.getElementById('people-overview-modal-body').innerHTML = `<div id="people-overview-mobile-detail-list" class="space-y-4 md:hidden">${mobileGroups}</div><div class="hidden md:block"><table class="w-full text-left text-xs rounded border border-slate-700 overflow-hidden">
           <thead>
             <tr class="text-slate-400 bg-slate-950/70">
               <th class="p-2">${i18n.t('entity.challenges')}</th>
@@ -2068,7 +2092,7 @@ function filteredPeople() {
             </tr>
           </thead>
           <tbody>${tableRows}</tbody>
-        </table>`;
+        </table></div>`;
       }
 
       function closePeopleOverviewModal() {
