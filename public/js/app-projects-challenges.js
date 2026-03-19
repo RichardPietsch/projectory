@@ -4,7 +4,7 @@
         const viewerPersonId = currentPersonId();
 
         if (projects.length === 0) {
-          return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-300">${i18n.t('clientTeams.emptyState')}</div>`;
+          return `<div class="rounded-xl border border-zinc-800 bg-zinc-900 p-6 text-sm text-zinc-300">${i18n.t('clientTeams.emptyState')}</div>`;
         }
 
         const hasSelectedProject = state.selectedProjectId && projects.some((project) => String(project.id) === String(state.selectedProjectId));
@@ -114,7 +114,7 @@
           }
 
           function renderOwnerPills(project) {
-            if (!project.ownerEntries.length) return `<span class="text-slate-400">${i18n.t('clientTeams.noOwnerAssigned')}</span>`;
+            if (!project.ownerEntries.length) return `<span class="text-zinc-400">${i18n.t('clientTeams.noOwnerAssigned')}</span>`;
             return project.ownerEntries
               .map((person) => {
                 const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
@@ -127,7 +127,7 @@
           }
 
           function renderLeaderPills(project) {
-            if (!project.leaderEntries.length) return `<span class="text-slate-400">${i18n.t('clientTeams.noLeaderAssigned')}</span>`;
+            if (!project.leaderEntries.length) return `<span class="text-zinc-400">${i18n.t('clientTeams.noLeaderAssigned')}</span>`;
             return project.leaderEntries
               .map((person) => {
                 const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
@@ -170,18 +170,18 @@
               const leaderPills = renderLeaderPills(project);
               const rowClass = hasCurrentUserAssignment
                 ? 'cursor-pointer border-t border-cyan-400/50 bg-cyan-500/10 hover:bg-cyan-500/20'
-                : 'cursor-pointer border-t border-slate-800 hover:bg-slate-800/40';
+                : 'cursor-pointer border-t border-zinc-800 hover:bg-zinc-700/40';
 
               return `<tr class="${rowClass}" onclick="openProjectDetail(${project.id})">
-                <td class="p-2 text-slate-300">${renderProjectStatusPill(project.status, project.id)}</td>
+                <td class="p-2 text-zinc-300">${renderProjectStatusPill(project.status, project.id)}</td>
                 <td class="p-2">
-                  <div class="font-medium text-slate-100">${project.name}</div>
+                  <div class="font-medium text-zinc-100">${project.name}</div>
                 </td>
-                <td class="p-2 text-slate-300">${project.client_name}</td>
-                <td class="p-2 text-slate-300">${formatEuroWhole(project.budget_cents)}</td>
-                <td class="p-2 text-slate-300">${renderPriorityPill(project.priority_name, project.priority_color_hex)}</td>
-                <td class="p-2 text-slate-300">${ownerPills}</td>
-                <td class="p-2 text-slate-300">${leaderPills}</td>
+                <td class="p-2 text-zinc-300">${project.client_name}</td>
+                <td class="p-2 text-zinc-300">${formatEuroWhole(project.budget_cents)}</td>
+                <td class="p-2 text-zinc-300">${renderPriorityPill(project.priority_name, project.priority_color_hex)}</td>
+                <td class="p-2 text-zinc-300">${ownerPills}</td>
+                <td class="p-2 text-zinc-300">${leaderPills}</td>
               </tr>`;
             })
             .join('');
@@ -193,39 +193,39 @@
               const priorityPresentation = getPriorityPresentation(project.priority_name, project.priority_color_hex);
               const cardClass = hasCurrentUserAssignment
                 ? 'border-cyan-400/60 bg-cyan-500/10'
-                : 'border-slate-800 bg-slate-950/60';
-              return `<button type="button" class="w-full rounded-xl border p-4 text-left shadow-sm transition hover:border-slate-600 hover:bg-slate-900/80 focus:outline-none focus:ring-2 focus:ring-[#00d8ff] ${cardClass}" onclick="openProjectDetail(${project.id})">
+                : 'border-zinc-800 bg-zinc-950/60';
+              return `<button type="button" class="w-full rounded-xl border p-4 text-left shadow-sm transition hover:border-zinc-600 hover:bg-zinc-900/80 focus:outline-none focus:ring-2 focus:ring-[#00d8ff] ${cardClass}" onclick="openProjectDetail(${project.id})">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div class="min-w-0 flex-1">
-                    <p class="truncate text-base font-semibold text-slate-50">${project.name}</p>
-                    <p class="mt-1 truncate text-sm text-slate-400">${project.client_name}</p>
+                    <p class="truncate text-base font-semibold text-zinc-50">${project.name}</p>
+                    <p class="mt-1 truncate text-sm text-zinc-400">${project.client_name}</p>
                   </div>
                   <div class="shrink-0">${renderPriorityPill(project.priority_name, project.priority_color_hex)}</div>
                 </div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.status')}</p>
-                    <div class="mt-1 flex items-center gap-2 text-sm text-slate-200">
+                  <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('clientTeams.columns.status')}</p>
+                    <div class="mt-1 flex items-center gap-2 text-sm text-zinc-200">
                       ${renderProjectStatusPill(project.status, project.id)}
                       <span class="min-w-0 break-words">${statusPresentation.label}</span>
                     </div>
                   </div>
-                  <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.budget')}</p>
-                    <p class="mt-1 break-words text-sm font-medium text-slate-100">${formatEuroWhole(project.budget_cents)}</p>
+                  <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('clientTeams.columns.budget')}</p>
+                    <p class="mt-1 break-words text-sm font-medium text-zinc-100">${formatEuroWhole(project.budget_cents)}</p>
                   </div>
-                  <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.owner')}</p>
+                  <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('clientTeams.columns.owner')}</p>
                     <div class="mt-2 flex flex-wrap gap-2">${renderOwnerPills(project)}</div>
                   </div>
-                  <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.leaders')}</p>
+                  <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('clientTeams.columns.leaders')}</p>
                     <div class="mt-2 flex flex-wrap gap-2">${renderLeaderPills(project)}</div>
                   </div>
                 </div>
-                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                  <span class="font-semibold uppercase tracking-[0.16em] text-slate-500">${i18n.t('clientTeams.columns.priority')}</span>
-                  <span class="min-w-0 break-words text-slate-300">${priorityPresentation.label}</span>
+                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+                  <span class="font-semibold uppercase tracking-[0.16em] text-zinc-500">${i18n.t('clientTeams.columns.priority')}</span>
+                  <span class="min-w-0 break-words text-zinc-300">${priorityPresentation.label}</span>
                 </div>
               </button>`;
             })
@@ -248,10 +248,10 @@
             'leaders_desc'
           ].map((sortValue) => `<option value="${sortValue}" ${state.clientTeamsSort === sortValue ? 'selected' : ''}>${clientTeamsSortOptionLabel(sortValue)}</option>`).join('');
 
-          return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          return `<div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
             <div class="mb-3">
               <h3 class="text-lg font-semibold">${i18n.t('clientTeams.title')}</h3>
-              <p class="text-xs text-slate-400">${i18n.t('clientTeams.subtitle')}</p>
+              <p class="text-xs text-zinc-400">${i18n.t('clientTeams.subtitle')}</p>
             </div>
             <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
@@ -260,16 +260,16 @@
                 value="${state.clientTeamsSearch || ''}"
                 oninput="setClientTeamsSearch(this.value)"
                 placeholder="${i18n.t('clientTeams.searchPlaceholder')}"
-                class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm"
+                class="w-full rounded border border-zinc-700 bg-zinc-950 p-2 text-sm"
               />
               <select
                 id="client-teams-sort-select"
                 onchange="setClientTeamsSort(this.value)"
-                class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm text-slate-200 sm:w-64"
+                class="w-full rounded border border-zinc-700 bg-zinc-950 p-2 text-sm text-zinc-200 sm:w-64"
                 aria-label="${i18n.t('clientTeams.sort.label')}"
               >${sortOptions}</select>
               <button
-                class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800 ${state.clientTeamsSearch ? '' : 'opacity-50'}"
+                class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-700 ${state.clientTeamsSearch ? '' : 'opacity-50'}"
                 onclick="clearClientTeamsSearch()"
                 ${state.clientTeamsSearch ? '' : 'disabled'}
                 title="Clear search"
@@ -279,14 +279,14 @@
             <div class="mt-4 hidden overflow-x-auto md:block">
               <table id="onboarding-project-overview-table" class="min-w-[860px] w-full table-fixed text-left text-sm">
                 <thead>
-                  <tr class="text-slate-400">
-                    <th class="w-[7%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[23%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[8%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[11%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[30%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <tr class="text-zinc-400">
+                    <th class="w-[7%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[23%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[8%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[11%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[30%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   </tr>
                 </thead>
                 <tbody>${projectRows}</tbody>
@@ -364,8 +364,8 @@
                     : 'border-emerald-300 bg-emerald-500 text-emerald-50';
                 } else {
                   tierClass = isSecondaryRole(personId)
-                    ? 'border-slate-300 border-dotted bg-slate-200/10 text-slate-100'
-                    : 'border-slate-300 bg-slate-100 text-slate-900';
+                    ? 'border-zinc-300 border-dotted bg-zinc-200/10 text-zinc-100'
+                    : 'border-zinc-300 bg-zinc-100 text-zinc-900';
                 }
               }
               const tierLabelWithMeta = `${selfRoleIcon(isSelf)}<span>${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</span>`;
@@ -377,19 +377,19 @@
             .filter(Boolean)
             .join(' ');
 
-          return `<div ${containerId ? `id="${containerId}"` : ''} class="rounded border border-slate-700 bg-slate-950/60 p-3">
-            <h4 class="mb-2 text-sm font-semibold text-slate-200">${tierLabel}</h4>
-            <div class="flex flex-wrap gap-2">${entries || `<span class="text-xs text-slate-400">${i18n.t('common.none')}</span>`}</div>
+          return `<div ${containerId ? `id="${containerId}"` : ''} class="rounded border border-zinc-700 bg-zinc-950/60 p-3">
+            <h4 class="mb-2 text-sm font-semibold text-zinc-200">${tierLabel}</h4>
+            <div class="flex flex-wrap gap-2">${entries || `<span class="text-xs text-zinc-400">${i18n.t('common.none')}</span>`}</div>
           </div>`;
         }
 
-        const projectPeopleOverview = `<div id="onboarding-project-team-overview" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+        const projectPeopleOverview = `<div id="onboarding-project-team-overview" class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
           <h3 class="mb-3 text-lg font-semibold">${i18n.t('projectDetail.teamOverview.title')}</h3>
-          <p class="mb-3 text-xs text-slate-400">${i18n.t('projectDetail.teamOverview.subtitle')}</p>
+          <p class="mb-3 text-xs text-zinc-400">${i18n.t('projectDetail.teamOverview.subtitle')}</p>
           <div class="space-y-3">
             ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50', 'border-blue-400/70 bg-blue-600 text-blue-50', () => false, 'onboarding-client-owners')}
             ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50', 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200', (personId) => ownerIds.has(personId), 'onboarding-client-leaders')}
-            ${renderTierPeople(contributorIds, 'Contributors', 'border-slate-500 bg-slate-700 text-slate-100', 'border-slate-500 border-dotted bg-transparent text-slate-300', (personId) => ownerIds.has(personId) || leaderIds.has(personId), 'onboarding-contributors')}
+            ${renderTierPeople(contributorIds, 'Contributors', 'border-zinc-500 bg-zinc-700 text-zinc-100', 'border-zinc-500 border-dotted bg-transparent text-zinc-300', (personId) => ownerIds.has(personId) || leaderIds.has(personId), 'onboarding-contributors')}
           </div>
         </div>`;
 
@@ -444,7 +444,7 @@
         function renderChallengeAssignees(challenge, assignments) {
           if (!assignments.length) {
             return viewerMode
-              ? `<span class="text-slate-400">—</span>`
+              ? `<span class="text-zinc-400">—</span>`
               : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff]" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('assign.assign')}</button>`;
           }
 
@@ -462,8 +462,8 @@
                     ? (isSelf ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100' : 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200')
                     : (isSelf ? 'border-emerald-300 bg-emerald-500 text-emerald-50' : 'border-emerald-400/70 bg-emerald-600 text-emerald-50')
                   : hasOwnerRole || hasLeaderRole
-                    ? (isSelf ? 'border-slate-300 border-dotted bg-slate-200/10 text-slate-100' : 'border-slate-500 border-dotted bg-transparent text-slate-300')
-                    : (isSelf ? 'border-slate-300 bg-slate-100 text-slate-900' : 'border-slate-500 bg-slate-700 text-slate-100');
+                    ? (isSelf ? 'border-zinc-300 border-dotted bg-zinc-200/10 text-zinc-100' : 'border-zinc-500 border-dotted bg-transparent text-zinc-300')
+                    : (isSelf ? 'border-zinc-300 bg-zinc-100 text-zinc-900' : 'border-zinc-500 bg-zinc-700 text-zinc-100');
               const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
               const assignmentLabel = `${selfRoleIcon(isSelf)}<span>${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</span>`;
               if (viewerMode) {
@@ -488,7 +488,7 @@
 
         function renderChallengeDeleteButton(challengeId) {
           if (viewerMode) return '';
-          return `<button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-500/70 text-slate-700 transition hover:border-rose-500/70 hover:text-rose-600" onclick="openChallengeDeleteModal(${challengeId})" aria-label="${i18n.t('common.delete')}">
+          return `<button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-600/70 text-zinc-700 transition hover:border-rose-500/70 hover:text-rose-600" onclick="openChallengeDeleteModal(${challengeId})" aria-label="${i18n.t('common.delete')}">
             <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M9 4.75h6l.55 1.5H19a.75.75 0 1 1 0 1.5h-.52l-.68 10.24A2 2 0 0 1 15.81 20H8.19a2 2 0 0 1-1.99-2.01L5.52 7.75H5a.75.75 0 1 1 0-1.5h3.45L9 4.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
               <path d="M10 10v5.5M14 10v5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -500,24 +500,24 @@
           const isEditing = String(state.inlineChallengeEdit.challengeId || '') === String(challenge.id) && state.inlineChallengeEdit.field === field;
           const value = isEditing ? state.inlineChallengeEdit.value : String(challenge[field] || '');
           const frameClass = field === 'title'
-            ? 'rounded-xl bg-slate-300/50 px-3 py-2 text-left transition hover:bg-slate-300'
-            : 'rounded-xl bg-slate-300/50 px-3 py-2.5 text-left transition hover:bg-slate-300';
+            ? 'rounded-xl bg-stone-200 px-3 py-2 text-left transition hover:bg-stone-300'
+            : 'rounded-xl bg-stone-200 px-3 py-2.5 text-left transition hover:bg-stone-300';
 
           if (!isEditing) {
             return `<button type="button" class="block w-full ${frameClass}" onclick="startInlineChallengeEdit(${challenge.id}, '${field}')">
               ${field === 'title'
-                ? `<span class="block text-lg font-semibold leading-7 text-slate-950 break-words">${value}</span>`
-                : `<span class="block text-sm leading-7 text-slate-800 break-words">${value}</span>`}
+                ? `<span class="block text-lg font-semibold leading-7 text-zinc-950 break-words">${value}</span>`
+                : `<span class="block text-sm leading-7 text-zinc-800 break-words">${value}</span>`}
             </button>`;
           }
 
           return `<div class="${frameClass}">
             ${field === 'title'
-              ? `<input type="text" class="w-full bg-transparent p-0 text-lg font-semibold text-slate-950 outline-none" value="${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus />`
-              : `<textarea class="min-h-[7rem] w-full resize-none bg-transparent p-0 text-sm leading-7 text-slate-900 outline-none" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus>${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}</textarea>`}
+              ? `<input type="text" class="w-full bg-transparent p-0 text-lg font-semibold text-zinc-950 outline-none" value="${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus />`
+              : `<textarea class="min-h-[7rem] w-full resize-none bg-transparent p-0 text-sm leading-7 text-zinc-900 outline-none" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus>${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}</textarea>`}
             <div class="mt-2 flex justify-end gap-2">
-              <button type="button" class="rounded-lg border border-slate-500/70 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-300/70" onclick="cancelInlineChallengeEdit()">${i18n.t('common.cancel')}</button>
-              <button type="button" class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800" onclick="saveInlineChallengeEdit(${challenge.id}, '${field}')" ${state.inlineChallengeEdit.submitting ? 'disabled' : ''}>${i18n.t('common.save')}</button>
+              <button type="button" class="rounded-lg border border-zinc-600/70 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-300/70" onclick="cancelInlineChallengeEdit()">${i18n.t('common.cancel')}</button>
+              <button type="button" class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800" onclick="saveInlineChallengeEdit(${challenge.id}, '${field}')" ${state.inlineChallengeEdit.submitting ? 'disabled' : ''}>${i18n.t('common.save')}</button>
             </div>
           </div>`;
         }
@@ -554,7 +554,7 @@
             const deleteButton = renderChallengeDeleteButton(challenge.id);
             const cardActions = renderChallengeCardActions(challenge, assignments);
 
-            return `<article class="group rounded-2xl border border-slate-400 bg-slate-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-colors hover:border-slate-500">
+            return `<article class="group rounded-2xl bg-stone-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0 flex-1">
                   ${renderInlineChallengeField(challenge, 'title')}
@@ -564,8 +564,8 @@
               <div class="mt-4">
                 ${renderInlineChallengeField(challenge, 'description')}
               </div>
-              <div class="mt-5 flex items-start justify-between gap-4 border-t border-slate-500/70 pt-4">
-                <p class="min-w-0 flex-1 text-sm leading-6 text-slate-800">${assignees}</p>
+              <div class="mt-5 flex items-start justify-between gap-4 border-t border-zinc-600/70 pt-4">
+                <p class="min-w-0 flex-1 text-sm leading-6 text-zinc-800">${assignees}</p>
                 ${viewerMode ? '' : `<div class="flex shrink-0 flex-wrap justify-end gap-2">${cardActions}</div>`}
               </div>
             </article>`;
@@ -577,7 +577,7 @@
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
             const deleteButton = renderChallengeDeleteButton(challenge.id);
             const cardActions = renderChallengeCardActions(challenge, assignments);
-            return `<article class="rounded-2xl border border-slate-400 bg-slate-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+            return `<article class="rounded-2xl bg-stone-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
                   ${renderInlineChallengeField(challenge, 'title')}
@@ -587,9 +587,9 @@
               <div class="mt-4">
                 ${renderInlineChallengeField(challenge, 'description')}
               </div>
-              <div class="mt-5 border-t border-slate-500/70 pt-4">
+              <div class="mt-5 border-t border-zinc-600/70 pt-4">
                 <div class="flex items-start justify-between gap-4">
-                  <p class="min-w-0 flex-1 text-sm leading-6 text-slate-800 break-words">${renderChallengeAssignees(challenge, assignments)}</p>
+                  <p class="min-w-0 flex-1 text-sm leading-6 text-zinc-800 break-words">${renderChallengeAssignees(challenge, assignments)}</p>
                   ${viewerMode ? '' : `<div class="flex shrink-0 flex-col gap-2">${cardActions}</div>`}
                 </div>
               </div>
@@ -599,40 +599,40 @@
 
         const statusPresentation = getProjectStatusPresentation(selectedProject.status);
         const statusControl = viewerMode
-          ? `<div class="inline-flex h-9 items-center gap-2 rounded-md border border-slate-600 bg-slate-950 px-3"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold text-slate-100">${statusPresentation.label}</span></div>`
-          : `<button class="inline-flex h-9 items-center gap-2 rounded-md border border-slate-600 bg-slate-950 px-3 hover:bg-slate-800" onclick="openProjectStatusModal(${selectedProject.id}, '${String(selectedProject.status || 'white').toLowerCase()}')"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold text-slate-100">${statusPresentation.label}</span></button>`;
+          ? `<div class="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-700 bg-zinc-700/50 px-3"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold text-zinc-100">${statusPresentation.label}</span></div>`
+          : `<button class="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-700 bg-zinc-700/50 px-3 hover:bg-zinc-700" onclick="openProjectStatusModal(${selectedProject.id}, '${String(selectedProject.status || 'white').toLowerCase()}')"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold text-zinc-100">${statusPresentation.label}</span></button>`;
 
         const priorityControl = viewerMode || isTeammateMode()
           ? `<div class="inline-flex h-9 items-center">${renderPriorityPill(selectedProject.priority_name, selectedProject.priority_color_hex)}</div>`
           : `<button class="inline-flex h-9 items-center" onclick="openProjectPriorityModal(${selectedProject.client_id}, ${selectedProject.priority_id})">${renderPriorityPill(selectedProject.priority_name, selectedProject.priority_color_hex)}</button>`;
 
-        return `<div class="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div class="grid grid-cols-1 gap-3 text-sm text-slate-300 lg:grid-cols-6 lg:items-center">
+        return `<div class="mb-6 rounded-xl bg-zinc-800 p-4">
+            <div class="grid grid-cols-1 gap-3 text-sm text-zinc-300 lg:grid-cols-6 lg:items-center">
               <div class="flex min-w-0 flex-wrap items-center gap-2 lg:col-span-3">
-                <button class="rounded border border-slate-600 px-2 py-1 hover:bg-slate-800" onclick='goToProjectOverview()'>${i18n.t('clientTeams.title')}</button>
+                <button class="rounded border border-zinc-600 px-2 py-1 hover:bg-zinc-700" onclick='goToProjectOverview()'>${i18n.t('clientTeams.title')}</button>
                 <span>/</span>
-                <span class="font-semibold text-slate-100">${selectedProject.name} (${selectedProject.client_name})</span>
+                <span class="font-semibold text-zinc-100">${selectedProject.name} (${selectedProject.client_name})</span>
               </div>
-              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">${i18n.t('common.status')}</span><div class="flex h-9 items-center">${statusControl}</div></div>
-              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.priority')}</span><div class="flex h-9 items-center">${priorityControl}</div></div>
-              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-slate-400">${i18n.t('clientTeams.columns.budget')}</span><div class="flex h-9 items-center px-1 text-xs font-semibold text-slate-100">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-zinc-400">${i18n.t('common.status')}</span><div class="flex h-9 items-center">${statusControl}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-zinc-400">${i18n.t('clientTeams.columns.priority')}</span><div class="flex h-9 items-center">${priorityControl}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-zinc-400">${i18n.t('clientTeams.columns.budget')}</span><div class="flex h-9 items-center px-1 text-xs font-semibold text-zinc-100">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
             </div>
           </div>
 
-          <div id="onboarding-challenge-overview" class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.24)] lg:p-6">
+          <div id="onboarding-challenge-overview" class="rounded-2xl bg-zinc-800 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.24)] lg:p-6">
               <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
-                  <h3 class="text-2xl font-semibold tracking-tight text-slate-50">${i18n.t('projectDetail.challengeOverview.title')}</h3>
-                  <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
+                  <h3 class="text-2xl font-semibold tracking-tight text-zinc-50">${i18n.t('projectDetail.challengeOverview.title')}</h3>
+                  <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-300">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
                 </div>
                 <div class="flex flex-col items-stretch gap-3 lg:min-w-[14rem] lg:items-end">
-                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#00d8ff] px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-[#33e1ff]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
+                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#00d8ff] px-4 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-[#33e1ff]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
                   <div class="w-full lg:w-[14rem]">
-                    <label for="challenge-sort-select" class="mb-1 block text-xs text-slate-400 capitalize">${i18n.t('projectDetail.challengeSort.label')}</label>
+                    <label for="challenge-sort-select" class="mb-1 block text-xs text-zinc-400 capitalize">${i18n.t('projectDetail.challengeSort.label')}</label>
                     <select
                       id="challenge-sort-select"
                       onchange="setChallengesSort(this.value)"
-                      class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100"
+                      class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100"
                       aria-label="${i18n.t('projectDetail.challengeSort.label')}"
                     >${['title_asc','title_desc','description_asc','description_desc','assignees_asc','assignees_desc'].map((sortValue) => `<option value="${sortValue}" ${state.challengesSort === sortValue ? 'selected' : ''}>${challengeSortOptionLabel(sortValue)}</option>`).join('')}</select>
                   </div>
@@ -680,7 +680,7 @@ const safeDom = window.ProjectorySafeDom || {};
 
         if (people.length === 0) {
           const empty = document.createElement('p');
-          empty.className = 'p-2 text-sm text-slate-400';
+          empty.className = 'p-2 text-sm text-zinc-400';
           if (typeof safeDom.setText === 'function') {
             safeDom.setText(empty, i18n.t('assign.noMatches'));
           } else {
@@ -697,7 +697,7 @@ const safeDom = window.ProjectorySafeDom || {};
 
         for (const person of people) {
           const label = document.createElement('label');
-          label.className = 'mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-900';
+          label.className = 'mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-zinc-900';
 
           const input = document.createElement('input');
           input.type = 'radio';
@@ -721,7 +721,7 @@ const safeDom = window.ProjectorySafeDom || {};
           }
 
           const trade = document.createElement('span');
-          trade.className = 'text-xs text-slate-400';
+          trade.className = 'text-xs text-zinc-400';
           if (typeof safeDom.setText === 'function') {
             safeDom.setText(trade, `(${String(person.trade_name || '')})`);
           } else {
@@ -894,7 +894,7 @@ function filteredPeople() {
         const root = document.getElementById('admin-tabs');
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
         root.innerHTML = adminTabs
-          .map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-[#00d8ff] bg-[#00d8ff]/15 text-[#7cecff]' : 'border-slate-700 bg-slate-900 text-slate-300'}" data-admin-tab="${tab.id}">${tab.label}</button>`)
+          .map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-[#00d8ff] bg-[#00d8ff]/15 text-[#7cecff]' : 'border-zinc-700 bg-zinc-900 text-zinc-300'}" data-admin-tab="${tab.id}">${tab.label}</button>`)
           .join('');
 
         root.querySelectorAll('button').forEach((button) => {
@@ -1014,7 +1014,7 @@ function filteredPeople() {
         const list = document.getElementById('export-scope-list');
         if (!list) return;
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-        list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-slate-700 bg-slate-950/40 p-2"><span class="text-sm text-slate-200">${i18n.t(scope.labelKey)}</span><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-export-scope="${scope.key}" data-export-format="json">${i18n.t('portability.exportJson')}</button><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-export-scope="${scope.key}" data-export-format="csv">${i18n.t('portability.exportCsv')}</button></div>`).join('');
+        list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-zinc-700 bg-zinc-950/40 p-2"><span class="text-sm text-zinc-200">${i18n.t(scope.labelKey)}</span><button class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-700" data-export-scope="${scope.key}" data-export-format="json">${i18n.t('portability.exportJson')}</button><button class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-700" data-export-scope="${scope.key}" data-export-format="csv">${i18n.t('portability.exportCsv')}</button></div>`).join('');
       }
 
       function closeExportModal() {
@@ -1035,7 +1035,7 @@ function filteredPeople() {
         const list = document.getElementById('import-scope-list');
         if (list) {
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-          list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-slate-700 bg-slate-950/40 p-2"><span class="text-sm text-slate-200">${i18n.t(scope.labelKey)}</span><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-import-scope="${scope.key}" data-import-format="json">${i18n.t('portability.importJson')}</button><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-import-scope="${scope.key}" data-import-format="csv">${i18n.t('portability.importCsv')}</button></div>`).join('');
+          list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-zinc-700 bg-zinc-950/40 p-2"><span class="text-sm text-zinc-200">${i18n.t(scope.labelKey)}</span><button class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-700" data-import-scope="${scope.key}" data-import-format="json">${i18n.t('portability.importJson')}</button><button class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-700" data-import-scope="${scope.key}" data-import-format="csv">${i18n.t('portability.importCsv')}</button></div>`).join('');
         }
 
         const preview = document.getElementById('import-preview');
@@ -1204,7 +1204,7 @@ function filteredPeople() {
 
       function clearOnboardingHighlight() {
         if (!onboardingDemo.highlightedElement) return;
-        onboardingDemo.highlightedElement.classList.remove('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[81]');
+        onboardingDemo.highlightedElement.classList.remove('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-zinc-950', 'relative', 'z-[81]');
         onboardingDemo.highlightedElement = null;
       }
 
@@ -1254,7 +1254,7 @@ function filteredPeople() {
 
         clearOnboardingHighlight();
         if (target) {
-          target.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-slate-950', 'relative', 'z-[81]');
+          target.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-zinc-950', 'relative', 'z-[81]');
           onboardingDemo.highlightedElement = target;
         }
 
@@ -1586,7 +1586,7 @@ function filteredPeople() {
           .map((assignment) => {
             const checked = state.unassignModal.selectedAssignmentIds.includes(String(assignment.id)) ? 'checked' : '';
             const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
-            return `<label class="mb-1 flex items-center gap-2 rounded px-2 py-1 hover:bg-slate-900">
+            return `<label class="mb-1 flex items-center gap-2 rounded px-2 py-1 hover:bg-zinc-900">
               <input type="checkbox" data-unassign-id="${assignment.id}" ${checked} />
               <span>${assignment.first_name} ${assignment.last_name} (${roleLabel})</span>
             </label>`;
@@ -2058,7 +2058,7 @@ function filteredPeople() {
         if (!person) {
           document.getElementById('people-overview-modal-title').textContent = i18n.t('peopleOverview.modal.title');
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-          document.getElementById('people-overview-modal-body').innerHTML = `<p class="text-slate-300">${i18n.t('peopleOverview.modal.noAssignmentsFound')}</p>`;
+          document.getElementById('people-overview-modal-body').innerHTML = `<p class="text-zinc-300">${i18n.t('peopleOverview.modal.noAssignmentsFound')}</p>`;
           return;
         }
 
@@ -2067,7 +2067,7 @@ function filteredPeople() {
 
         if (assignments.length === 0) {
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-          document.getElementById('people-overview-modal-body').innerHTML = `<p class="text-slate-300">${i18n.t('peopleOverview.modal.noAssignmentsForPerson')}</p>`;
+          document.getElementById('people-overview-modal-body').innerHTML = `<p class="text-zinc-300">${i18n.t('peopleOverview.modal.noAssignmentsForPerson')}</p>`;
           return;
         }
 
@@ -2084,46 +2084,46 @@ function filteredPeople() {
           .map(([projectId, projectAssignments]) => {
             const project = projectById.get(projectId);
             const projectName = project ? `${project.name} (${project.client_name})` : `Project ${projectId}`;
-            const adjustControl = isViewerMode() ? '' : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff] hover:bg-slate-800" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">${i18n.t('peopleOverview.adjustWorkload')}</button>`;
+            const adjustControl = isViewerMode() ? '' : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff] hover:bg-zinc-700" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">${i18n.t('peopleOverview.adjustWorkload')}</button>`;
 
             const assignmentRows = projectAssignments
               .map((assignment) => {
                 const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
-                const roleClass = assignment.is_owner ? 'text-blue-300' : assignment.is_leader ? 'text-emerald-300' : 'text-slate-100';
+                const roleClass = assignment.is_owner ? 'text-blue-300' : assignment.is_leader ? 'text-emerald-300' : 'text-zinc-100';
                 const challenge = challengeById.get(String(assignment.challenge_id));
                 const challengeDescription = challenge?.description || 'No description available.';
                 const quantity = Math.round(Number(assignment.quantity || 0));
-                const barColor = assignment.is_owner ? 'bg-blue-500' : assignment.is_leader ? 'bg-emerald-500' : 'bg-slate-100';
+                const barColor = assignment.is_owner ? 'bg-blue-500' : assignment.is_leader ? 'bg-emerald-500' : 'bg-zinc-100';
                 const challengePayload = JSON.stringify(challenge || { id: assignment.challenge_id, title: assignment.challenge_title, description: challengeDescription, project_id: assignment.project_id });
 
-                const tableRow = `<tr class="border-t border-slate-800">
+                const tableRow = `<tr class="border-t border-zinc-800">
                   <td class="p-2 pl-6">
                     <button class="w-full text-left hover:opacity-90" onclick='openChallengeFromPeopleOverviewModal(${challengePayload})'>
-                      <div class="font-medium text-slate-100 underline decoration-slate-600 underline-offset-2">${assignment.challenge_title}</div>
-                      <div class="text-slate-400">${challengeDescription}</div>
+                      <div class="font-medium text-zinc-100 underline decoration-zinc-600 underline-offset-2">${assignment.challenge_title}</div>
+                      <div class="text-zinc-400">${challengeDescription}</div>
                     </button>
                   </td>
                   <td class="p-2"><span class="font-semibold ${roleClass}">${roleLabel}</span></td>
                   <td class="p-2 text-right">
                     <div class="font-semibold">${quantity}% (${formatWorkloadDuration(quantity, person.working_hours)})</div>
-                    <div class="mt-1 ml-auto h-2 w-32 overflow-hidden rounded bg-slate-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
+                    <div class="mt-1 ml-auto h-2 w-32 overflow-hidden rounded bg-zinc-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
                   </td>
                 </tr>`;
 
-                const mobileCard = `<article class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-sm">
+                const mobileCard = `<article class="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 shadow-sm">
                   <button class="w-full text-left" onclick='openChallengeFromPeopleOverviewModal(${challengePayload})'>
-                    <div class="text-base font-semibold text-slate-100 break-words underline decoration-slate-600 underline-offset-2">${assignment.challenge_title}</div>
-                    <p class="mt-2 text-sm leading-6 text-slate-400 break-words">${challengeDescription}</p>
+                    <div class="text-base font-semibold text-zinc-100 break-words underline decoration-zinc-600 underline-offset-2">${assignment.challenge_title}</div>
+                    <p class="mt-2 text-sm leading-6 text-zinc-400 break-words">${challengeDescription}</p>
                   </button>
                   <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('assign.role')}</div>
-                      <div class="mt-2"><span class="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${assignment.is_owner ? 'border-blue-400/70 bg-blue-600 text-blue-50' : assignment.is_leader ? 'border-emerald-400/70 bg-emerald-600 text-emerald-50' : 'border-slate-500 bg-slate-700 text-slate-100'}">${roleLabel}</span></div>
+                    <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('assign.role')}</div>
+                      <div class="mt-2"><span class="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${assignment.is_owner ? 'border-blue-400/70 bg-blue-600 text-blue-50' : assignment.is_leader ? 'border-emerald-400/70 bg-emerald-600 text-emerald-50' : 'border-zinc-500 bg-zinc-700 text-zinc-100'}">${roleLabel}</span></div>
                     </div>
-                    <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('peopleOverview.columns.workload')}</div>
-                      <div class="mt-1 font-semibold text-slate-100">${quantity}% (${formatWorkloadDuration(quantity, person.working_hours)})</div>
-                      <div class="mt-2 h-2 overflow-hidden rounded bg-slate-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
+                    <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('peopleOverview.columns.workload')}</div>
+                      <div class="mt-1 font-semibold text-zinc-100">${quantity}% (${formatWorkloadDuration(quantity, person.working_hours)})</div>
+                      <div class="mt-2 h-2 overflow-hidden rounded bg-zinc-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
                     </div>
                   </div>
                 </article>`;
@@ -2131,8 +2131,8 @@ function filteredPeople() {
                 return { tableRow, mobileCard };
               });
 
-            const tableGroup = `<tr class="border-t border-slate-700 bg-slate-900/70"><td class="p-2 font-semibold text-slate-100" colspan="2">${projectName}</td><td class="p-2 text-right">${adjustControl}</td></tr>${assignmentRows.map((entry) => entry.tableRow).join('')}`;
-            const mobileGroup = `<section class="rounded-2xl border border-slate-700 bg-slate-900/70 p-3"><div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h4 class="text-sm font-semibold text-slate-100 break-words">${projectName}</h4>${adjustControl}</div><div class="space-y-3">${assignmentRows.map((entry) => entry.mobileCard).join('')}</div></section>`;
+            const tableGroup = `<tr class="border-t border-zinc-700 bg-zinc-900/70"><td class="p-2 font-semibold text-zinc-100" colspan="2">${projectName}</td><td class="p-2 text-right">${adjustControl}</td></tr>${assignmentRows.map((entry) => entry.tableRow).join('')}`;
+            const mobileGroup = `<section class="rounded-2xl border border-zinc-700 bg-zinc-900/70 p-3"><div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h4 class="text-sm font-semibold text-zinc-100 break-words">${projectName}</h4>${adjustControl}</div><div class="space-y-3">${assignmentRows.map((entry) => entry.mobileCard).join('')}</div></section>`;
             return { tableGroup, mobileGroup };
           });
 
@@ -2140,9 +2140,9 @@ function filteredPeople() {
         const mobileGroups = detailGroups.map((group) => group.mobileGroup).join('');
 
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-        document.getElementById('people-overview-modal-body').innerHTML = `<div id="people-overview-mobile-detail-list" class="space-y-4 md:hidden">${mobileGroups}</div><div class="hidden md:block"><table class="w-full text-left text-xs rounded border border-slate-700 overflow-hidden">
+        document.getElementById('people-overview-modal-body').innerHTML = `<div id="people-overview-mobile-detail-list" class="space-y-4 md:hidden">${mobileGroups}</div><div class="hidden md:block"><table class="w-full text-left text-xs rounded border border-zinc-700 overflow-hidden">
           <thead>
-            <tr class="text-slate-400 bg-slate-950/70">
+            <tr class="text-zinc-400 bg-zinc-950/70">
               <th class="p-2">${i18n.t('entity.challenges')}</th>
               <th class="p-2">${i18n.t('assign.role')}</th>
               <th class="p-2">${i18n.t('peopleOverview.columns.workload')}</th>

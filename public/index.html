@@ -23,7 +23,7 @@
     <script defer src="/js/routing-a11y-utils.js"></script>
     <script defer src="/js/app-routing-ui.js"></script>
   </head>
-  <body class="min-h-screen bg-slate-950 text-slate-100">
+  <body class="min-h-screen bg-zinc-900 text-zinc-100">
     <main class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
       <header class="mb-6 p-3 sm:p-4">
         <div class="flex flex-wrap items-start justify-between gap-4">
@@ -41,13 +41,13 @@
           </button>
           <div class="min-w-0">
             <h1 class="text-2xl font-bold leading-tight sm:text-3xl" data-i18n="app.title">Projectory</h1>
-            <p class="mt-1 max-w-2xl text-sm text-slate-300" data-i18n="app.tagline">A challenge-first ownership approach for setting up autonomous client-teams</p>
+            <p class="mt-1 max-w-2xl text-sm text-zinc-300" data-i18n="app.tagline">A challenge-first ownership approach for setting up autonomous client-teams</p>
           </div>
         </div>
         <button
           id="header-menu-toggle"
           type="button"
-          class="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 md:hidden"
+          class="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800 md:hidden"
           aria-expanded="false"
           aria-controls="header-mobile-controls"
         >
@@ -57,14 +57,14 @@
         <div id="header-desktop-controls" class="hidden items-center gap-2 md:flex">
           <button id="onboarding-demo-start" class="inline-flex items-center gap-2 rounded-lg border border-indigo-500/50 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200 hover:bg-indigo-500/20"><span aria-hidden="true">🎓</span><span data-i18n="onboarding.demo.start">Start tour demo</span></button>
           <label class="sr-only" for="locale-select" data-i18n="header.language">Language</label>
-          <select id="locale-select" class="rounded-lg border border-slate-700 bg-slate-950 px-2 py-2 pr-8 text-sm text-slate-200">
+          <select id="locale-select" class="rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-2 pr-8 text-sm text-zinc-200">
             <option value="en" data-i18n="locale.en">English</option>
             <option value="de" data-i18n="locale.de">Deutsch</option>
             <option value="pseudo" data-i18n="locale.pseudo">Pseudo (accented)</option>
           </select>
           <button
             id="admin-toggle"
-            class="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+            class="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
             title="Open Administration"
             data-i18n-title="header.openAdministration"
           >
@@ -74,17 +74,17 @@
           <button id="auth-logout" class="hidden rounded-lg border border-rose-500/50 bg-rose-500/10 px-3 py-2 text-sm text-rose-200 hover:bg-rose-500/20" data-i18n="auth.logout">Log out</button>
         </div>
         </div>
-        <div id="header-mobile-controls" class="mt-4 hidden flex-col gap-2 border-t border-slate-800 pt-4 md:hidden">
+        <div id="header-mobile-controls" class="mt-4 hidden flex-col gap-2 border-t border-zinc-800 pt-4 md:hidden">
           <button id="onboarding-demo-start-mobile" class="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-500/50 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200 hover:bg-indigo-500/20"><span aria-hidden="true">🎓</span><span data-i18n="onboarding.demo.start">Start tour demo</span></button>
-          <label class="text-xs font-medium uppercase tracking-[0.16em] text-slate-400" for="locale-select-mobile" data-i18n="header.language">Language</label>
-          <select id="locale-select-mobile" class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200">
+          <label class="text-xs font-medium uppercase tracking-[0.16em] text-zinc-400" for="locale-select-mobile" data-i18n="header.language">Language</label>
+          <select id="locale-select-mobile" class="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200">
             <option value="en" data-i18n="locale.en">English</option>
             <option value="de" data-i18n="locale.de">Deutsch</option>
             <option value="pseudo" data-i18n="locale.pseudo">Pseudo (accented)</option>
           </select>
           <button
             id="admin-toggle-mobile"
-            class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+            class="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
             title="Open Administration"
             data-i18n-title="header.openAdministration"
           >
@@ -97,11 +97,11 @@
 
       <section id="view" class="min-w-0"></section>
 
-      <section id="admin-panel" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 p-4">
-        <div class="h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
+      <section id="admin-panel" class="fixed inset-0 z-40 hidden items-center justify-center bg-zinc-950/80 p-4">
+        <div class="h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-4 shadow-2xl">
           <div class="mb-4 flex items-center justify-between gap-3">
             <h2 class="text-lg font-semibold" data-i18n="admin.mode">Administration Mode</h2>
-            <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+            <button id="admin-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
           </div>
           <nav class="mb-6 flex gap-2" id="admin-tabs"></nav>
           <section id="admin-view"></section>
@@ -111,50 +111,50 @@
 
     <div id="toast-container" class="fixed right-4 top-4 z-[70] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"></div>
 
-    <div id="export-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="export-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-lg font-semibold" data-i18n="modal.export.title">Export data</h3>
-          <button id="export-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="export-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
         <div id="export-scope-list" class="space-y-2"></div>
         <div class="mt-4 flex justify-end">
-          <button id="export-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="export-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button>
         </div>
       </div>
     </div>
 
-    <div id="import-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="import-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-lg font-semibold" data-i18n="modal.import.title">Import data</h3>
-          <button id="import-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="import-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
 
         <div id="import-scope-list" class="space-y-2"></div>
         <input id="import-file" type="file" accept=".json,.csv,application/json,text/csv" class="hidden" />
 
-        <div id="import-preview" class="mt-3 hidden rounded border border-slate-700 bg-slate-950/60 p-3 text-sm">
+        <div id="import-preview" class="mt-3 hidden rounded border border-zinc-700 bg-zinc-950/60 p-3 text-sm">
           <p class="mb-1 text-amber-300" data-i18n="modal.import.warningScoped">⚠️ Warning: importing will replace data inside the selected cluster.</p>
-          <p id="import-preview-scope" class="mb-2 text-slate-300"></p>
-          <ul id="import-preview-summary" class="list-disc pl-5 text-slate-200"></ul>
+          <p id="import-preview-scope" class="mb-2 text-zinc-300"></p>
+          <ul id="import-preview-summary" class="list-disc pl-5 text-zinc-200"></ul>
         </div>
 
         <div class="mt-4 flex justify-end gap-2">
-          <button id="import-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="import-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button>
           <button id="import-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold" disabled data-i18n="modal.import.confirm">Confirm Import</button>
         </div>
       </div>
     </div>
 
-    <div id="project-status-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="project-status-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-lg font-semibold" data-i18n="modal.projectStatus.title">Update project status</h3>
-          <button id="project-status-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="project-status-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
         <label class="mb-4 block text-sm"><span data-i18n="modal.projectStatus.status">Status</span>
-          <select id="project-status-select" class="mt-1 w-full rounded bg-slate-950 p-2">
+          <select id="project-status-select" class="mt-1 w-full rounded bg-zinc-950 p-2">
             <option value="green" data-i18n="projectStatus.green">Formed Team</option>
             <option value="blue" data-i18n="projectStatus.blue">In Progress</option>
             <option value="yellow" data-i18n="projectStatus.yellow">Needs Attention</option>
@@ -163,191 +163,191 @@
           </select>
         </label>
         <div class="flex justify-end gap-2">
-          <button id="project-status-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
-          <button id="project-status-confirm" class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="common.saveStatus">Save Status</button>
+          <button id="project-status-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button>
+          <button id="project-status-confirm" class="rounded bg-[#00d8ff] text-zinc-950 px-3 py-2 text-sm font-semibold" data-i18n="common.saveStatus">Save Status</button>
         </div>
       </div>
     </div>
 
 
 
-    <div id="project-priority-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="project-priority-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-lg font-semibold" data-i18n="clients.priorityModal.title">Update client priority</h3>
-          <button id="project-priority-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="project-priority-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
         <label class="mb-4 block text-sm"><span data-i18n="clients.columns.priority">Priority</span>
-          <select id="project-priority-select" class="mt-1 w-full rounded bg-slate-950 p-2"></select>
+          <select id="project-priority-select" class="mt-1 w-full rounded bg-zinc-950 p-2"></select>
         </label>
         <div class="flex justify-end gap-2">
-          <button id="project-priority-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
-          <button id="project-priority-confirm" class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="clients.priorityModal.save">Save Priority</button>
+          <button id="project-priority-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button>
+          <button id="project-priority-confirm" class="rounded bg-[#00d8ff] text-zinc-950 px-3 py-2 text-sm font-semibold" data-i18n="clients.priorityModal.save">Save Priority</button>
         </div>
       </div>
     </div>
 
-    <div id="assign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="assign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-2xl rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 id="assign-modal-title" class="text-lg font-semibold" data-i18n="assign.title">Assign People</h3>
-          <button id="assign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="assign-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
 
         <label class="mb-3 block text-sm">
           <span data-i18n="assign.searchLabel">Search people</span>
-          <input id="assign-search" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="Type a name..." data-i18n-placeholder="assign.searchPlaceholder" />
+          <input id="assign-search" class="mt-1 w-full rounded bg-zinc-950 p-2" placeholder="Type a name..." data-i18n-placeholder="assign.searchPlaceholder" />
         </label>
 
         <label class="mb-3 block text-sm">
           <span data-i18n="assign.role">Role</span>
-          <select id="assign-role" class="mt-1 w-full rounded bg-slate-950 p-2">
+          <select id="assign-role" class="mt-1 w-full rounded bg-zinc-950 p-2">
             <option value="contributor" data-i18n="assign.roleContributor">Contributor</option>
             <option value="owner" data-i18n="assign.roleOwner">Owner</option>
             <option value="leader" data-i18n="assign.roleLeader">Leader</option>
           </select>
         </label>
 
-        <div id="assign-people-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2"></div>
+        <div id="assign-people-list" class="max-h-72 overflow-y-auto rounded border border-zinc-800 bg-zinc-950 p-2"></div>
 
         <div class="mt-4 flex justify-end gap-2">
-          <button id="assign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
-          <button id="assign-confirm" class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="assign.confirm">Assign</button>
+          <button id="assign-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button>
+          <button id="assign-confirm" class="rounded bg-[#00d8ff] text-zinc-950 px-3 py-2 text-sm font-semibold" data-i18n="assign.confirm">Assign</button>
         </div>
       </div>
     </div>
 
-    <div id="unassign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="unassign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-xl rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 id="unassign-modal-title" class="text-lg font-semibold" data-i18n="unassign.title">Unassign People</h3>
-          <button id="unassign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="unassign-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
-        <div id="unassign-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2 text-sm"></div>
+        <div id="unassign-list" class="max-h-72 overflow-y-auto rounded border border-zinc-800 bg-zinc-950 p-2 text-sm"></div>
         <div class="mt-4 flex justify-end gap-2">
-          <button id="unassign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="unassign-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button>
           <button id="unassign-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold" data-i18n="unassign.confirm">Unassign selected</button>
         </div>
       </div>
     </div>
 
-    <div id="challenge-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="challenge-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-2xl rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 id="challenge-modal-title" class="text-lg font-semibold" data-i18n="challenge.add">Add Challenge</h3>
-          <button id="challenge-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="challenge-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
         <form id="challenge-modal-form">
           <input type="hidden" name="id" />
-          <label class="mb-2 block text-sm"><span data-i18n="challenge.title">Title</span><input required name="title" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm"><span data-i18n="challenge.description">Description</span><textarea required name="description" class="mt-1 w-full rounded bg-slate-950 p-2"></textarea></label>
+          <label class="mb-2 block text-sm"><span data-i18n="challenge.title">Title</span><input required name="title" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="challenge.description">Description</span><textarea required name="description" class="mt-1 w-full rounded bg-zinc-950 p-2"></textarea></label>
           <div class="mt-4 flex justify-end gap-2">
-            <button type="button" id="challenge-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
-            <button class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="challenge.save">Save Challenge</button>
+            <button type="button" id="challenge-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button>
+            <button class="rounded bg-[#00d8ff] text-zinc-950 px-3 py-2 text-sm font-semibold" data-i18n="challenge.save">Save Challenge</button>
           </div>
         </form>
       </div>
     </div>
 
-    <div id="challenge-delete-modal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="challenge-delete-modal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-3 flex items-center justify-between gap-3">
           <h3 class="text-lg font-semibold" data-i18n="challenge.deleteConfirmTitle">Delete challenge?</h3>
-          <button id="challenge-delete-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="challenge-delete-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
-        <p class="text-sm text-slate-300" data-i18n="challenge.deleteConfirmBody">This action permanently removes the challenge. You can’t undo it from this dialog.</p>
+        <p class="text-sm text-zinc-300" data-i18n="challenge.deleteConfirmBody">This action permanently removes the challenge. You can’t undo it from this dialog.</p>
         <div class="mt-4 flex justify-end gap-2">
-          <button type="button" id="challenge-delete-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button type="button" id="challenge-delete-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button>
           <button type="button" id="challenge-delete-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-500" data-i18n="common.delete">Delete</button>
         </div>
       </div>
     </div>
 
 
-    <div id="people-overview-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="people-overview-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 id="people-overview-modal-title" class="text-lg font-semibold" data-i18n="peopleOverview.modal.title">Person assignments</h3>
-          <button id="people-overview-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="people-overview-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
         <div id="people-overview-modal-body" class="max-h-[70vh] overflow-y-auto text-sm"></div>
       </div>
     </div>
 
-    <div id="workload-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+    <div id="workload-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <div class="mb-4 flex items-center justify-between">
           <h3 class="text-lg font-semibold" data-i18n="peopleOverview.workloadModal.title">Adjust workload</h3>
-          <button id="workload-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="workload-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
         </div>
         <label class="mb-3 block text-sm">
           <span data-i18n="peopleOverview.workloadModal.valueLabel">Workload (%)</span>
-          <input id="workload-modal-value" type="number" min="0" max="100" step="1" class="mt-1 w-full rounded bg-slate-950 p-2" />
+          <input id="workload-modal-value" type="number" min="0" max="100" step="1" class="mt-1 w-full rounded bg-zinc-950 p-2" />
         </label>
-        <p class="mb-4 text-xs text-slate-400" data-i18n="peopleOverview.workloadModal.help">Enter an integer between 0 and 100.</p>
+        <p class="mb-4 text-xs text-zinc-400" data-i18n="peopleOverview.workloadModal.help">Enter an integer between 0 and 100.</p>
         <div class="flex justify-end gap-2">
-          <button type="button" id="workload-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
-          <button type="button" id="workload-modal-confirm" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="peopleOverview.workloadModal.confirm">Save workload</button>
+          <button type="button" id="workload-modal-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button>
+          <button type="button" id="workload-modal-confirm" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-zinc-950" data-i18n="peopleOverview.workloadModal.confirm">Save workload</button>
         </div>
       </div>
     </div>
 
 
-    <div id="admin-person-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/80 p-0 sm:items-center sm:p-4">
-      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
-        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-person-modal-title" class="text-lg font-semibold" data-i18n="people.add">Add Person</h3><button id="admin-person-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+    <div id="admin-person-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-zinc-950/80 p-0 sm:items-center sm:p-4">
+      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-zinc-700 bg-zinc-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-person-modal-title" class="text-lg font-semibold" data-i18n="people.add">Add Person</h3><button id="admin-person-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button></div>
         <form id="admin-person-form" class="space-y-3"><input type="hidden" name="id" />
-          <label class="mb-2 block text-sm"><span data-i18n="people.firstName">First Name</span><input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm"><span data-i18n="people.lastName">Last Name</span><input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm"><span data-i18n="people.trade">Trade</span><select required name="tradeId" id="admin-person-trade" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
-          <label class="mb-2 block text-sm"><span data-i18n="people.level">Level</span><select required name="levelId" id="admin-person-level" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
-          <label class="mb-2 block text-sm"><span data-i18n="people.workingHours">Working Hours</span><input required name="workingHours" type="number" min="1" step="1" class="mt-1 w-full rounded bg-slate-950 p-2" value="40" /></label>
-          <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isHidden" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Hidden in non-admin views (if unassigned)</label>
-          <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isLeaver" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Mark as future leaver</label>
-          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-person-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="people.save">Save Person</button></div>
+          <label class="mb-2 block text-sm"><span data-i18n="people.firstName">First Name</span><input required name="firstName" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.lastName">Last Name</span><input required name="lastName" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.trade">Trade</span><select required name="tradeId" id="admin-person-trade" class="mt-1 w-full rounded bg-zinc-950 p-2"></select></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.level">Level</span><select required name="levelId" id="admin-person-level" class="mt-1 w-full rounded bg-zinc-950 p-2"></select></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.workingHours">Working Hours</span><input required name="workingHours" type="number" min="1" step="1" class="mt-1 w-full rounded bg-zinc-950 p-2" value="40" /></label>
+          <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isHidden" value="true" class="h-4 w-4 rounded border-zinc-600 bg-zinc-950" /> Hidden in non-admin views (if unassigned)</label>
+          <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isLeaver" value="true" class="h-4 w-4 rounded border-zinc-600 bg-zinc-950" /> Mark as future leaver</label>
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-person-modal-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-zinc-950" data-i18n="people.save">Save Person</button></div>
         </form>
       </div>
     </div>
 
-    <div id="admin-client-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/80 p-0 sm:items-center sm:p-4">
-      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
-        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-client-modal-title" class="text-lg font-semibold" data-i18n="clients.add">Add Client</h3><button id="admin-client-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+    <div id="admin-client-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-zinc-950/80 p-0 sm:items-center sm:p-4">
+      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-zinc-700 bg-zinc-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-client-modal-title" class="text-lg font-semibold" data-i18n="clients.add">Add Client</h3><button id="admin-client-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button></div>
         <form id="admin-client-form" class="space-y-3"><input type="hidden" name="id" />
-          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.location">Location</span><input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.since">Since</span> (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.priority">Priority</span><select required name="priorityId" id="admin-client-priority" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
-          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-client-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="clients.save">Save Client</button></div>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.location">Location</span><input required name="location" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.since">Since</span> (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.priority">Priority</span><select required name="priorityId" id="admin-client-priority" class="mt-1 w-full rounded bg-zinc-950 p-2"></select></label>
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-client-modal-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-zinc-950" data-i18n="clients.save">Save Client</button></div>
         </form>
       </div>
     </div>
 
-    <div id="admin-project-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/80 p-0 sm:items-center sm:p-4">
-      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
-        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-project-modal-title" class="text-lg font-semibold" data-i18n="projects.add">Add Project</h3><button id="admin-project-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+    <div id="admin-project-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-zinc-950/80 p-0 sm:items-center sm:p-4">
+      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-zinc-700 bg-zinc-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-project-modal-title" class="text-lg font-semibold" data-i18n="projects.add">Add Project</h3><button id="admin-project-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button></div>
         <form id="admin-project-form" class="space-y-3"><input type="hidden" name="id" />
-          <label class="mb-2 block text-sm"><span data-i18n="projects.form.client">Client</span><select required name="clientId" id="admin-project-client" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
-          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="projects.form.client">Client</span><select required name="clientId" id="admin-project-client" class="mt-1 w-full rounded bg-zinc-950 p-2"></select></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
           <label class="mb-2 block text-sm">Status
-            <select required name="status" id="admin-project-status" class="mt-1 w-full rounded bg-slate-950 p-2"></select>
+            <select required name="status" id="admin-project-status" class="mt-1 w-full rounded bg-zinc-950 p-2"></select>
           </label>
-          <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm">End (yyyy-mm)<input name="endMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm"><span data-i18n="projects.form.budget">Budget in EUR</span><input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-project-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="projects.save">Save Project</button></div>
+          <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <label class="mb-2 block text-sm">End (yyyy-mm)<input name="endMonth" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="projects.form.budget">Budget in EUR</span><input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-project-modal-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-zinc-950" data-i18n="projects.save">Save Project</button></div>
         </form>
       </div>
     </div>
 
 
-    <div id="admin-user-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
-      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
-        <div class="mb-4 flex items-center justify-between"><h3 class="text-lg font-semibold" data-i18n="admin.access.editUserTitle">Edit User</h3><button id="admin-user-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+    <div id="admin-user-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-950/80 p-4">
+      <div class="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
+        <div class="mb-4 flex items-center justify-between"><h3 class="text-lg font-semibold" data-i18n="admin.access.editUserTitle">Edit User</h3><button id="admin-user-modal-close" class="rounded border border-zinc-600 px-3 py-1 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button></div>
         <form id="admin-user-edit-form"><input id="admin-user-edit-id" type="hidden" />
-          <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.displayName">Display Name</span><input id="admin-user-edit-name" required class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
-          <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.email">Email</span><input id="admin-user-edit-email" required type="email" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.displayName">Display Name</span><input id="admin-user-edit-name" required class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.email">Email</span><input id="admin-user-edit-email" required type="email" class="mt-1 w-full rounded bg-zinc-950 p-2" /></label>
           <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.roleShort">Role</span>
-            <select id="admin-user-edit-role" required class="mt-1 w-full rounded bg-slate-950 p-2">
+            <select id="admin-user-edit-role" required class="mt-1 w-full rounded bg-zinc-950 p-2">
               <option value="viewer" data-i18n="admin.access.roles.viewer">Viewer</option>
               <option value="planner" data-i18n="admin.access.roles.planner">Planner</option>
               <option value="teammate" data-i18n="admin.access.roles.teammate">Teammate</option>
@@ -355,22 +355,22 @@
             </select>
           </label>
           <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.person">Linked Person</span>
-            <select id="admin-user-edit-person" class="mt-1 w-full rounded bg-slate-950 p-2"></select>
+            <select id="admin-user-edit-person" class="mt-1 w-full rounded bg-zinc-950 p-2"></select>
           </label>
-          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-user-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="common.save">Save</button></div>
+          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-user-modal-cancel" class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] text-zinc-950 px-3 py-2 text-sm font-semibold" data-i18n="common.save">Save</button></div>
         </form>
       </div>
     </div>
 
-    <div id="onboarding-overlay" class="fixed inset-0 z-[80] hidden bg-slate-950/60"></div>
-    <div id="onboarding-popover" class="fixed z-[82] hidden w-[26rem] max-w-[calc(100vw-2rem)] rounded-xl border border-indigo-400/50 bg-slate-900 p-4 shadow-2xl">
+    <div id="onboarding-overlay" class="fixed inset-0 z-[80] hidden bg-zinc-950/60"></div>
+    <div id="onboarding-popover" class="fixed z-[82] hidden w-[26rem] max-w-[calc(100vw-2rem)] rounded-xl border border-indigo-400/50 bg-zinc-900 p-4 shadow-2xl">
       <div class="mb-2 text-xs uppercase tracking-wide text-indigo-300" id="onboarding-step-indicator">Step 1 / 3</div>
-      <h3 id="onboarding-title" class="text-base font-semibold text-slate-100" data-i18n="onboarding.demo.step1.title">Welcome</h3>
-      <p id="onboarding-description" class="mt-2 text-sm text-slate-300"></p>
+      <h3 id="onboarding-title" class="text-base font-semibold text-zinc-100" data-i18n="onboarding.demo.step1.title">Welcome</h3>
+      <p id="onboarding-description" class="mt-2 text-sm text-zinc-300"></p>
       <div class="mt-4 flex items-center justify-between gap-2">
-        <button id="onboarding-prev" class="rounded border border-slate-600 px-3 py-1.5 text-xs hover:bg-slate-800" data-i18n="onboarding.demo.previous">Previous</button>
+        <button id="onboarding-prev" class="rounded border border-zinc-600 px-3 py-1.5 text-xs hover:bg-zinc-800" data-i18n="onboarding.demo.previous">Previous</button>
         <div class="flex gap-2">
-          <button id="onboarding-close" class="rounded border border-slate-600 px-3 py-1.5 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="onboarding-close" class="rounded border border-zinc-600 px-3 py-1.5 text-xs hover:bg-zinc-800" data-i18n="common.close">Close</button>
           <button id="onboarding-next" class="rounded bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-indigo-50 hover:bg-indigo-500" data-i18n="onboarding.demo.next">Next</button>
         </div>
       </div>
