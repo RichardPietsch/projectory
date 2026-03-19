@@ -196,9 +196,9 @@
       };
 
       function adminStandaloneView() {
-        const tabs = adminTabs.map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-[#00d8ff] bg-[#00d8ff]/15 text-[#7cecff]' : 'border-slate-700 bg-slate-900 text-slate-300'}" onclick="setAdminTab('${tab.id}')">${i18n.t(tab.labelKey)}</button>`).join('');
+        const tabs = adminTabs.map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-[#00d8ff] bg-[#00d8ff]/15 text-[#7cecff]' : 'border-zinc-700 bg-zinc-900 text-zinc-300'}" onclick="setAdminTab('${tab.id}')">${i18n.t(tab.labelKey)}</button>`).join('');
         const body = state.adminTab === 'people' ? peopleView() : state.adminTab === 'clients' ? clientsView() : state.adminTab === 'projects' ? administrationProjectsView() : state.adminTab === 'access' ? accessManagementView() : configurationView();
-        return `<div class="space-y-4"><div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 id="admin-standalone-title" tabindex="-1" class="text-2xl font-bold">${i18n.t('admin.title')}</h2><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800 sm:self-auto" onclick="closeAdminStandalone()">${i18n.t('common.backToApp')}</button></div><div class="overflow-x-auto"><div class="flex min-w-max gap-2">${tabs}</div></div>${body}<footer class="mt-6 border-t border-slate-800 pt-4 text-sm text-slate-300"><div class="flex flex-wrap items-center gap-3"><button id="export-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.export')}</button><button id="import-btn" class="rounded border border-slate-600 px-3 py-2 hover:bg-slate-800">${i18n.t('common.import')}</button></div></footer></div>`;
+        return `<div class="space-y-4"><div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 id="admin-standalone-title" tabindex="-1" class="text-2xl font-bold">${i18n.t('admin.title')}</h2><button class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800 sm:self-auto" onclick="closeAdminStandalone()">${i18n.t('common.backToApp')}</button></div><div class="overflow-x-auto"><div class="flex min-w-max gap-2">${tabs}</div></div>${body}<footer class="mt-6 border-t border-zinc-800 pt-4 text-sm text-zinc-300"><div class="flex flex-wrap items-center gap-3"><button id="export-btn" class="rounded border border-zinc-600 px-3 py-2 hover:bg-zinc-800">${i18n.t('common.export')}</button><button id="import-btn" class="rounded border border-zinc-600 px-3 py-2 hover:bg-zinc-800">${i18n.t('common.import')}</button></div></footer></div>`;
       }
 
       window.setAdminTab = function setAdminTab(tabId) { if (!canAccessAdmin()) return; state.adminTab = tabId; state.showAdmin = true; navigateFromState(); render(); };
@@ -207,7 +207,7 @@
       function createHomeTabButton({ id, label, count, active, onClick }) {
         const safeDom = window.ProjectorySafeDom || {};
         const button = document.createElement('button');
-        button.className = `inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${active ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-slate-400 hover:text-slate-200'}`;
+        button.className = `inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold ${active ? 'border-[#00d8ff] text-[#00d8ff]' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`;
         button.id = id;
         button.setAttribute('role', 'tab');
         button.setAttribute('aria-selected', active ? 'true' : 'false');
@@ -236,7 +236,7 @@
 
       function renderHomeTabs(container) {
         const tabsWrap = document.createElement('div');
-        tabsWrap.className = 'mb-4 overflow-x-auto border-b border-slate-800';
+        tabsWrap.className = 'mb-4 overflow-x-auto border-b border-zinc-800';
 
         const nav = document.createElement('nav');
         nav.className = '-mb-px flex min-w-max gap-4 sm:gap-6';

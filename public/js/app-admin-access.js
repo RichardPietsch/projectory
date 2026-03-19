@@ -350,7 +350,7 @@
       }
 
       function personHiddenBadge(person) {
-        return person.is_hidden ? `<span class="ml-2 rounded border border-slate-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">${i18n.t('people.flags.hidden')}</span>` : '';
+        return person.is_hidden ? `<span class="ml-2 rounded border border-zinc-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-300">${i18n.t('people.flags.hidden')}</span>` : '';
       }
 
       function leaverRunIcon(isLeaver) {
@@ -381,21 +381,21 @@
 
       function peopleOverviewView() {
         function assignmentsWarningClass(count) {
-          if (count === 0) return 'text-slate-100';
+          if (count === 0) return 'text-zinc-100';
           if (count <= 5) return 'text-[#00d8ff]';
           if (count <= 8) return 'text-amber-300';
           return 'text-rose-300';
         }
 
         function roleCountWarningClass(count) {
-          if (count === 0) return 'text-slate-100';
+          if (count === 0) return 'text-zinc-100';
           if (count <= 2) return 'text-[#00d8ff]';
           if (count <= 4) return 'text-amber-300';
           return 'text-rose-300';
         }
 
         function workloadWarningClass(workload) {
-          if (workload === 0) return 'text-slate-100';
+          if (workload === 0) return 'text-zinc-100';
           if (workload < 100) return 'text-amber-300';
           if (workload === 100) return 'text-green-300';
           return 'text-rose-300';
@@ -487,7 +487,7 @@
             const isCurrentUser = viewerPersonId && String(person.id) === viewerPersonId;
             const rowClass = isCurrentUser
               ? 'cursor-pointer border-t border-cyan-400/50 bg-cyan-500/10 hover:bg-cyan-500/20'
-              : 'cursor-pointer border-t border-slate-800 hover:bg-slate-800/40';
+              : 'cursor-pointer border-t border-zinc-800 hover:bg-zinc-800/40';
             return `<tr class="${rowClass}" onclick="openPeopleOverviewModal(${person.id})">
             <td class="p-2">${person.first_name} ${person.last_name}${personLeaverBadge(person)}</td>
             <td class="p-2">${person.trade_name}</td>
@@ -501,10 +501,10 @@
           })
           .join('');
 
-        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+        return `<div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
           <div class="mb-3">
             <h3 class="text-lg font-semibold">${i18n.t('home.peopleOverview')}</h3>
-            <p class="text-xs text-slate-400">${i18n.t('peopleOverview.subtitle')}</p>
+            <p class="text-xs text-zinc-400">${i18n.t('peopleOverview.subtitle')}</p>
           </div>
           <div class="mb-3 flex items-center gap-2">
             <input
@@ -513,25 +513,25 @@
               value="${state.peopleOverviewSearch || ''}"
               oninput="setPeopleOverviewSearch(this.value)"
               placeholder="${i18n.t('peopleOverview.searchPlaceholder')}"
-              class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm"
+              class="w-full rounded border border-zinc-700 bg-zinc-950 p-2 text-sm"
             />
             <button
-              class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800 ${state.peopleOverviewSearch ? '' : 'opacity-50'}"
+              class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800 ${state.peopleOverviewSearch ? '' : 'opacity-50'}"
               onclick="clearPeopleOverviewSearch()"
               ${state.peopleOverviewSearch ? '' : 'disabled'}
               title="Clear search"
             >✕</button>
           </div>
           <table id="onboarding-people-overview-table" class="w-full table-fixed text-left text-sm">
-            <thead><tr class="text-slate-400">
-              <th class="w-[20%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('name')">${i18n.t('people.columns.name')} ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('trade')">${i18n.t('people.columns.trade')} ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('level')">${i18n.t('people.columns.level')} ${state.peopleOverviewSort.startsWith('level_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('assignments')">${i18n.t('peopleOverview.columns.assignments')} ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('ownerships')">${i18n.t('peopleOverview.columns.ownerships')} ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('leaderships')">${i18n.t('peopleOverview.columns.leaderships')} ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('contributions')">${i18n.t('peopleOverview.columns.contributions')} ${state.peopleOverviewSort.startsWith('contributions_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-              <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setPeopleOverviewSortField('quantity')">${i18n.t('peopleOverview.columns.workload')} ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+            <thead><tr class="text-zinc-400">
+              <th class="w-[20%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setPeopleOverviewSortField('name')">${i18n.t('people.columns.name')} ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setPeopleOverviewSortField('trade')">${i18n.t('people.columns.trade')} ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[15%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setPeopleOverviewSortField('level')">${i18n.t('people.columns.level')} ${state.peopleOverviewSort.startsWith('level_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setPeopleOverviewSortField('assignments')">${i18n.t('peopleOverview.columns.assignments')} ${state.peopleOverviewSort.startsWith('assignments_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setPeopleOverviewSortField('ownerships')">${i18n.t('peopleOverview.columns.ownerships')} ${state.peopleOverviewSort.startsWith('ownerships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setPeopleOverviewSortField('leaderships')">${i18n.t('peopleOverview.columns.leaderships')} ${state.peopleOverviewSort.startsWith('leaderships_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[9%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setPeopleOverviewSortField('contributions')">${i18n.t('peopleOverview.columns.contributions')} ${state.peopleOverviewSort.startsWith('contributions_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+              <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setPeopleOverviewSortField('quantity')">${i18n.t('peopleOverview.columns.workload')} ${state.peopleOverviewSort.startsWith('quantity_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
             </tr></thead>
             <tbody>${rows}</tbody>
           </table>
@@ -558,7 +558,7 @@ function clientsView() {
           const swatches = CONFIGURATION_COLOR_OPTIONS.map((option) => {
             const hex = option.hex;
             const isSelected = normalizedSelected === hex.toLowerCase();
-            const selectedClass = isSelected ? 'ring-2 ring-[#00d8ff] ring-offset-1 ring-offset-slate-900' : 'ring-1 ring-slate-700';
+            const selectedClass = isSelected ? 'ring-2 ring-[#00d8ff] ring-offset-1 ring-offset-zinc-900' : 'ring-1 ring-zinc-700';
             const swatchStyle = option.style || `background:${hex};`;
             return `<button type="button" class="h-5 w-5 rounded-full ${selectedClass}" style="${swatchStyle}" data-config-action="pick-color" data-kind="${kind}" data-item-key="${itemKey}" data-color="${hex}" title="${hex}" aria-label="${i18n.t('admin.configuration.selectColorAria', { color: hex })}"></button>`;
           }).join('');
@@ -570,10 +570,10 @@ function clientsView() {
           if (useMetallicSwatch) {
             const preset = getPriorityPresetFromHex(selected);
             if (preset !== 'custom' && PRIORITY_PRESET_MAP[preset]) {
-              return `<button type="button" class="inline-flex h-6 w-6 rounded-full border border-slate-700" style="${PRIORITY_PRESET_MAP[preset].style}" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${preset}"></button>`;
+              return `<button type="button" class="inline-flex h-6 w-6 rounded-full border border-zinc-700" style="${PRIORITY_PRESET_MAP[preset].style}" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${preset}"></button>`;
             }
           }
-          return `<button type="button" class="inline-flex h-6 w-6 rounded-full border border-slate-700" style="background:${selected};" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${selected}"></button>`;
+          return `<button type="button" class="inline-flex h-6 w-6 rounded-full border border-zinc-700" style="background:${selected};" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${selected}"></button>`;
         }
 
         function renderCard(kind, label, options = {}) {
@@ -588,31 +588,31 @@ function clientsView() {
               const removeDisabled = usage > 0 ? 'disabled title="In use"' : '';
               const itemKey = item.id || item.key || item.name;
               const escapedItemKey = String(itemKey).replace(/"/g, '&quot;');
-              const nameInput = `<input class="w-full rounded bg-slate-900 p-1 text-sm" data-config-action="set-name" data-kind="${kind}" data-item-key="${escapedItemKey}" value="${String(item.name || '').replace(/"/g, '&quot;')}" />`;
+              const nameInput = `<input class="w-full rounded bg-zinc-900 p-1 text-sm" data-config-action="set-name" data-kind="${kind}" data-item-key="${escapedItemKey}" value="${String(item.name || '').replace(/"/g, '&quot;')}" />`;
               const colorCell = supportsColor
                 ? renderSelectedColorSwatch(kind, escapedItemKey, item.colorHex || '#64748B', kind === 'priorities')
                 : '—';
               const dropHighlightClass = supportsSort && state.configurationDrag?.kind === kind && state.configurationDrag?.lastOverKey === String(itemKey)
-                ? ' bg-slate-800/60'
+                ? ' bg-zinc-800/60'
                 : '';
               const rowAttrs = supportsSort
-                ? `class="border-t border-slate-800 hover:bg-slate-900/40${dropHighlightClass}" data-config-action="drag-drop-target" data-kind="${kind}" data-item-key="${escapedItemKey}"`
-                : 'class="border-t border-slate-800"';
+                ? `class="border-t border-zinc-800 hover:bg-zinc-900/40${dropHighlightClass}" data-config-action="drag-drop-target" data-kind="${kind}" data-item-key="${escapedItemKey}"`
+                : 'class="border-t border-zinc-800"';
               const handleCell = supportsSort
-                ? `<button type="button" aria-label="Drag to reorder" class="cursor-grab active:cursor-grabbing rounded p-1 text-slate-500 hover:text-slate-300" draggable="true" data-config-action="drag-handle" data-kind="${kind}" data-item-key="${escapedItemKey}"><span class="grid grid-cols-2 gap-0.5"><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span></span></button>`
+                ? `<button type="button" aria-label="Drag to reorder" class="cursor-grab active:cursor-grabbing rounded p-1 text-zinc-500 hover:text-zinc-300" draggable="true" data-config-action="drag-handle" data-kind="${kind}" data-item-key="${escapedItemKey}"><span class="grid grid-cols-2 gap-0.5"><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span></span></button>`
                 : '';
-              return `<tr ${rowAttrs}><td class="w-8 p-2 align-middle">${handleCell}</td><td class="p-2 text-slate-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" data-config-action="remove-item" data-kind="${kind}" data-item-key="${escapedItemKey}" ${removeDisabled}>${i18n.t('common.delete')}</button></td></tr>`;
+              return `<tr ${rowAttrs}><td class="w-8 p-2 align-middle">${handleCell}</td><td class="p-2 text-zinc-100">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2"><span class="rounded border px-2 py-0.5 text-xs ${usageClass}">${usage}</span></td><td class="p-2 text-right"><button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40" data-config-action="remove-item" data-kind="${kind}" data-item-key="${escapedItemKey}" ${removeDisabled}>${i18n.t('common.delete')}</button></td></tr>`;
             })
             .join('');
 
-          return `<div class="rounded-lg border border-slate-800 bg-slate-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${label}</h4><span class="text-xs text-slate-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-config-action="add-item" data-kind="${kind}">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="w-8 p-2"></th><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">${i18n.t('common.color')}</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-slate-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
+          return `<div class="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-zinc-100">${label}</h4><span class="text-xs text-zinc-400">${items.length} ${i18n.t('admin.configuration.items')}</span></div><div class="mb-3 flex gap-2"><input id="configuration-${kind}-new" class="w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${i18n.t('admin.configuration.addPlaceholder')}" /><button class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-800" data-config-action="add-item" data-kind="${kind}">${i18n.t('admin.configuration.add')}</button></div><div class="max-h-72 overflow-y-auto rounded border border-zinc-800"><table class="w-full text-left text-sm"><thead><tr class="text-zinc-400"><th class="w-8 p-2"></th><th class="p-2">${i18n.t('admin.configuration.value')}</th><th class="p-2">${i18n.t('common.color')}</th><th class="p-2">${i18n.t('admin.configuration.usage')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${rows || `<tr><td class="p-3 text-zinc-400" colspan="5">${i18n.t('admin.configuration.empty')}</td></tr>`}</tbody></table></div></div>`;
         }
 
         const colorPickerModal = state.configurationColorPicker?.open
-          ? `<div class="fixed inset-0 z-40 flex items-center justify-center bg-black/60" data-config-action="color-modal-overlay"><div class="w-full max-w-xs rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-slate-100">${i18n.t('admin.configuration.selectColor')}</h4><button type="button" class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" data-config-action="close-color-modal">${i18n.t('common.close')}</button></div>${renderColorSwatchGrid(state.configurationColorPicker.kind, state.configurationColorPicker.itemKey, state.configurationColorPicker.selectedHex)}</div></div>`
+          ? `<div class="fixed inset-0 z-40 flex items-center justify-center bg-black/60" data-config-action="color-modal-overlay"><div class="w-full max-w-xs rounded-xl border border-zinc-700 bg-zinc-900 p-4 shadow-2xl"><div class="mb-3 flex items-center justify-between"><h4 class="text-sm font-semibold text-zinc-100">${i18n.t('admin.configuration.selectColor')}</h4><button type="button" class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-800" data-config-action="close-color-modal">${i18n.t('common.close')}</button></div>${renderColorSwatchGrid(state.configurationColorPicker.kind, state.configurationColorPicker.itemKey, state.configurationColorPicker.selectedHex)}</div></div>`
           : '';
 
-        return `<div class="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-slate-400">${i18n.t('admin.configuration.subtitle')}</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'), { sort: true })}${renderCard('priorities', i18n.t('configuration.priorities'), { color: true, sort: true })}${renderCard('projectStatuses', i18n.t('configuration.projectStatuses'), { color: true, sort: true })}</div>${colorPickerModal}</div>`;
+        return `<div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4 space-y-4"><div><h3 class="text-lg font-semibold">${i18n.t('admin.configuration.title')}</h3><p class="text-sm text-zinc-400">${i18n.t('admin.configuration.subtitle')}</p></div><div class="grid gap-4 md:grid-cols-2">${renderCard('trades', i18n.t('configuration.trades'))}${renderCard('levels', i18n.t('configuration.levels'), { sort: true })}${renderCard('priorities', i18n.t('configuration.priorities'), { color: true, sort: true })}${renderCard('projectStatuses', i18n.t('configuration.projectStatuses'), { color: true, sort: true })}</div>${colorPickerModal}</div>`;
       }
 
       window.addConfigurationItem = addConfigurationItem;
@@ -633,20 +633,20 @@ function clientsView() {
         const bootstrapAdminId = adminUserIds.length ? Math.min(...adminUserIds) : null;
         const userRows = (state.adminUsers || []).map((user) => {
           const statusLabel = String(user.status || 'unknown').replace(/_/g, ' ');
-          const inviteMeta = user.latestInvitedAt ? `<div class="text-[11px] text-slate-500">${i18n.t('admin.access.messages.invitedAt', { timestamp: user.latestInvitedAt })}</div>` : '';
+          const inviteMeta = user.latestInvitedAt ? `<div class="text-[11px] text-zinc-500">${i18n.t('admin.access.messages.invitedAt', { timestamp: user.latestInvitedAt })}</div>` : '';
           const userRoles = (user.roles || []).map((role) => String(role).toLowerCase());
           const isBootstrapAdmin = userRoles.includes('admin') && Number(user.id) === bootstrapAdminId;
           const inviteButton = isBootstrapAdmin
             ? ''
-            : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-slate-800" onclick="inviteAdminUserFromAccessTab(${Number(user.id)})">${i18n.t('admin.access.actions.invite')}</button>`;
-          const revokeButton = user.canRevokeInvite && !isBootstrapAdmin ? `<button class="rounded border border-amber-500/50 px-2 py-1 text-xs text-amber-300 hover:bg-slate-800" onclick="revokeInviteFromAccessTab(${Number(user.id)})">${i18n.t('admin.access.actions.revokeInvite')}</button>` : '';
+            : `<button class="rounded border border-emerald-500/50 px-2 py-1 text-xs text-emerald-300 hover:bg-zinc-800" onclick="inviteAdminUserFromAccessTab(${Number(user.id)})">${i18n.t('admin.access.actions.invite')}</button>`;
+          const revokeButton = user.canRevokeInvite && !isBootstrapAdmin ? `<button class="rounded border border-amber-500/50 px-2 py-1 text-xs text-amber-300 hover:bg-zinc-800" onclick="revokeInviteFromAccessTab(${Number(user.id)})">${i18n.t('admin.access.actions.revokeInvite')}</button>` : '';
           const deleteDisabled = adminCount < 2;
           const deleteButton = deleteDisabled
             ? `<button class="rounded border border-rose-500/30 px-2 py-1 text-xs text-rose-300/40 cursor-not-allowed" disabled title="${i18n.t('admin.access.messages.requireSecondAdmin')}">${i18n.t('common.delete')}</button>`
-            : `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-slate-800" onclick="deleteAdminUserFromAccessTab(${Number(user.id)})">${i18n.t('common.delete')}</button>`;
-          return `<tr class="border-t border-slate-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-slate-300">${user.email}</td><td class="p-2 text-slate-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-slate-300">${user.personName || '—'}</td><td class="p-2 text-slate-300"><div class="capitalize">${statusLabel}</div>${inviteMeta}</td><td class="p-2 text-right"><div class="flex flex-wrap justify-end gap-2"><button class="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800" onclick="openAdminUserEditModal(${Number(user.id)})">${i18n.t('common.edit')}</button>${inviteButton}${revokeButton}${deleteButton}</div></td></tr>`;
+            : `<button class="rounded border border-rose-500/50 px-2 py-1 text-xs text-rose-300 hover:bg-zinc-800" onclick="deleteAdminUserFromAccessTab(${Number(user.id)})">${i18n.t('common.delete')}</button>`;
+          return `<tr class="border-t border-zinc-800"><td class="p-2">${user.displayName}</td><td class="p-2 text-zinc-300">${user.email}</td><td class="p-2 text-zinc-300">${(user.roles || []).join(', ') || '—'}</td><td class="p-2 text-zinc-300">${user.personName || '—'}</td><td class="p-2 text-zinc-300"><div class="capitalize">${statusLabel}</div>${inviteMeta}</td><td class="p-2 text-right"><div class="flex flex-wrap justify-end gap-2"><button class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-800" onclick="openAdminUserEditModal(${Number(user.id)})">${i18n.t('common.edit')}</button>${inviteButton}${revokeButton}${deleteButton}</div></td></tr>`;
         }).join('');
-        const auditRows = (state.auditEntries || []).slice(0, 20).map((entry) => `<tr class="border-t border-slate-800"><td class="p-2 text-xs text-slate-300">${entry.created_at || ''}</td><td class="p-2 text-xs">${entry.action || ''}</td><td class="p-2 text-xs text-slate-300">${entry.actor_role || '—'}</td><td class="p-2 text-xs text-slate-300">${entry.entity_type || '—'} ${entry.entity_id || ''}</td></tr>`).join('');
+        const auditRows = (state.auditEntries || []).slice(0, 20).map((entry) => `<tr class="border-t border-zinc-800"><td class="p-2 text-xs text-zinc-300">${entry.created_at || ''}</td><td class="p-2 text-xs">${entry.action || ''}</td><td class="p-2 text-xs text-zinc-300">${entry.actor_role || '—'}</td><td class="p-2 text-xs text-zinc-300">${entry.entity_type || '—'} ${entry.entity_id || ''}</td></tr>`).join('');
         const smtp = state.smtpSettings || {};
         const personOptions = (state.people || [])
           .map((person) => ({
@@ -660,64 +660,64 @@ function clientsView() {
           .join('');
 
         return `<div class="space-y-4">
-          <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
             <h3 class="mb-3 text-lg font-semibold">${i18n.t('admin.access.title')}</h3>
             <div class="mb-3 grid gap-3 md:grid-cols-5">
-              <label class="text-xs text-slate-400">${i18n.t('admin.access.fields.displayName')}
-                <input id="access-user-name" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.displayName')}" />
+              <label class="text-xs text-zinc-400">${i18n.t('admin.access.fields.displayName')}
+                <input id="access-user-name" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.displayName')}" />
               </label>
-              <label class="text-xs text-slate-400">${i18n.t('admin.access.fields.email')}
-                <input id="access-user-email" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.email')}" />
+              <label class="text-xs text-zinc-400">${i18n.t('admin.access.fields.email')}
+                <input id="access-user-email" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.email')}" />
               </label>
-              <label class="text-xs text-slate-400">${i18n.t('admin.access.fields.role')}
-                <select id="access-user-role" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm">
+              <label class="text-xs text-zinc-400">${i18n.t('admin.access.fields.role')}
+                <select id="access-user-role" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm">
                   <option value="viewer">${i18n.t('admin.access.roles.viewer')}</option>
                   <option value="planner">${i18n.t('admin.access.roles.planner')}</option>
                   <option value="teammate">${i18n.t('admin.access.roles.teammate')}</option>
                   <option value="admin">${i18n.t('admin.access.roles.admin')}</option>
                 </select>
               </label>
-              <label class="text-xs text-slate-400 md:col-span-2">${i18n.t('admin.access.fields.person')}
-                <input id="access-user-person" list="access-user-person-options" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.personPlaceholder')}" />
+              <label class="text-xs text-zinc-400 md:col-span-2">${i18n.t('admin.access.fields.person')}
+                <input id="access-user-person" list="access-user-person-options" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${i18n.t('admin.access.fields.personPlaceholder')}" />
                 <datalist id="access-user-person-options">${personOptionsHtml}</datalist>
-                <span class="mt-1 block text-[11px] text-slate-500">${i18n.t('admin.access.fields.personHelp')}</span>
+                <span class="mt-1 block text-[11px] text-zinc-500">${i18n.t('admin.access.fields.personHelp')}</span>
               </label>
-              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800 md:col-start-5" onclick="createAdminUserFromAccessTab()">${i18n.t('admin.access.actions.createUser')}</button>
+              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-zinc-800 md:col-start-5" onclick="createAdminUserFromAccessTab()">${i18n.t('admin.access.actions.createUser')}</button>
             </div>
-            <div class="overflow-x-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.access.table.name')}</th><th class="p-2">${i18n.t('admin.access.table.email')}</th><th class="p-2">${i18n.t('admin.access.table.roles')}</th><th class="p-2">${i18n.t('admin.access.table.person')}</th><th class="p-2">${i18n.t('common.status')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-slate-400" colspan="6">${i18n.t('admin.access.table.empty')}</td></tr>`}</tbody></table></div>
+            <div class="overflow-x-auto rounded border border-zinc-800"><table class="w-full text-left text-sm"><thead><tr class="text-zinc-400"><th class="p-2">${i18n.t('admin.access.table.name')}</th><th class="p-2">${i18n.t('admin.access.table.email')}</th><th class="p-2">${i18n.t('admin.access.table.roles')}</th><th class="p-2">${i18n.t('admin.access.table.person')}</th><th class="p-2">${i18n.t('common.status')}</th><th class="p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${userRows || `<tr><td class="p-3 text-zinc-400" colspan="6">${i18n.t('admin.access.table.empty')}</td></tr>`}</tbody></table></div>
           </div>
 
-          <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
             <h3 class="mb-3 text-lg font-semibold">${i18n.t('admin.smtp.title')}</h3>
             <div class="grid gap-3 md:grid-cols-3">
-              <label class="text-xs text-slate-400">${i18n.t('admin.smtp.fields.host')}
-                <input id="smtp-host" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.host')}" value="${smtp.host || ''}" />
+              <label class="text-xs text-zinc-400">${i18n.t('admin.smtp.fields.host')}
+                <input id="smtp-host" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.host')}" value="${smtp.host || ''}" />
               </label>
-              <label class="text-xs text-slate-400">${i18n.t('admin.smtp.fields.port')}
-                <input id="smtp-port" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.port')}" value="${smtp.port || ''}" />
+              <label class="text-xs text-zinc-400">${i18n.t('admin.smtp.fields.port')}
+                <input id="smtp-port" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.port')}" value="${smtp.port || ''}" />
               </label>
-              <label class="text-xs text-slate-400">${i18n.t('admin.smtp.fields.username')}
-                <input id="smtp-user" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.username')}" value="${smtp.username || ''}" />
+              <label class="text-xs text-zinc-400">${i18n.t('admin.smtp.fields.username')}
+                <input id="smtp-user" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.username')}" value="${smtp.username || ''}" />
               </label>
-              <label class="text-xs text-slate-400 md:col-span-2">${i18n.t('admin.smtp.fields.fromEmail')}
-                <input id="smtp-from" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.fromEmail')}" value="${smtp.fromEmail || ''}" />
+              <label class="text-xs text-zinc-400 md:col-span-2">${i18n.t('admin.smtp.fields.fromEmail')}
+                <input id="smtp-from" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.fromEmail')}" value="${smtp.fromEmail || ''}" />
               </label>
-              <label class="text-xs text-slate-400">${i18n.t('admin.smtp.fields.password')}
-                <input id="smtp-password" type="password" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${smtp.passwordSet ? i18n.t('admin.smtp.placeholders.passwordSet') : i18n.t('admin.smtp.placeholders.password')}" />
+              <label class="text-xs text-zinc-400">${i18n.t('admin.smtp.fields.password')}
+                <input id="smtp-password" type="password" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${smtp.passwordSet ? i18n.t('admin.smtp.placeholders.passwordSet') : i18n.t('admin.smtp.placeholders.password')}" />
               </label>
               <label class="inline-flex items-center gap-2 self-end text-sm"><input id="smtp-enabled" type="checkbox" ${smtp.enabled ? 'checked' : ''} /> ${i18n.t('admin.smtp.fields.enabled')}</label>
               <label class="inline-flex items-center gap-2 self-end text-sm"><input id="smtp-secure" type="checkbox" ${smtp.secure !== false ? 'checked' : ''} /> ${i18n.t('admin.smtp.fields.secure')}</label>
-              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-slate-800" onclick="saveSmtpSettingsFromAccessTab()">${i18n.t('admin.smtp.actions.save')}</button>
-              <label class="text-xs text-slate-400 md:col-span-2">${i18n.t('admin.smtp.fields.testRecipient')}
-                <input id="smtp-test-to" class="mt-1 w-full rounded bg-slate-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.testRecipient')}" value="${state.smtpTestRecipient || smtp.fromEmail || ''}" />
+              <button class="rounded border border-[#00d8ff]/50 px-3 py-2 text-sm text-[#7cecff] hover:bg-zinc-800" onclick="saveSmtpSettingsFromAccessTab()">${i18n.t('admin.smtp.actions.save')}</button>
+              <label class="text-xs text-zinc-400 md:col-span-2">${i18n.t('admin.smtp.fields.testRecipient')}
+                <input id="smtp-test-to" class="mt-1 w-full rounded bg-zinc-950 p-2 text-sm" placeholder="${i18n.t('admin.smtp.placeholders.testRecipient')}" value="${state.smtpTestRecipient || smtp.fromEmail || ''}" />
               </label>
-              <button class="rounded border border-emerald-500/50 px-3 py-2 text-sm text-emerald-300 hover:bg-slate-800" onclick="sendSmtpTestMailFromAccessTab()">${i18n.t('admin.smtp.actions.sendTest')}</button>
+              <button class="rounded border border-emerald-500/50 px-3 py-2 text-sm text-emerald-300 hover:bg-zinc-800" onclick="sendSmtpTestMailFromAccessTab()">${i18n.t('admin.smtp.actions.sendTest')}</button>
             </div>
           </div>
 
-          <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div class="mb-3 flex items-center justify-between"><h3 class="text-lg font-semibold">${i18n.t('admin.audit.title')}</h3><button class="rounded border border-slate-600 px-3 py-1 text-sm hover:bg-slate-800" onclick="refreshAuditFromAccessTab()">${i18n.t('admin.audit.refresh')}</button></div>
-            <div class="max-h-80 overflow-y-auto rounded border border-slate-800"><table class="w-full text-left text-sm"><thead><tr class="text-slate-400"><th class="p-2">${i18n.t('admin.audit.columns.timestamp')}</th><th class="p-2">${i18n.t('admin.audit.columns.action')}</th><th class="p-2">${i18n.t('admin.audit.columns.role')}</th><th class="p-2">${i18n.t('admin.audit.columns.entity')}</th></tr></thead><tbody>${auditRows || `<tr><td class="p-3 text-slate-400" colspan="4">${i18n.t('admin.audit.empty')}</td></tr>`}</tbody></table></div>
+          <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <div class="mb-3 flex items-center justify-between"><h3 class="text-lg font-semibold">${i18n.t('admin.audit.title')}</h3><button class="rounded border border-zinc-600 px-3 py-1 text-sm hover:bg-zinc-800" onclick="refreshAuditFromAccessTab()">${i18n.t('admin.audit.refresh')}</button></div>
+            <div class="max-h-80 overflow-y-auto rounded border border-zinc-800"><table class="w-full text-left text-sm"><thead><tr class="text-zinc-400"><th class="p-2">${i18n.t('admin.audit.columns.timestamp')}</th><th class="p-2">${i18n.t('admin.audit.columns.action')}</th><th class="p-2">${i18n.t('admin.audit.columns.role')}</th><th class="p-2">${i18n.t('admin.audit.columns.entity')}</th></tr></thead><tbody>${auditRows || `<tr><td class="p-3 text-zinc-400" colspan="4">${i18n.t('admin.audit.empty')}</td></tr>`}</tbody></table></div>
           </div>
         </div>`;
       }
