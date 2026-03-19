@@ -322,7 +322,6 @@
     'projectDetail.challengeSort.descriptionDesc': 'Beschreibung (Z bis A)',
     'projectDetail.challengeSort.assigneesAsc': 'Zugewiesene (A bis Z)',
     'projectDetail.challengeSort.assigneesDesc': 'Zugewiesene (Z bis A)',
-    'projectDetail.challengeMobile.secondaryHint': 'Weitere Aktionen im Menü',
     'peopleOverview.subtitle': 'Organisationsweite Einblicke zu Assignments, Rollen und Auslastung.',
     'peopleOverview.searchPlaceholder': 'Personenübersicht durchsuchen...',
     'peopleOverview.columns.assignments': 'Zuweisungen',

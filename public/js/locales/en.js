@@ -320,7 +320,6 @@
     'projectDetail.challengeSort.descriptionDesc': 'Description (Z to A)',
     'projectDetail.challengeSort.assigneesAsc': 'Assignees (A to Z)',
     'projectDetail.challengeSort.assigneesDesc': 'Assignees (Z to A)',
-    'projectDetail.challengeMobile.secondaryHint': 'More actions in the menu',
     'peopleOverview.subtitle': 'Organization-wide assignment, role and workload insights.',
     'peopleOverview.searchPlaceholder': 'Search people overview...',
     'peopleOverview.columns.assignments': 'Assignments',

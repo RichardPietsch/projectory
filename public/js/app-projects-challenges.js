@@ -513,13 +513,6 @@
             <div class="${menuClass} space-y-1 rounded border border-slate-700 bg-slate-900 p-2 shadow-xl">${actionItems.join('')}</div>
           </details>`;
         }
-
-        function getChallengePrimaryAction(challenge, assignments) {
-          if (viewerMode) return '';
-          const primaryLabel = assignments.length ? i18n.t('projectDetail.actions.addAssignee') : i18n.t('assign.assign');
-          return `<button class="rounded-lg border border-[#00d8ff]/50 bg-[#00d8ff]/10 px-3 py-2 text-sm font-medium text-[#7cecff] hover:bg-[#00d8ff]/20" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${primaryLabel}</button>`;
-        }
-
         function challengeSortOptionLabel(sortValue) {
           const labels = {
             title_asc: i18n.t('projectDetail.challengeSort.titleAsc'),
@@ -550,7 +543,6 @@
         const mobileChallengeCards = sortedChallenges
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
-            const primaryAction = getChallengePrimaryAction(challenge, assignments);
             const actionsMenu = renderChallengeActionsMenu(challenge, assignments, 'absolute right-0 z-30 mt-2 w-56');
             return `<article class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-sm">
               <div class="flex items-start justify-between gap-3">
@@ -564,7 +556,6 @@
                 <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('challenge.columns.assignee')}</p>
                 <div class="mt-2 flex flex-wrap gap-2">${renderChallengeAssignees(challenge, assignments)}</div>
               </div>
-              ${viewerMode ? '' : `<div class="mt-3 flex flex-wrap items-center justify-between gap-3">${primaryAction}<span class="text-xs text-slate-500">${i18n.t('projectDetail.challengeMobile.secondaryHint')}</span></div>`}
             </article>`;
           })
           .join('');
