@@ -529,14 +529,24 @@
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
             const assignees = renderChallengeAssignees(challenge, assignments);
-            const actionsMenu = renderChallengeActionsMenu(challenge, assignments);
+            const actionsMenu = renderChallengeActionsMenu(challenge, assignments, 'absolute right-0 z-30 mt-2 w-56');
 
-            return `<tr class="border-t border-slate-800">
-              <td class="p-2">${challenge.title}</td>
-              <td class="p-2">${challenge.description}</td>
-              <td class="p-2">${assignees}</td>
-              <td class="p-2 text-right"><div class="flex justify-end">${actionsMenu}</div></td>
-            </tr>`;
+            return `<article class="group rounded-2xl border border-slate-800/90 bg-slate-950/85 p-5 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ring-1 ring-inset ring-slate-800/70 transition-colors hover:border-slate-700 hover:ring-slate-700/80">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                  <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#67e8f9]">${i18n.t('projectDetail.challengeOverview.title')}</p>
+                  <h4 class="mt-2 text-lg font-semibold leading-7 text-slate-50 break-words">${challenge.title}</h4>
+                </div>
+                ${viewerMode ? '' : `<div class="shrink-0 text-right">${actionsMenu}</div>`}
+              </div>
+              <div class="mt-4 rounded-2xl border border-slate-800/80 bg-slate-900/70 px-4 py-4">
+                <p class="text-sm leading-7 text-slate-200 break-words">${challenge.description}</p>
+              </div>
+              <div class="mt-4 rounded-xl border border-slate-800/80 bg-slate-900/50 px-4 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">${i18n.t('challenge.columns.assignee')}</p>
+                <p class="mt-2 text-sm leading-6 text-slate-200">${assignees}</p>
+              </div>
+            </article>`;
           })
           .join('');
 
@@ -544,17 +554,20 @@
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
             const actionsMenu = renderChallengeActionsMenu(challenge, assignments, 'absolute right-0 z-30 mt-2 w-56');
-            return `<article class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-sm">
+            return `<article class="rounded-2xl border border-slate-800/90 bg-slate-950/85 p-5 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ring-1 ring-inset ring-slate-800/70">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                  <h4 class="text-base font-semibold text-slate-100 break-words">${challenge.title}</h4>
-                  <p class="mt-2 text-sm leading-6 text-slate-300 break-words">${getChallengeDescriptionPreview(challenge.description)}</p>
+                  <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#67e8f9]">${i18n.t('projectDetail.challengeOverview.title')}</p>
+                  <h4 class="mt-2 text-lg font-semibold leading-7 text-slate-50 break-words">${challenge.title}</h4>
                 </div>
                 ${viewerMode ? '' : `<div class="shrink-0">${actionsMenu}</div>`}
               </div>
-              <div class="mt-3 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('challenge.columns.assignee')}</p>
-                <div class="mt-2 flex flex-wrap gap-2">${renderChallengeAssignees(challenge, assignments)}</div>
+              <div class="mt-4 rounded-2xl border border-slate-800/80 bg-slate-900/70 px-4 py-4">
+                <p class="text-sm leading-7 text-slate-200 break-words">${getChallengeDescriptionPreview(challenge.description)}</p>
+              </div>
+              <div class="mt-4 rounded-xl border border-slate-800/80 bg-slate-900/50 px-4 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">${i18n.t('challenge.columns.assignee')}</p>
+                <p class="mt-2 text-sm leading-6 text-slate-200 break-words">${renderChallengeAssignees(challenge, assignments)}</p>
               </div>
             </article>`;
           })
@@ -582,25 +595,36 @@
             </div>
           </div>
 
-          <div id="onboarding-challenge-overview" class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h3 class="text-lg font-semibold">${i18n.t('projectDetail.challengeOverview.title')}</h3>
-                <p class="text-xs text-slate-400">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
+          <div id="onboarding-challenge-overview" class="rounded-[1.75rem] border border-slate-800/90 bg-slate-900/95 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.28)] ring-1 ring-inset ring-slate-800/70 lg:p-6">
+            <div class="rounded-[1.5rem] border border-slate-800/80 bg-slate-950/70 px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div class="max-w-3xl">
+                  <div class="h-1.5 w-16 rounded-full bg-[#67e8f9]/80"></div>
+                  <h3 class="mt-4 text-2xl font-semibold tracking-tight text-slate-50">${i18n.t('projectDetail.challengeOverview.title')}</h3>
+                  <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
+                </div>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div class="min-w-[14rem]">
+                    <label for="challenge-sort-select" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">${i18n.t('projectDetail.challengeSort.label')}</label>
+                    <select
+                      id="challenge-sort-select"
+                      onchange="setChallengesSort(this.value)"
+                      class="w-full rounded-xl border border-slate-700 bg-slate-950/90 px-3 py-2.5 text-sm text-slate-100 shadow-inner shadow-slate-950/20"
+                      aria-label="${i18n.t('projectDetail.challengeSort.label')}"
+                    >${['title_asc','title_desc','description_asc','description_desc','assignees_asc','assignees_desc'].map((sortValue) => `<option value="${sortValue}" ${state.challengesSort === sortValue ? 'selected' : ''}>${challengeSortOptionLabel(sortValue)}</option>`).join('')}</select>
+                  </div>
+                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#67e8f9] px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_10px_30px_rgba(103,232,249,0.18)] transition hover:bg-[#8aeffd]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
+                </div>
               </div>
-              ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center gap-2 rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
             </div>
-            <div class="mb-3">
-              <select
-                id="challenge-sort-select"
-                onchange="setChallengesSort(this.value)"
-                class="w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm text-slate-200 sm:w-72"
-                aria-label="${i18n.t('projectDetail.challengeSort.label')}"
-              >${['title_asc','title_desc','description_asc','description_desc','assignees_asc','assignees_desc'].map((sortValue) => `<option value="${sortValue}" ${state.challengesSort === sortValue ? 'selected' : ''}>${challengeSortOptionLabel(sortValue)}</option>`).join('')}</select>
-            </div>
-            <div id="project-detail-challenge-mobile-list" class="space-y-3 lg:hidden">${mobileChallengeCards}</div>
-            <div class="hidden lg:block">
-              <table class="w-full table-fixed text-left text-sm"><thead><tr class="text-slate-400"><th class="w-[19%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[50%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[20%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-slate-100" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th><th class="w-[11%] p-2 text-right">${i18n.t('common.actions')}</th></tr></thead><tbody>${challengeRows}</tbody></table>
+            <div class="mt-5 space-y-4 lg:hidden">${mobileChallengeCards}</div>
+            <div class="mt-5 hidden lg:block">
+              <div class="mb-4 grid grid-cols-[minmax(0,1.3fr)_minmax(0,2.2fr)_minmax(14rem,1fr)] gap-4 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                <button class="inline-flex items-center gap-1 text-left transition hover:text-slate-200" onclick="setChallengesSortField('title')">${i18n.t('challenge.columns.title')} ${state.challengesSort.startsWith('title_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button>
+                <button class="inline-flex items-center gap-1 text-left transition hover:text-slate-200" onclick="setChallengesSortField('description')">${i18n.t('challenge.columns.description')} ${state.challengesSort.startsWith('description_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button>
+                <button class="inline-flex items-center gap-1 text-left transition hover:text-slate-200" onclick="setChallengesSortField('assignees')">${i18n.t('challenge.columns.assignee')} ${state.challengesSort.startsWith('assignees_') ? (state.challengesSort.endsWith('_asc') ? '↑' : '↓') : ''}</button>
+              </div>
+              <div class="space-y-4">${challengeRows}</div>
             </div>
           </div>
 
