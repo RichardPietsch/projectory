@@ -61,3 +61,10 @@ test('people overview detail keeps a dedicated mobile grouped-card container', (
   assert.match(challengesSource, /id="people-overview-mobile-detail-list" class="space-y-4 md:hidden"/);
   assert.match(challengesSource, /adjustProjectPersonQuantity\(\$\{projectId\}, \$\{person\.id\}, true\)/);
 });
+
+
+test('mobile role summaries reuse pill-based role styling in responsive views', () => {
+  assert.match(challengesSource, /<div class="mt-2 flex flex-wrap gap-2">\$\{renderOwnerPills\(project\)\}<\/div>/);
+  assert.match(challengesSource, /<div class="mt-2 flex flex-wrap gap-2">\$\{renderChallengeAssignees\(challenge, assignments\)\}<\/div>/);
+  assert.match(challengesSource, /assignment\.is_owner \? 'border-blue-400\/70 bg-blue-600 text-blue-50'/);
+});

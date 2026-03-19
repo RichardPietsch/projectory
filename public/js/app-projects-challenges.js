@@ -216,11 +216,11 @@
                   </div>
                   <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.owner')}</p>
-                    <p class="mt-1 break-words text-sm leading-6 text-slate-200">${renderPersonSummary(project.ownerEntries, 'clientTeams.noOwnerAssigned')}</p>
+                    <div class="mt-2 flex flex-wrap gap-2">${renderOwnerPills(project)}</div>
                   </div>
                   <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('clientTeams.columns.leaders')}</p>
-                    <p class="mt-1 break-words text-sm leading-6 text-slate-200">${renderPersonSummary(project.leaderEntries, 'clientTeams.noLeaderAssigned')}</p>
+                    <div class="mt-2 flex flex-wrap gap-2">${renderLeaderPills(project)}</div>
                   </div>
                 </div>
                 <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
@@ -562,7 +562,7 @@
               </div>
               <div class="mt-3 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('challenge.columns.assignee')}</p>
-                <p class="mt-1 text-sm leading-6 text-slate-200 break-words">${renderChallengeAssigneeSummary(assignments)}</p>
+                <div class="mt-2 flex flex-wrap gap-2">${renderChallengeAssignees(challenge, assignments)}</div>
               </div>
               ${viewerMode ? '' : `<div class="mt-3 flex flex-wrap items-center justify-between gap-3">${primaryAction}<span class="text-xs text-slate-500">${i18n.t('projectDetail.challengeMobile.secondaryHint')}</span></div>`}
             </article>`;
@@ -2061,7 +2061,7 @@ function filteredPeople() {
                   <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
                       <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('assign.role')}</div>
-                      <div class="mt-1 font-semibold ${roleClass}">${roleLabel}</div>
+                      <div class="mt-2"><span class="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${assignment.is_owner ? 'border-blue-400/70 bg-blue-600 text-blue-50' : assignment.is_leader ? 'border-emerald-400/70 bg-emerald-600 text-emerald-50' : 'border-slate-500 bg-slate-700 text-slate-100'}">${roleLabel}</span></div>
                     </div>
                     <div class="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
                       <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">${i18n.t('peopleOverview.columns.workload')}</div>
