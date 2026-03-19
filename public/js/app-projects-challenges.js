@@ -531,20 +531,16 @@
             const assignees = renderChallengeAssignees(challenge, assignments);
             const actionsMenu = renderChallengeActionsMenu(challenge, assignments, 'absolute right-0 z-30 mt-2 w-56');
 
-            return `<article class="group rounded-2xl border border-slate-800/90 bg-slate-950/85 p-5 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ring-1 ring-inset ring-slate-800/70 transition-colors hover:border-slate-700 hover:ring-slate-700/80">
+            return `<article class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] transition-colors hover:border-slate-300">
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0 flex-1">
-                  <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#67e8f9]">${i18n.t('projectDetail.challengeOverview.title')}</p>
-                  <h4 class="mt-2 text-lg font-semibold leading-7 text-slate-50 break-words">${challenge.title}</h4>
+                  <h4 class="text-lg font-semibold leading-7 text-slate-950 break-words">${challenge.title}</h4>
                 </div>
                 ${viewerMode ? '' : `<div class="shrink-0 text-right">${actionsMenu}</div>`}
               </div>
-              <div class="mt-4 rounded-2xl border border-slate-800/80 bg-slate-900/70 px-4 py-4">
-                <p class="text-sm leading-7 text-slate-200 break-words">${challenge.description}</p>
-              </div>
-              <div class="mt-4 rounded-xl border border-slate-800/80 bg-slate-900/50 px-4 py-3">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">${i18n.t('challenge.columns.assignee')}</p>
-                <p class="mt-2 text-sm leading-6 text-slate-200">${assignees}</p>
+              <p class="mt-4 text-sm leading-7 text-slate-700 break-words">${challenge.description}</p>
+              <div class="mt-5 border-t border-slate-200 pt-4">
+                <p class="text-sm leading-6 text-slate-700">${assignees}</p>
               </div>
             </article>`;
           })
@@ -554,20 +550,16 @@
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
             const actionsMenu = renderChallengeActionsMenu(challenge, assignments, 'absolute right-0 z-30 mt-2 w-56');
-            return `<article class="rounded-2xl border border-slate-800/90 bg-slate-950/85 p-5 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ring-1 ring-inset ring-slate-800/70">
+            return `<article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                  <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#67e8f9]">${i18n.t('projectDetail.challengeOverview.title')}</p>
-                  <h4 class="mt-2 text-lg font-semibold leading-7 text-slate-50 break-words">${challenge.title}</h4>
+                  <h4 class="text-lg font-semibold leading-7 text-slate-950 break-words">${challenge.title}</h4>
                 </div>
                 ${viewerMode ? '' : `<div class="shrink-0">${actionsMenu}</div>`}
               </div>
-              <div class="mt-4 rounded-2xl border border-slate-800/80 bg-slate-900/70 px-4 py-4">
-                <p class="text-sm leading-7 text-slate-200 break-words">${getChallengeDescriptionPreview(challenge.description)}</p>
-              </div>
-              <div class="mt-4 rounded-xl border border-slate-800/80 bg-slate-900/50 px-4 py-3">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">${i18n.t('challenge.columns.assignee')}</p>
-                <p class="mt-2 text-sm leading-6 text-slate-200 break-words">${renderChallengeAssignees(challenge, assignments)}</p>
+              <p class="mt-4 text-sm leading-7 text-slate-700 break-words">${getChallengeDescriptionPreview(challenge.description)}</p>
+              <div class="mt-5 border-t border-slate-200 pt-4">
+                <p class="text-sm leading-6 text-slate-700 break-words">${renderChallengeAssignees(challenge, assignments)}</p>
               </div>
             </article>`;
           })
@@ -595,8 +587,8 @@
             </div>
           </div>
 
-          <div id="onboarding-challenge-overview" class="rounded-[1.75rem] border border-slate-800/90 bg-slate-900/95 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.28)] ring-1 ring-inset ring-slate-800/70 lg:p-6">
-            <div class="rounded-[1.5rem] border border-slate-800/80 bg-slate-950/70 px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
+          <div id="onboarding-challenge-overview" class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.24)] lg:p-6">
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
               <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="max-w-3xl">
                   <div class="h-1.5 w-16 rounded-full bg-[#67e8f9]/80"></div>
@@ -609,11 +601,11 @@
                     <select
                       id="challenge-sort-select"
                       onchange="setChallengesSort(this.value)"
-                      class="w-full rounded-xl border border-slate-700 bg-slate-950/90 px-3 py-2.5 text-sm text-slate-100 shadow-inner shadow-slate-950/20"
+                      class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100"
                       aria-label="${i18n.t('projectDetail.challengeSort.label')}"
                     >${['title_asc','title_desc','description_asc','description_desc','assignees_asc','assignees_desc'].map((sortValue) => `<option value="${sortValue}" ${state.challengesSort === sortValue ? 'selected' : ''}>${challengeSortOptionLabel(sortValue)}</option>`).join('')}</select>
                   </div>
-                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#67e8f9] px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_10px_30px_rgba(103,232,249,0.18)] transition hover:bg-[#8aeffd]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
+                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#67e8f9] px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-[#8aeffd]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
                 </div>
               </div>
             </div>
