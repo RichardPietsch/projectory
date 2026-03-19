@@ -206,7 +206,7 @@ jobs:
         run: mkdir -p ci-artifacts
 
       - name: Setup Trivy CLI
-        uses: aquasecurity/setup-trivy@v0.2.2
+        uses: aquasecurity/setup-trivy@v0.2.4
 
       - name: Container image vulnerability report (Trivy CLI)
         run: |
