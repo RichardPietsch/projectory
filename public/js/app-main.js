@@ -136,6 +136,7 @@
           bindOnboardingDemoActions();
           bindFooterActions();
           bindChallengeModalActions();
+          bindChallengeDeleteModalActions();
           bindAssignModalActions();
           bindUnassignModalActions();
           bindExportModalActions();

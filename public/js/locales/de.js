@@ -271,6 +271,8 @@
     'challenge.edit': 'Challenge bearbeiten',
     'challenge.notFound': 'Challenge nicht gefunden.',
     'challenge.deleted': 'Challenge gelöscht.',
+    'challenge.deleteConfirmTitle': 'Challenge löschen?',
+    'challenge.deleteConfirmBody': 'Diese Aktion entfernt die Challenge dauerhaft. Innerhalb dieses Dialogs kann sie nicht rückgängig gemacht werden.',
     'challenge.restored': 'Challenge wiederhergestellt.',
     'challenge.save': 'Challenge speichern',
     'challenge.title': 'Titel',

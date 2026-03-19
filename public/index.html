@@ -249,6 +249,20 @@
       </div>
     </div>
 
+    <div id="challenge-delete-modal" class="fixed inset-0 z-[65] hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h3 class="text-lg font-semibold" data-i18n="challenge.deleteConfirmTitle">Delete challenge?</h3>
+          <button id="challenge-delete-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+        <p class="text-sm text-slate-300" data-i18n="challenge.deleteConfirmBody">This action permanently removes the challenge. You can’t undo it from this dialog.</p>
+        <div class="mt-4 flex justify-end gap-2">
+          <button type="button" id="challenge-delete-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button type="button" id="challenge-delete-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-500" data-i18n="common.delete">Delete</button>
+        </div>
+      </div>
+    </div>
+
 
     <div id="people-overview-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
       <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
