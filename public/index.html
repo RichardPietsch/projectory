@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projectory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="/js/safe-dom.js"></script>
+    <script defer src="/js/api.js"></script>
+    <script defer src="/js/state.js"></script>
+    <script defer src="/js/locales/en.js"></script>
+    <script defer src="/js/locales/de.js"></script>
+    <script defer src="/js/locales/pseudo.js"></script>
+    <script defer src="/js/i18n.js"></script>
+    <script defer src="/js/views-people.js"></script>
+    <script defer src="/js/views-clients.js"></script>
+    <script defer src="/js/views-admin-projects.js"></script>
+    <script defer src="/js/onboarding-tour.js"></script>
+    <script defer src="/js/responsive-shell.js"></script>
+    <script defer src="/js/app-shared-auth.js"></script>
+    <script defer src="/js/app-admin-access.js"></script>
+    <script defer src="/js/app-projects-challenges.js"></script>
+    <script defer src="/js/routing-a11y-utils.js"></script>
+    <script defer src="/js/app-routing-ui.js"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <main class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
+      <header class="mb-6 p-3 sm:p-4">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="flex min-w-0 items-start gap-3 sm:gap-4">
+          <button id="app-logo-button" class="rounded outline-none focus:outline-none focus-visible:outline-none" title="Go to client overview" aria-label="Go to client overview">
+          <svg aria-hidden="true" viewBox="0 0 88 88" class="h-14 w-14 shrink-0 text-[#00d8ff]" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M51.29,6.25l1.93,25.11c.21,2.7.13,4.31-.41,5.32-.63,1.16-.92.71-1.85-.22s-2.81-2.83-3.81-3.83-2.62-2.57-2.46-4.36,1.32-5.31,1.35-6.54l.25-11.63c.05-2.78,1.48-4.38,2.78-4.85,1.37-.5,2.13-.09,2.21.99Z"/>
+            <path d="M12.3,29.43l23.85-2.67c2.09-.24,3.84.02,5.08,1.3l11.73,12.18c1.74,2.19,1.24,3.99-1.05,4.99-.36.17-.32.59-.11.94,1,1.8.41,4.24-.91,5.29-.51-.99-1.28-1.99-2.46-3.02l-9.08-8c-1.47-1.28-3.52-1.47-5.39-.59l-7.51,3.56c-1.68.79-2.44,2.27-2.75,3.33l-.57,1.95c-.24.81-.49,1.21-1.08,1.61-1.25.85-2.33.94-2.93.78-.78-.22-.78-.61-.58-.95l4.88-8.9c.91-1.65,1.23-2.11,2.95-2.97l9.2-4.54c1.55-.76,2.62-.09,3.57.81l9.35,8.95c.87.85,1.6.21.76-.69l-8.85-9.52c-1.65-1.77-3.62-2.16-5.62-1.17l-2.44,1.2c-.99.49-1.63.73-2.67.7l-12.85-.31c-3.68-.08-5.67-1.4-6.05-2.42-.46-1.24.35-1.72,1.49-1.85h0Z"/>
+            <path d="M9.7,32.82c1.04,1.44,3.19,2.48,6.25,2.63.85.04.92.11,1.38.73,1.41,1.93,2.17,3.36,2.66,6.27.15.98.12,1.16-.34,2.02l-2.64,4.81c-.38.7-.4,1.54-.05,2.19s.99,1.11,1.75,1.32c.97.26,2.15.15,3.4-.44l-1.16,3.94c-.11.38.03.79.38,1.01.96.61,2.02.84,3.03.7,1.02-.15,1.94-.65,2.79-1.38,1.53-1.33,2.8-3.52,3.95-6.14.13-.3.23-.28.47-.23,1.33.25,2.59.04,3.82-.42.27,1.31.48,2.44,1.68,3.07.67.36.56.48.27.8-1.13,1.23-1.66,2.77-1.67,4.06-.01.54-.2.58-.58.82-2.29,1.49-3.69,3.25-4.55,5.04-.97,2.03-.94,3.95-.09,6.76.31,1.04,1.39.68,1.2-.23-.9-4.4.55-7.4,3.58-9.64.63-.47,1.07-.53,1.4-.36.84.43,1.23.94,2.64,1.15.93.14,1.12-.75.04-1.04-3.3-.89-2.33-5.28-.21-6.52.58-.34.54-.8-.05-1.09-1.46-.95-2.21-2.04-2.27-4.22,0-.43-.47-.64-.99-.26-1.57.86-2.91.88-4.88.36-.43-.12-.88.11-1.05.52-1.18,2.87-2.53,5.08-3.88,6.23-.73.62-1.36.96-2.07.97-.84,0-.91-.64-.78-1.06l2.34-7.94c.22-.78.69-1.7,1.8-2.22l7.52-3.56c1.37-.65,2.48-.51,3.43.31l9.09,7.99c1.55,1.35,2.18,2.44,2.46,3.5.27,1.06.17,2.18-.01,3.6l-1.45,11.07c-.13,1-.03,1.49.32,2.38l2.63,6.64c.38.95.41,2.22-1.09,2.81l-17.62,7.59c-1.29.51-2.17-.28-2.27-1.05s-.51-4.16-.47-4.7-.11-1.24.78-.92c3.61,1.27,6.72.31,9.71-2.25.91-.77.14-1.71-.77-.93-3.33,2.83-7.27,2.98-11.54-.03-4.26-3.01-5.84-6.2-7.41-12.29-2.63-10.14-7.12-19.84-12.15-30.28-.25-.53-.41-1.03-.34-1.47.2-1.27,1.07-1.4,1.64-.62h.02Z"/>
+            <path d="M45.77,7.28l-3.38-3.5c-.25-.26-.69-.18-.83.15l-.33.78c-8.97-2.48-16.42-1.93-22.15,1.66-7.86,4.92-10.18,14.38-11.05,20.18-.08.55.3,1.07.86,1.14.53.07,1.02-.29,1.11-.81.88-5.25,3.55-14.02,10.41-18.32,4.92-3.08,11.65-3.24,19.63-1.07l-.42,1c-.15.36.14.75.53.7l5.16-.63c.62-.08.89-.83.45-1.28Z"/>
+            <path d="M7.67,29.1h0c.46.42.47,1.13.02,1.56l-4.01,3.78c-.24.23-.61.23-.86,0h0c-.24-.22-.28-.59-.08-.86l3.38-4.36c.38-.49,1.09-.55,1.55-.14Z"/>
+            <path d="M6.28,27.19h0c-.32.53-1.02.68-1.53.32L.27,24.31c-.27-.19-.35-.56-.18-.84h0c.17-.28.53-.39.82-.24l4.93,2.46c.55.28.75.97.44,1.5Z"/>
+            <path d="M11.2,27.3h0c-.2-.58.13-1.22.73-1.38l5.33-1.41c.32-.08.65.09.76.4h0c.11.31-.04.65-.34.79l-5.05,2.22c-.57.25-1.22-.04-1.43-.62Z"/>
+          </svg>
+          </button>
+          <div class="min-w-0">
+            <h1 class="text-2xl font-bold leading-tight sm:text-3xl" data-i18n="app.title">Projectory</h1>
+            <p class="mt-1 max-w-2xl text-sm text-slate-300" data-i18n="app.tagline">A challenge-first ownership approach for setting up autonomous client-teams</p>
+          </div>
+        </div>
+        <button
+          id="header-menu-toggle"
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 md:hidden"
+          aria-expanded="false"
+          aria-controls="header-mobile-controls"
+        >
+          <span aria-hidden="true">☰</span>
+          <span data-i18n="header.menu">Menu</span>
+        </button>
+        <div id="header-desktop-controls" class="hidden items-center gap-2 md:flex">
+          <button id="onboarding-demo-start" class="inline-flex items-center gap-2 rounded-lg border border-indigo-500/50 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200 hover:bg-indigo-500/20"><span aria-hidden="true">🎓</span><span data-i18n="onboarding.demo.start">Start tour demo</span></button>
+          <label class="sr-only" for="locale-select" data-i18n="header.language">Language</label>
+          <select id="locale-select" class="rounded-lg border border-slate-700 bg-slate-950 px-2 py-2 pr-8 text-sm text-slate-200">
+            <option value="en" data-i18n="locale.en">English</option>
+            <option value="de" data-i18n="locale.de">Deutsch</option>
+            <option value="pseudo" data-i18n="locale.pseudo">Pseudo (accented)</option>
+          </select>
+          <button
+            id="admin-toggle"
+            class="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+            title="Open Administration"
+            data-i18n-title="header.openAdministration"
+          >
+            <span aria-hidden="true">⚙️</span>
+            <span data-i18n="header.admin">Admin</span>
+          </button>
+          <button id="auth-logout" class="hidden rounded-lg border border-rose-500/50 bg-rose-500/10 px-3 py-2 text-sm text-rose-200 hover:bg-rose-500/20" data-i18n="auth.logout">Log out</button>
+        </div>
+        </div>
+        <div id="header-mobile-controls" class="mt-4 hidden flex-col gap-2 border-t border-slate-800 pt-4 md:hidden">
+          <button id="onboarding-demo-start-mobile" class="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-500/50 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200 hover:bg-indigo-500/20"><span aria-hidden="true">🎓</span><span data-i18n="onboarding.demo.start">Start tour demo</span></button>
+          <label class="text-xs font-medium uppercase tracking-[0.16em] text-slate-400" for="locale-select-mobile" data-i18n="header.language">Language</label>
+          <select id="locale-select-mobile" class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200">
+            <option value="en" data-i18n="locale.en">English</option>
+            <option value="de" data-i18n="locale.de">Deutsch</option>
+            <option value="pseudo" data-i18n="locale.pseudo">Pseudo (accented)</option>
+          </select>
+          <button
+            id="admin-toggle-mobile"
+            class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+            title="Open Administration"
+            data-i18n-title="header.openAdministration"
+          >
+            <span aria-hidden="true">⚙️</span>
+            <span data-i18n="header.admin">Admin</span>
+          </button>
+          <button id="auth-logout-mobile" class="hidden rounded-lg border border-rose-500/50 bg-rose-500/10 px-3 py-2 text-sm text-rose-200 hover:bg-rose-500/20" data-i18n="auth.logout">Log out</button>
+        </div>
+      </header>
+
+      <section id="view" class="min-w-0"></section>
+
+      <section id="admin-panel" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 p-4">
+        <div class="h-[90vh] w-full max-w-6xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold" data-i18n="admin.mode">Administration Mode</h2>
+            <button id="admin-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          </div>
+          <nav class="mb-6 flex gap-2" id="admin-tabs"></nav>
+          <section id="admin-view"></section>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast-container" class="fixed right-4 top-4 z-[70] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2"></div>
+
+    <div id="export-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold" data-i18n="modal.export.title">Export data</h3>
+          <button id="export-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+        <div id="export-scope-list" class="space-y-2"></div>
+        <div class="mt-4 flex justify-end">
+          <button id="export-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="import-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold" data-i18n="modal.import.title">Import data</h3>
+          <button id="import-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+
+        <div id="import-scope-list" class="space-y-2"></div>
+        <input id="import-file" type="file" accept=".json,.csv,application/json,text/csv" class="hidden" />
+
+        <div id="import-preview" class="mt-3 hidden rounded border border-slate-700 bg-slate-950/60 p-3 text-sm">
+          <p class="mb-1 text-amber-300" data-i18n="modal.import.warningScoped">⚠️ Warning: importing will replace data inside the selected cluster.</p>
+          <p id="import-preview-scope" class="mb-2 text-slate-300"></p>
+          <ul id="import-preview-summary" class="list-disc pl-5 text-slate-200"></ul>
+        </div>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="import-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="import-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold" disabled data-i18n="modal.import.confirm">Confirm Import</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="project-status-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold" data-i18n="modal.projectStatus.title">Update project status</h3>
+          <button id="project-status-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+        <label class="mb-4 block text-sm"><span data-i18n="modal.projectStatus.status">Status</span>
+          <select id="project-status-select" class="mt-1 w-full rounded bg-slate-950 p-2">
+            <option value="green" data-i18n="projectStatus.green">Formed Team</option>
+            <option value="blue" data-i18n="projectStatus.blue">In Progress</option>
+            <option value="yellow" data-i18n="projectStatus.yellow">Needs Attention</option>
+            <option value="red" data-i18n="projectStatus.red">Needs Problem-Solving</option>
+            <option value="white" data-i18n="projectStatus.white">New</option>
+          </select>
+        </label>
+        <div class="flex justify-end gap-2">
+          <button id="project-status-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="project-status-confirm" class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="common.saveStatus">Save Status</button>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div id="project-priority-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold" data-i18n="clients.priorityModal.title">Update client priority</h3>
+          <button id="project-priority-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+        <label class="mb-4 block text-sm"><span data-i18n="clients.columns.priority">Priority</span>
+          <select id="project-priority-select" class="mt-1 w-full rounded bg-slate-950 p-2"></select>
+        </label>
+        <div class="flex justify-end gap-2">
+          <button id="project-priority-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="project-priority-confirm" class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="clients.priorityModal.save">Save Priority</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="assign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="assign-modal-title" class="text-lg font-semibold" data-i18n="assign.title">Assign People</h3>
+          <button id="assign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+
+        <label class="mb-3 block text-sm">
+          <span data-i18n="assign.searchLabel">Search people</span>
+          <input id="assign-search" class="mt-1 w-full rounded bg-slate-950 p-2" placeholder="Type a name..." data-i18n-placeholder="assign.searchPlaceholder" />
+        </label>
+
+        <label class="mb-3 block text-sm">
+          <span data-i18n="assign.role">Role</span>
+          <select id="assign-role" class="mt-1 w-full rounded bg-slate-950 p-2">
+            <option value="contributor" data-i18n="assign.roleContributor">Contributor</option>
+            <option value="owner" data-i18n="assign.roleOwner">Owner</option>
+            <option value="leader" data-i18n="assign.roleLeader">Leader</option>
+          </select>
+        </label>
+
+        <div id="assign-people-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2"></div>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="assign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="assign-confirm" class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="assign.confirm">Assign</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="unassign-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="unassign-modal-title" class="text-lg font-semibold" data-i18n="unassign.title">Unassign People</h3>
+          <button id="unassign-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+        <div id="unassign-list" class="max-h-72 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2 text-sm"></div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="unassign-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button id="unassign-confirm" class="rounded bg-rose-600 px-3 py-2 text-sm font-semibold" data-i18n="unassign.confirm">Unassign selected</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="challenge-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="challenge-modal-title" class="text-lg font-semibold" data-i18n="challenge.add">Add Challenge</h3>
+          <button id="challenge-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+        <form id="challenge-modal-form">
+          <input type="hidden" name="id" />
+          <label class="mb-2 block text-sm"><span data-i18n="challenge.title">Title</span><input required name="title" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="challenge.description">Description</span><textarea required name="description" class="mt-1 w-full rounded bg-slate-950 p-2"></textarea></label>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" id="challenge-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+            <button class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="challenge.save">Save Challenge</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+
+    <div id="people-overview-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 id="people-overview-modal-title" class="text-lg font-semibold" data-i18n="peopleOverview.modal.title">Person assignments</h3>
+          <button id="people-overview-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+        <div id="people-overview-modal-body" class="max-h-[70vh] overflow-y-auto text-sm"></div>
+      </div>
+    </div>
+
+    <div id="workload-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-semibold" data-i18n="peopleOverview.workloadModal.title">Adjust workload</h3>
+          <button id="workload-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+        </div>
+        <label class="mb-3 block text-sm">
+          <span data-i18n="peopleOverview.workloadModal.valueLabel">Workload (%)</span>
+          <input id="workload-modal-value" type="number" min="0" max="100" step="1" class="mt-1 w-full rounded bg-slate-950 p-2" />
+        </label>
+        <p class="mb-4 text-xs text-slate-400" data-i18n="peopleOverview.workloadModal.help">Enter an integer between 0 and 100.</p>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="workload-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button>
+          <button type="button" id="workload-modal-confirm" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="peopleOverview.workloadModal.confirm">Save workload</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="admin-person-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/80 p-0 sm:items-center sm:p-4">
+      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-person-modal-title" class="text-lg font-semibold" data-i18n="people.add">Add Person</h3><button id="admin-person-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+        <form id="admin-person-form" class="space-y-3"><input type="hidden" name="id" />
+          <label class="mb-2 block text-sm"><span data-i18n="people.firstName">First Name</span><input required name="firstName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.lastName">Last Name</span><input required name="lastName" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.trade">Trade</span><select required name="tradeId" id="admin-person-trade" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.level">Level</span><select required name="levelId" id="admin-person-level" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 block text-sm"><span data-i18n="people.workingHours">Working Hours</span><input required name="workingHours" type="number" min="1" step="1" class="mt-1 w-full rounded bg-slate-950 p-2" value="40" /></label>
+          <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isHidden" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Hidden in non-admin views (if unassigned)</label>
+          <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="isLeaver" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-950" /> Mark as future leaver</label>
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-person-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="people.save">Save Person</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="admin-client-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/80 p-0 sm:items-center sm:p-4">
+      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-client-modal-title" class="text-lg font-semibold" data-i18n="clients.add">Add Client</h3><button id="admin-client-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+        <form id="admin-client-form" class="space-y-3"><input type="hidden" name="id" />
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.location">Location</span><input required name="location" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.since">Since</span> (yyyy-mm)<input required name="sinceMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.priority">Priority</span><select required name="priorityId" id="admin-client-priority" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-client-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="clients.save">Save Client</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="admin-project-modal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-950/80 p-0 sm:items-center sm:p-4">
+      <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-900 p-4 sm:max-w-md sm:rounded-xl sm:p-5">
+        <div class="mb-4 flex items-center justify-between gap-3"><h3 id="admin-project-modal-title" class="text-lg font-semibold" data-i18n="projects.add">Add Project</h3><button id="admin-project-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+        <form id="admin-project-form" class="space-y-3"><input type="hidden" name="id" />
+          <label class="mb-2 block text-sm"><span data-i18n="projects.form.client">Client</span><select required name="clientId" id="admin-project-client" class="mt-1 w-full rounded bg-slate-950 p-2"></select></label>
+          <label class="mb-2 block text-sm"><span data-i18n="clients.columns.name">Name</span><input required name="name" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">Status
+            <select required name="status" id="admin-project-status" class="mt-1 w-full rounded bg-slate-950 p-2"></select>
+          </label>
+          <label class="mb-2 block text-sm">Start (yyyy-mm)<input required name="startMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm">End (yyyy-mm)<input name="endMonth" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="projects.form.budget">Budget in EUR</span><input required name="budgetEuros" type="number" min="0" step="0.01" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" id="admin-project-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-slate-950" data-i18n="projects.save">Save Project</button></div>
+        </form>
+      </div>
+    </div>
+
+
+    <div id="admin-user-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4">
+      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <div class="mb-4 flex items-center justify-between"><h3 class="text-lg font-semibold" data-i18n="admin.access.editUserTitle">Edit User</h3><button id="admin-user-modal-close" class="rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button></div>
+        <form id="admin-user-edit-form"><input id="admin-user-edit-id" type="hidden" />
+          <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.displayName">Display Name</span><input id="admin-user-edit-name" required class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.email">Email</span><input id="admin-user-edit-email" required type="email" class="mt-1 w-full rounded bg-slate-950 p-2" /></label>
+          <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.roleShort">Role</span>
+            <select id="admin-user-edit-role" required class="mt-1 w-full rounded bg-slate-950 p-2">
+              <option value="viewer" data-i18n="admin.access.roles.viewer">Viewer</option>
+              <option value="planner" data-i18n="admin.access.roles.planner">Planner</option>
+              <option value="teammate" data-i18n="admin.access.roles.teammate">Teammate</option>
+              <option value="admin" data-i18n="admin.access.roles.admin">Admin</option>
+            </select>
+          </label>
+          <label class="mb-2 block text-sm"><span data-i18n="admin.access.fields.person">Linked Person</span>
+            <select id="admin-user-edit-person" class="mt-1 w-full rounded bg-slate-950 p-2"></select>
+          </label>
+          <div class="mt-4 flex justify-end gap-2"><button type="button" id="admin-user-modal-cancel" class="rounded border border-slate-600 px-3 py-2 text-sm hover:bg-slate-800" data-i18n="common.cancel">Cancel</button><button class="rounded bg-[#00d8ff] text-slate-950 px-3 py-2 text-sm font-semibold" data-i18n="common.save">Save</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="onboarding-overlay" class="fixed inset-0 z-[80] hidden bg-slate-950/60"></div>
+    <div id="onboarding-popover" class="fixed z-[82] hidden w-[26rem] max-w-[calc(100vw-2rem)] rounded-xl border border-indigo-400/50 bg-slate-900 p-4 shadow-2xl">
+      <div class="mb-2 text-xs uppercase tracking-wide text-indigo-300" id="onboarding-step-indicator">Step 1 / 3</div>
+      <h3 id="onboarding-title" class="text-base font-semibold text-slate-100" data-i18n="onboarding.demo.step1.title">Welcome</h3>
+      <p id="onboarding-description" class="mt-2 text-sm text-slate-300"></p>
+      <div class="mt-4 flex items-center justify-between gap-2">
+        <button id="onboarding-prev" class="rounded border border-slate-600 px-3 py-1.5 text-xs hover:bg-slate-800" data-i18n="onboarding.demo.previous">Previous</button>
+        <div class="flex gap-2">
+          <button id="onboarding-close" class="rounded border border-slate-600 px-3 py-1.5 text-xs hover:bg-slate-800" data-i18n="common.close">Close</button>
+          <button id="onboarding-next" class="rounded bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-indigo-50 hover:bg-indigo-500" data-i18n="onboarding.demo.next">Next</button>
+        </div>
+      </div>
+    </div>
+
+        <script defer src="/js/app-main.js"></script>
+
+  </body>
+</html>
