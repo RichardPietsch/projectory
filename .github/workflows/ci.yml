@@ -67,6 +67,8 @@ jobs:
 
       - name: Filesystem vulnerability scan (Trivy, fail on critical)
         uses: aquasecurity/trivy-action@0.24.0
+        env:
+          TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
         with:
           scan-type: fs
           scan-ref: .
@@ -91,6 +93,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ci-artifacts
+          rm -rf .cache/trivy
 
           # Generate machine-readable reports first so we can print actionable diagnostics
           # before enforcing the fail-on-findings gate.

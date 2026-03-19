@@ -31,6 +31,16 @@
         returnToPeopleOverview: false,
         returnPersonId: null
       },
+      inlineChallengeEdit: {
+        challengeId: null,
+        field: '',
+        value: '',
+        submitting: false
+      },
+      challengeDeleteModal: {
+        open: false,
+        challengeId: null
+      },
       projectStatusModal: {
         open: false,
         projectId: null,
@@ -55,6 +65,7 @@
         unassignModal: false,
         challengeModal: false,
         challengeModalForm: false,
+        challengeDeleteModal: false,
         exportModal: false,
         importModal: false,
         peopleOverviewModal: false,

@@ -486,32 +486,54 @@
             .join(', ');
         }
 
-        function createChallengeActionItems(challenge, assignments) {
-          if (viewerMode) return [];
-          const actionItems = [
-            `<button class="w-full rounded border border-slate-600 px-2 py-1 text-left text-xs hover:bg-slate-800" onclick='openChallengeModal(${JSON.stringify(challenge)})'>${i18n.t('common.edit')}</button>`,
-            `<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteChallenge(${challenge.id})'>${i18n.t('common.delete')}</button>`
-          ];
-
-          if (assignments.length >= 1) {
-            actionItems.push(`<button class="w-full rounded border border-[#00d8ff]/50 px-2 py-1 text-left text-xs text-[#00d8ff] hover:bg-slate-800" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('projectDetail.actions.addAssignee')}</button>`);
-          }
-
-          if (assignments.length === 1) {
-            actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='deleteAssignment(${assignments[0].id})'>${i18n.t('projectDetail.actions.unassignNamed', { name: assignments[0].first_name })}</button>`);
-          } else if (assignments.length > 1) {
-            actionItems.push(`<button class="w-full rounded border border-rose-500/50 px-2 py-1 text-left text-xs text-rose-300 hover:bg-slate-800" onclick='openUnassignModal(${challenge.id})'>${i18n.t('projectDetail.actions.unassign')}</button>`);
-          }
-          return actionItems;
+        function renderChallengeDeleteButton(challengeId) {
+          if (viewerMode) return '';
+          return `<button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-500/70 text-slate-700 transition hover:border-rose-500/70 hover:text-rose-600" onclick="openChallengeDeleteModal(${challengeId})" aria-label="${i18n.t('common.delete')}">
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 4.75h6l.55 1.5H19a.75.75 0 1 1 0 1.5h-.52l-.68 10.24A2 2 0 0 1 15.81 20H8.19a2 2 0 0 1-1.99-2.01L5.52 7.75H5a.75.75 0 1 1 0-1.5h3.45L9 4.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M10 10v5.5M14 10v5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>`;
         }
 
-        function renderChallengeActionsMenu(challenge, assignments, menuClass = 'absolute right-0 z-30 mt-1 w-52') {
+        function renderInlineChallengeField(challenge, field) {
+          const isEditing = String(state.inlineChallengeEdit.challengeId || '') === String(challenge.id) && state.inlineChallengeEdit.field === field;
+          const value = isEditing ? state.inlineChallengeEdit.value : String(challenge[field] || '');
+          const frameClass = field === 'title'
+            ? 'rounded-xl border border-slate-500/45 px-3 py-2 text-left transition hover:border-slate-600/60'
+            : 'rounded-xl border border-slate-500/35 px-3 py-2.5 text-left transition hover:border-slate-600/50';
+
+          if (!isEditing) {
+            return `<button type="button" class="block w-full ${frameClass}" onclick="startInlineChallengeEdit(${challenge.id}, '${field}')">
+              ${field === 'title'
+                ? `<span class="block text-lg font-semibold leading-7 text-slate-950 break-words">${value}</span>`
+                : `<span class="block text-sm leading-7 text-slate-800 break-words">${value}</span>`}
+            </button>`;
+          }
+
+          return `<div class="${frameClass}">
+            ${field === 'title'
+              ? `<input type="text" class="w-full rounded-lg border border-slate-500 bg-white px-3 py-2 text-lg font-semibold text-slate-950 outline-none" value="${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus />`
+              : `<textarea class="min-h-[7rem] w-full rounded-lg border border-slate-500 bg-white px-3 py-2 text-sm leading-7 text-slate-900 outline-none" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus>${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}</textarea>`}
+            <div class="mt-2 flex justify-end gap-2">
+              <button type="button" class="rounded-lg border border-slate-500 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200/70" onclick="cancelInlineChallengeEdit()">${i18n.t('common.cancel')}</button>
+              <button type="button" class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800" onclick="saveInlineChallengeEdit(${challenge.id}, '${field}')" ${state.inlineChallengeEdit.submitting ? 'disabled' : ''}>${i18n.t('common.save')}</button>
+            </div>
+          </div>`;
+        }
+
+        function renderChallengeCardActions(challenge, assignments) {
           if (viewerMode) return '';
-          const actionItems = createChallengeActionItems(challenge, assignments);
-          return `<details class="relative inline-block">
-            <summary class="list-none cursor-pointer rounded-xl border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-50 shadow-sm transition hover:bg-slate-800"><span class="inline-flex items-center gap-1"><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M13 3h-2a2 2 0 0 0-2 2v1H8a2 2 0 0 0 0 4h1v1H8a2 2 0 0 0 0 4h1v1a2 2 0 0 0 2 2h2v-1a2 2 0 1 1 4 0v1h2a2 2 0 0 0 2-2v-2h-1a2 2 0 1 1 0-4h1V8a2 2 0 0 0-2-2h-2V5a2 2 0 0 0-2-2Z"/></svg><span>${i18n.t('projectDetail.actionsMenu')}</span></span></summary>
-            <div class="${menuClass} space-y-1 rounded border border-slate-700 bg-slate-900 p-2 shadow-xl">${actionItems.join('')}</div>
-          </details>`;
+          const buttons = [];
+          buttons.push(`<button type="button" class="rounded-xl border border-[#0284c7]/40 bg-[#e0f2fe] px-3 py-2 text-xs font-medium text-sky-800 hover:bg-[#d3ecfd]" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${assignments.length ? i18n.t('projectDetail.actions.addAssignee') : i18n.t('assign.assign')}</button>`);
+
+          if (assignments.length === 1) {
+            buttons.push(`<button type="button" class="rounded-xl border border-rose-400/60 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100" onclick='deleteAssignment(${assignments[0].id})'>${i18n.t('projectDetail.actions.unassignNamed', { name: assignments[0].first_name })}</button>`);
+          } else if (assignments.length > 1) {
+            buttons.push(`<button type="button" class="rounded-xl border border-rose-400/60 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100" onclick='openUnassignModal(${challenge.id})'>${i18n.t('projectDetail.actions.unassign')}</button>`);
+          }
+
+          return buttons.join('');
         }
         function challengeSortOptionLabel(sortValue) {
           const labels = {
@@ -529,18 +551,22 @@
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
             const assignees = renderChallengeAssignees(challenge, assignments);
-            const actionsMenu = renderChallengeActionsMenu(challenge, assignments, 'absolute right-0 z-30 mt-2 w-56');
+            const deleteButton = renderChallengeDeleteButton(challenge.id);
+            const cardActions = renderChallengeCardActions(challenge, assignments);
 
-            return `<article class="group rounded-2xl border border-slate-400 bg-slate-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] transition-colors hover:border-slate-500">
+            return `<article class="group rounded-2xl border border-slate-400 bg-slate-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition-colors hover:border-slate-500">
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0 flex-1">
-                  <h4 class="text-lg font-semibold leading-7 text-slate-900 break-words">${challenge.title}</h4>
+                  ${renderInlineChallengeField(challenge, 'title')}
                 </div>
-                ${viewerMode ? '' : `<div class="shrink-0 text-right">${actionsMenu}</div>`}
+                ${viewerMode ? '' : `<div class="shrink-0 text-right">${deleteButton}</div>`}
               </div>
-              <p class="mt-4 text-sm leading-7 text-slate-800 break-words">${challenge.description}</p>
-              <div class="mt-5 border-t border-slate-400 pt-4">
-                <p class="text-sm leading-6 text-slate-800">${assignees}</p>
+              <div class="mt-4">
+                ${renderInlineChallengeField(challenge, 'description')}
+              </div>
+              <div class="mt-5 flex items-start justify-between gap-4 border-t border-slate-500/70 pt-4">
+                <p class="min-w-0 flex-1 text-sm leading-6 text-slate-800">${assignees}</p>
+                ${viewerMode ? '' : `<div class="flex shrink-0 flex-wrap justify-end gap-2">${cardActions}</div>`}
               </div>
             </article>`;
           })
@@ -549,17 +575,23 @@
         const mobileChallengeCards = sortedChallenges
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
-            const actionsMenu = renderChallengeActionsMenu(challenge, assignments, 'absolute right-0 z-30 mt-2 w-56');
-            return `<article class="rounded-2xl border border-slate-400 bg-slate-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+            const deleteButton = renderChallengeDeleteButton(challenge.id);
+            const cardActions = renderChallengeCardActions(challenge, assignments);
+            return `<article class="rounded-2xl border border-slate-400 bg-slate-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                  <h4 class="text-lg font-semibold leading-7 text-slate-900 break-words">${challenge.title}</h4>
+                  ${renderInlineChallengeField(challenge, 'title')}
                 </div>
-                ${viewerMode ? '' : `<div class="shrink-0">${actionsMenu}</div>`}
+                ${viewerMode ? '' : `<div class="shrink-0">${deleteButton}</div>`}
               </div>
-              <p class="mt-4 text-sm leading-7 text-slate-800 break-words">${getChallengeDescriptionPreview(challenge.description)}</p>
-              <div class="mt-5 border-t border-slate-400 pt-4">
-                <p class="text-sm leading-6 text-slate-800 break-words">${renderChallengeAssignees(challenge, assignments)}</p>
+              <div class="mt-4">
+                ${renderInlineChallengeField(challenge, 'description')}
+              </div>
+              <div class="mt-5 border-t border-slate-500/70 pt-4">
+                <div class="flex items-start justify-between gap-4">
+                  <p class="min-w-0 flex-1 text-sm leading-6 text-slate-800 break-words">${renderChallengeAssignees(challenge, assignments)}</p>
+                  ${viewerMode ? '' : `<div class="flex shrink-0 flex-col gap-2">${cardActions}</div>`}
+                </div>
               </div>
             </article>`;
           })
@@ -605,7 +637,7 @@
                       aria-label="${i18n.t('projectDetail.challengeSort.label')}"
                     >${['title_asc','title_desc','description_asc','description_desc','assignees_asc','assignees_desc'].map((sortValue) => `<option value="${sortValue}" ${state.challengesSort === sortValue ? 'selected' : ''}>${challengeSortOptionLabel(sortValue)}</option>`).join('')}</select>
                   </div>
-                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#67e8f9] px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-[#8aeffd]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
+                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#67e8f9] px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-[#8aeffd]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
                 </div>
               </div>
             </div>
@@ -1510,6 +1542,32 @@ function filteredPeople() {
         clearPrefilledFieldOnFocus(challengeForm?.description);
       }
 
+      function renderChallengeDeleteModal() {
+        const modal = document.getElementById('challenge-delete-modal');
+        if (!modal) return;
+        modal.classList.toggle('hidden', !state.challengeDeleteModal.open);
+        modal.classList.toggle('flex', state.challengeDeleteModal.open);
+      }
+
+      function closeChallengeDeleteModal() {
+        state.challengeDeleteModal.open = false;
+        state.challengeDeleteModal.challengeId = null;
+        renderChallengeDeleteModal();
+      }
+
+      function bindChallengeDeleteModalActions() {
+        if (state.listenersBound.challengeDeleteModal) return;
+        state.listenersBound.challengeDeleteModal = true;
+        document.getElementById('challenge-delete-modal-close')?.addEventListener('click', closeChallengeDeleteModal);
+        document.getElementById('challenge-delete-cancel')?.addEventListener('click', closeChallengeDeleteModal);
+        document.getElementById('challenge-delete-confirm')?.addEventListener('click', async () => {
+          if (!state.challengeDeleteModal.challengeId) return;
+          const challengeId = state.challengeDeleteModal.challengeId;
+          closeChallengeDeleteModal();
+          await window.deleteChallenge(challengeId);
+        });
+      }
+
       function renderUnassignModal() {
         const modal = document.getElementById('unassign-modal');
         modal.classList.toggle('hidden', !state.unassignModal.open);
@@ -2177,6 +2235,86 @@ function filteredPeople() {
 
       window.editChallenge = function editChallenge(challenge) {
         window.openChallengeModal(challenge);
+      };
+
+      window.startInlineChallengeEdit = function startInlineChallengeEdit(challengeId, field) {
+        if (isViewerMode()) return;
+        const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(challengeId));
+        if (!challenge) return;
+        state.inlineChallengeEdit.challengeId = String(challengeId);
+        state.inlineChallengeEdit.field = field;
+        state.inlineChallengeEdit.value = String(challenge[field] || '');
+        state.inlineChallengeEdit.submitting = false;
+        render();
+      };
+
+      window.updateInlineChallengeEditValue = function updateInlineChallengeEditValue(value) {
+        state.inlineChallengeEdit.value = value;
+      };
+
+      window.cancelInlineChallengeEdit = function cancelInlineChallengeEdit() {
+        state.inlineChallengeEdit.challengeId = null;
+        state.inlineChallengeEdit.field = '';
+        state.inlineChallengeEdit.value = '';
+        state.inlineChallengeEdit.submitting = false;
+        render();
+      };
+
+      window.handleInlineChallengeEditKeydown = function handleInlineChallengeEditKeydown(event, challengeId, field) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          window.cancelInlineChallengeEdit();
+          return;
+        }
+        if (field === 'title' && event.key === 'Enter') {
+          event.preventDefault();
+          window.saveInlineChallengeEdit(challengeId, field);
+          return;
+        }
+        if (field === 'description' && event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          window.saveInlineChallengeEdit(challengeId, field);
+        }
+      };
+
+      window.saveInlineChallengeEdit = async function saveInlineChallengeEdit(challengeId, field) {
+        if (state.inlineChallengeEdit.submitting) return;
+        const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(challengeId));
+        if (!challenge) {
+          showMessage(i18n.t('challenge.notFound'), 'error');
+          return;
+        }
+        const nextValue = String(state.inlineChallengeEdit.value || '').trim();
+        if (!nextValue) {
+          showMessage('Please provide a value.', 'warning');
+          return;
+        }
+        const payload = {
+          title: field === 'title' ? nextValue : challenge.title,
+          description: field === 'description' ? nextValue : challenge.description
+        };
+        state.inlineChallengeEdit.submitting = true;
+        render();
+        try {
+          await handleMutation(() => api(`/api/challenges/${challengeId}`, { method: 'PUT', body: JSON.stringify(payload) }), 'Challenge saved.');
+          state.inlineChallengeEdit.challengeId = null;
+          state.inlineChallengeEdit.field = '';
+          state.inlineChallengeEdit.value = '';
+          state.inlineChallengeEdit.submitting = false;
+          render();
+        } finally {
+          if (state.inlineChallengeEdit.challengeId) {
+            state.inlineChallengeEdit.submitting = false;
+            render();
+          }
+        }
+      };
+
+      window.openChallengeDeleteModal = function openChallengeDeleteModal(challengeId) {
+        if (isViewerMode()) return;
+        state.challengeDeleteModal.open = true;
+        state.challengeDeleteModal.challengeId = String(challengeId);
+        renderChallengeDeleteModal();
       };
 
       window.deleteChallenge = async function deleteChallenge(id) {

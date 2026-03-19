@@ -270,6 +270,8 @@
     'challenge.edit': 'Edit Challenge',
     'challenge.notFound': 'Challenge not found.',
     'challenge.deleted': 'Challenge deleted.',
+    'challenge.deleteConfirmTitle': 'Delete challenge?',
+    'challenge.deleteConfirmBody': 'This action permanently removes the challenge. You can’t undo it from this dialog.',
     'challenge.restored': 'Challenge restored.',
     'challenge.save': 'Save Challenge',
     'challenge.title': 'Title',
