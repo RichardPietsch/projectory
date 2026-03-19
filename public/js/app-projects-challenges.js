@@ -500,8 +500,8 @@
           const isEditing = String(state.inlineChallengeEdit.challengeId || '') === String(challenge.id) && state.inlineChallengeEdit.field === field;
           const value = isEditing ? state.inlineChallengeEdit.value : String(challenge[field] || '');
           const frameClass = field === 'title'
-            ? 'rounded-xl border border-slate-500/45 px-3 py-2 text-left transition hover:border-slate-600/60'
-            : 'rounded-xl border border-slate-500/35 px-3 py-2.5 text-left transition hover:border-slate-600/50';
+            ? 'rounded-xl bg-slate-300/50 px-3 py-2 text-left transition hover:bg-slate-300'
+            : 'rounded-xl bg-slate-300/50 px-3 py-2.5 text-left transition hover:bg-slate-300';
 
           if (!isEditing) {
             return `<button type="button" class="block w-full ${frameClass}" onclick="startInlineChallengeEdit(${challenge.id}, '${field}')">
@@ -513,10 +513,10 @@
 
           return `<div class="${frameClass}">
             ${field === 'title'
-              ? `<input type="text" class="w-full rounded-lg border border-slate-500 bg-white px-3 py-2 text-lg font-semibold text-slate-950 outline-none" value="${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus />`
-              : `<textarea class="min-h-[7rem] w-full rounded-lg border border-slate-500 bg-white px-3 py-2 text-sm leading-7 text-slate-900 outline-none" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus>${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}</textarea>`}
+              ? `<input type="text" class="w-full bg-transparent p-0 text-lg font-semibold text-slate-950 outline-none" value="${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus />`
+              : `<textarea class="min-h-[7rem] w-full resize-none bg-transparent p-0 text-sm leading-7 text-slate-900 outline-none" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus>${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}</textarea>`}
             <div class="mt-2 flex justify-end gap-2">
-              <button type="button" class="rounded-lg border border-slate-500 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200/70" onclick="cancelInlineChallengeEdit()">${i18n.t('common.cancel')}</button>
+              <button type="button" class="rounded-lg border border-slate-500/70 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-300/70" onclick="cancelInlineChallengeEdit()">${i18n.t('common.cancel')}</button>
               <button type="button" class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800" onclick="saveInlineChallengeEdit(${challenge.id}, '${field}')" ${state.inlineChallengeEdit.submitting ? 'disabled' : ''}>${i18n.t('common.save')}</button>
             </div>
           </div>`;
@@ -620,16 +620,15 @@
           </div>
 
           <div id="onboarding-challenge-overview" class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.24)] lg:p-6">
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
-              <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
-                  <div class="h-1.5 w-16 rounded-full bg-[#67e8f9]/80"></div>
-                  <h3 class="mt-4 text-2xl font-semibold tracking-tight text-slate-50">${i18n.t('projectDetail.challengeOverview.title')}</h3>
+                  <h3 class="text-2xl font-semibold tracking-tight text-slate-50">${i18n.t('projectDetail.challengeOverview.title')}</h3>
                   <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
                 </div>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div class="min-w-[14rem]">
-                    <label for="challenge-sort-select" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">${i18n.t('projectDetail.challengeSort.label')}</label>
+                <div class="flex flex-col items-stretch gap-3 lg:min-w-[14rem] lg:items-end">
+                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#00d8ff] px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-[#33e1ff]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
+                  <div class="w-full lg:w-[14rem]">
+                    <label for="challenge-sort-select" class="mb-1 block text-xs text-slate-400 capitalize">${i18n.t('projectDetail.challengeSort.label')}</label>
                     <select
                       id="challenge-sort-select"
                       onchange="setChallengesSort(this.value)"
@@ -637,10 +636,8 @@
                       aria-label="${i18n.t('projectDetail.challengeSort.label')}"
                     >${['title_asc','title_desc','description_asc','description_desc','assignees_asc','assignees_desc'].map((sortValue) => `<option value="${sortValue}" ${state.challengesSort === sortValue ? 'selected' : ''}>${challengeSortOptionLabel(sortValue)}</option>`).join('')}</select>
                   </div>
-                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#67e8f9] px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-[#8aeffd]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
                 </div>
               </div>
-            </div>
             <div class="mt-5 space-y-4 lg:hidden">${mobileChallengeCards}</div>
             <div class="mt-5 hidden lg:block">
               <div class="space-y-4">${challengeRows}</div>
