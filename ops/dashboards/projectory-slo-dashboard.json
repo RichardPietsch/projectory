@@ -1,0 +1,45 @@
+{
+  "title": "Projectory SLO Overview",
+  "uid": "projectory-slo-overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "title": "Availability (up)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "avg_over_time(up{job=\"projectory\"}[5m])", "legendFormat": "availability" }
+      ]
+    },
+    {
+      "title": "5xx Error Rate",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum(rate(projectory_http_request_errors_total[5m])) / clamp_min(sum(rate(projectory_http_requests_total[5m])), 0.001)", "legendFormat": "error_rate" }
+      ]
+    },
+    {
+      "title": "HTTP p95 latency (ms)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(projectory_http_request_duration_ms_bucket[5m])))", "legendFormat": "p95_http_ms" }
+      ]
+    },
+    {
+      "title": "DB query errors (5m increase)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "increase(projectory_db_query_errors_total[5m])", "legendFormat": "db_errors_5m" }
+      ]
+    },
+    {
+      "title": "DB p95 latency (ms)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(projectory_db_query_duration_ms_bucket[5m])))", "legendFormat": "p95_db_ms" }
+      ]
+    }
+  ]
+}
