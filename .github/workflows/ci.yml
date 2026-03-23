@@ -1,0 +1,475 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+      - work
+  pull_request:
+
+jobs:
+  quality-and-security:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dependency lockfile/package sync guard
+        run: npm run ci:deps:lockfile
+
+      - name: Fresh-workspace npm ci repeatability guard
+        run: npm run ci:deps:repeatability
+
+      - name: Install dependencies
+        run: npm ci --no-fund
+
+      - name: Prepare CI artifact directory
+        run: mkdir -p ci-artifacts
+
+      - name: Lint checks
+        run: |
+          npm run lint:ci | tee ci-artifacts/lint.txt
+
+      - name: Formatting checks
+        run: |
+          npm run format:check | tee ci-artifacts/format.txt
+
+      - name: Locale key parity checks
+        run: |
+          npm run locale:check | tee ci-artifacts/locale-check.txt
+
+      - name: Dependency vulnerability scan (fail on high/critical)
+        run: |
+          set -euo pipefail
+          if npm audit --omit=dev --audit-level=high --json > ci-artifacts/npm-audit.json; then
+            echo "No high/critical runtime vulnerabilities found." | tee ci-artifacts/dependency-scan.txt
+          else
+            echo "Dependency scan failed: high/critical runtime vulnerabilities detected." | tee ci-artifacts/dependency-scan.txt
+            echo "Fix instructions:" | tee -a ci-artifacts/dependency-scan.txt
+            echo "- Run: npm audit fix" | tee -a ci-artifacts/dependency-scan.txt
+            echo "- If needed, update dependency versions in package.json manually and re-test." | tee -a ci-artifacts/dependency-scan.txt
+            exit 1
+          fi
+
+
+      - name: Filesystem vulnerability scan (Trivy, fail on critical)
+        uses: aquasecurity/trivy-action@v0.33.1
+        env:
+          TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL
+          ignore-unfixed: true
+          format: sarif
+          output: ci-artifacts/trivy-fs.sarif
+          exit-code: '1'
+          vuln-type: os,library
+          trivyignores: .trivyignore
+          version: v0.69.3
+
+      - name: Install gitleaks CLI
+        run: |
+          set -euo pipefail
+          GITLEAKS_VERSION="8.24.3"
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Secret scan (gitleaks CLI, fail on findings)
+        run: |
+          set -euo pipefail
+          mkdir -p ci-artifacts
+          rm -rf .cache/trivy
+
+          # Generate machine-readable reports first so we can print actionable diagnostics
+          # before enforcing the fail-on-findings gate.
+          gitleaks detect \
+            --source . \
+            --no-git \
+            --redact \
+            --report-format json \
+            --report-path ci-artifacts/gitleaks.json \
+            --exit-code 0
+
+          # Emit a concise finding summary into logs to make triage easier.
+          if [ -s ci-artifacts/gitleaks.json ] && [ "$(jq 'length' ci-artifacts/gitleaks.json)" -gt 0 ]; then
+            echo "Gitleaks findings (rule, file, line):"
+            jq -r '.[] | "- \(.RuleID) | \(.File):\(.StartLine)"' ci-artifacts/gitleaks.json
+          else
+            echo "No gitleaks findings."
+          fi
+
+          # Generate SARIF for GitHub code scanning integrations.
+          gitleaks detect \
+            --source . \
+            --no-git \
+            --redact \
+            --report-format sarif \
+            --report-path ci-artifacts/gitleaks.sarif \
+            --exit-code 0
+
+          # Enforce the security gate after reports/logs are published.
+          findings_count="$(jq 'length' ci-artifacts/gitleaks.json)"
+          if [ "$findings_count" -gt 0 ]; then
+            echo "Failing build: gitleaks found $findings_count potential secret(s)."
+            exit 1
+          fi
+
+
+      - name: Build quality/security summary
+        if: always()
+        run: |
+          mkdir -p ci-artifacts
+          {
+            echo "# Quality & Security Summary"
+            echo ""
+            echo "- Lint: see lint.txt"
+            echo "- Formatting: see format.txt"
+            echo "- Locale keys: see locale-check.txt"
+            echo "- Dependency lockfile check: see step logs (Dependency lockfile/package sync guard)"
+            echo "- npm ci repeatability: see step logs (Fresh-workspace npm ci repeatability guard)"
+            echo "- Dependency scan: see dependency-scan.txt and npm-audit.json"
+            echo "- Filesystem vuln scan: see trivy-fs.sarif"
+            echo "- Secret scan: see gitleaks.json, gitleaks.sarif, and gitleaks step logs"
+            echo ""
+            echo "## Fast remediation"
+            echo "- Lint: npm run lint:ci"
+            echo "- Format: npm run format:check"
+            echo "- Locale keys: npm run locale:check"
+            echo "- Vulnerabilities: npm audit fix"
+          } > ci-artifacts/quality-security-summary.md
+          cat ci-artifacts/quality-security-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload quality/security artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-security-artifacts
+          path: ci-artifacts/
+          if-no-files-found: warn
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+
+
+  container-image-security:
+    runs-on: ubuntu-latest
+    needs:
+      - quality-and-security
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build app image (deterministic, lockfile-based)
+        run: docker build --pull --tag projectory:ci .
+
+      - name: Prepare image-scan artifact directory
+        run: mkdir -p ci-artifacts
+
+      - name: Setup Trivy CLI
+        uses: aquasecurity/setup-trivy@e07451d2e059ed86c2870430ea286b3a9e0bf241
+        with:
+          version: v0.68.2
+
+      - name: Container image vulnerability report (Trivy CLI)
+        run: |
+          trivy image             --format table             --output ci-artifacts/trivy-image.txt             --severity CRITICAL,HIGH             --ignore-unfixed             --vuln-type os,library             --scanners vuln             --ignorefile .trivyignore             projectory:ci
+
+      - name: Container image vulnerability policy gate (Trivy CLI, fail on critical)
+        run: |
+          trivy image             --format sarif             --output ci-artifacts/trivy-image.sarif             --severity CRITICAL             --ignore-unfixed             --vuln-type os,library             --scanners vuln             --ignorefile .trivyignore             --exit-code 1             projectory:ci
+
+      - name: List image-scan artifacts directory
+        if: always()
+        run: ls -lah ci-artifacts || true
+
+      - name: Image scan summary (always)
+        if: always()
+        run: |
+          {
+            echo "# Container Image Security Summary"
+            echo ""
+            echo "- Trivy table report: ci-artifacts/trivy-image.txt"
+            echo "- Trivy SARIF policy report: ci-artifacts/trivy-image.sarif"
+            echo ""
+            if [ -f ci-artifacts/trivy-image.txt ]; then
+              echo "## Top of Trivy report"
+              echo '```text'
+              sed -n '1,80p' ci-artifacts/trivy-image.txt
+              echo '```'
+            else
+              echo "⚠️ trivy-image.txt was not generated; inspect Trivy step logs."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Trivy image scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-scan-artifacts
+          path: ci-artifacts/
+          if-no-files-found: warn
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs:
+      - quality-and-security
+      - static-analysis
+      - container-image-security
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: helloapp
+          POSTGRES_USER: hello
+          POSTGRES_PASSWORD: hello
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hello -d helloapp"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: helloapp
+      DB_USER: hello
+      DB_PASSWORD: hello
+      AUTH_DEFAULT_ROLE: admin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Prepare test artifact directory
+        run: mkdir -p ci-artifacts
+
+      - name: Run DB migrations
+        run: |
+          npm run migrate | tee ci-artifacts/migrate.txt
+
+      - name: Syntax checks
+        run: |
+          npm run check:syntax | tee ci-artifacts/syntax.txt
+
+      - name: Run tests
+        run: |
+          npm test | tee ci-artifacts/tests.txt
+
+      - name: Run production-parity session-only profile tests
+        run: |
+          npm run test:prod-profile | tee ci-artifacts/tests-prod-profile.txt
+
+      - name: Build test summary
+        if: always()
+        run: |
+          {
+            echo "# Build/Test Summary"
+            echo ""
+            echo "- Migrations: see migrate.txt"
+            echo "- Syntax: see syntax.txt"
+            echo "- Tests: see tests.txt"
+            echo "- Production-parity session-only profile tests: see tests-prod-profile.txt"
+          } > ci-artifacts/build-test-summary.md
+          cat ci-artifacts/build-test-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload build/test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-test-artifacts
+          path: ci-artifacts/
+          if-no-files-found: warn
+
+  release-db-contract-gate:
+    runs-on: ubuntu-latest
+    needs:
+      - quality-and-security
+      - static-analysis
+      - container-image-security
+      - build-and-test
+    if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'release/'))
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: helloapp
+          POSTGRES_USER: hello
+          POSTGRES_PASSWORD: hello
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U hello -d helloapp"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: helloapp
+      DB_USER: hello
+      DB_PASSWORD: hello
+      AUTH_DEFAULT_ROLE: admin
+      RUN_DB_INTEGRATION: '1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Prepare release DB gate artifact directory
+        run: mkdir -p ci-artifacts
+
+      - name: Run DB migrations
+        run: |
+          npm run migrate | tee ci-artifacts/release-db-migrate.txt
+
+      - name: Validate SLO operational readiness artifacts
+        run: |
+          npm run ops:readiness-check | tee ci-artifacts/release-readiness.txt
+
+      - name: Run real-DB contract suites (mandatory on release branches)
+        run: |
+          node --test test/api-contract.db.test.js test/db-integration.test.js | tee ci-artifacts/release-db-contract-tests.txt
+
+      - name: Stamp release evidence markers
+        run: |
+          RELEASE_EVIDENCE_COMMIT_SHA="${GITHUB_SHA}"
+          RELEASE_EVIDENCE_GENERATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "RELEASE_EVIDENCE_GENERATED_AT=${RELEASE_EVIDENCE_GENERATED_AT}" >> "$GITHUB_ENV"
+
+          for file in ci-artifacts/release-db-migrate.txt ci-artifacts/release-readiness.txt ci-artifacts/release-db-contract-tests.txt; do
+            {
+              echo ""
+              echo "evidence_commit_sha=${RELEASE_EVIDENCE_COMMIT_SHA}"
+              echo "evidence_generated_at=${RELEASE_EVIDENCE_GENERATED_AT}"
+            } >> "$file"
+          done
+
+      - name: Build release evidence manifest (sha256 + timestamp + commit)
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const crypto = require('node:crypto');
+
+          const artifactDir = path.join(process.cwd(), 'ci-artifacts');
+          const files = [
+            'release-db-migrate.txt',
+            'release-readiness.txt',
+            'release-db-contract-tests.txt'
+          ];
+
+          const generatedAt = process.env.RELEASE_EVIDENCE_GENERATED_AT || new Date().toISOString();
+          const commitSha = process.env.GITHUB_SHA || '';
+
+          const manifest = {
+            generated_at: generatedAt,
+            commit_sha: commitSha,
+            files: {}
+          };
+
+          for (const fileName of files) {
+            const filePath = path.join(artifactDir, fileName);
+            const content = fs.readFileSync(filePath);
+            const sha = crypto.createHash('sha256').update(content).digest('hex');
+            manifest.files[fileName] = {
+              sha256: sha,
+              bytes: content.length
+            };
+          }
+
+          fs.writeFileSync(path.join(artifactDir, 'release-evidence-manifest.json'), JSON.stringify(manifest, null, 2));
+          NODE
+
+      - name: Validate release readiness checklist + evidence integrity
+        run: |
+          node scripts/check-release-readiness.js             --require-evidence             --evidence-dir ci-artifacts             --expected-commit "${GITHUB_SHA}"             --max-age-minutes 180 | tee -a ci-artifacts/release-readiness.txt
+
+      - name: Build release DB gate summary
+        if: always()
+        run: |
+          {
+            echo "# Release DB Contract Gate Summary"
+            echo ""
+            echo "- Migrations: see release-db-migrate.txt"
+            echo "- Release readiness evidence check: see release-readiness.txt"
+            echo "- Evidence manifest: see release-evidence-manifest.json"
+            echo "- Real-DB contract suites: see release-db-contract-tests.txt"
+            echo "- Evidence IDs (sha256): release-evidence-manifest.json"
+            echo ""
+            echo "This gate is mandatory on pushes to main/release/* branches."
+          } > ci-artifacts/release-db-contract-summary.md
+          cat ci-artifacts/release-db-contract-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release DB gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-db-contract-artifacts
+          path: ci-artifacts/
+          if-no-files-found: warn
