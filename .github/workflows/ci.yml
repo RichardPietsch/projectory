@@ -206,18 +206,39 @@ jobs:
       - name: Prepare image-scan artifact directory
         run: mkdir -p ci-artifacts
 
-      - name: Setup Trivy CLI
-        uses: aquasecurity/setup-trivy@e07451d2e059ed86c2870430ea286b3a9e0bf241
+      - name: Container image vulnerability report (Trivy)
+        uses: aquasecurity/trivy-action@v0.33.1
+        env:
+          TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
         with:
-          version: v0.68.2
+          scan-type: image
+          image-ref: projectory:ci
+          format: table
+          output: ci-artifacts/trivy-image.txt
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          vuln-type: os,library
+          scanners: vuln
+          trivyignores: .trivyignore
+          version: v0.69.3
 
-      - name: Container image vulnerability report (Trivy CLI)
-        run: |
-          trivy image             --format table             --output ci-artifacts/trivy-image.txt             --severity CRITICAL,HIGH             --ignore-unfixed             --vuln-type os,library             --scanners vuln             --ignorefile .trivyignore             projectory:ci
-
-      - name: Container image vulnerability policy gate (Trivy CLI, fail on critical)
-        run: |
-          trivy image             --format sarif             --output ci-artifacts/trivy-image.sarif             --severity CRITICAL             --ignore-unfixed             --vuln-type os,library             --scanners vuln             --ignorefile .trivyignore             --exit-code 1             projectory:ci
+      - name: Container image vulnerability policy gate (Trivy, fail on critical)
+        uses: aquasecurity/trivy-action@v0.33.1
+        env:
+          TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
+        with:
+          scan-type: image
+          image-ref: projectory:ci
+          format: sarif
+          output: ci-artifacts/trivy-image.sarif
+          severity: CRITICAL
+          ignore-unfixed: true
+          vuln-type: os,library
+          scanners: vuln
+          trivyignores: .trivyignore
+          exit-code: '1'
+          version: v0.69.3
+          skip-setup-trivy: true
 
       - name: List image-scan artifacts directory
         if: always()
