@@ -66,7 +66,7 @@ jobs:
 
 
       - name: Filesystem vulnerability scan (Trivy, fail on critical)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.33.1
         env:
           TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
         with:
@@ -79,6 +79,7 @@ jobs:
           exit-code: '1'
           vuln-type: os,library
           trivyignores: .trivyignore
+          version: v0.69.3
 
       - name: Install gitleaks CLI
         run: |
