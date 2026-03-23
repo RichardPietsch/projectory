@@ -169,19 +169,19 @@
               const ownerPills = renderOwnerPills(project);
               const leaderPills = renderLeaderPills(project);
               const rowClass = hasCurrentUserAssignment
-                ? 'cursor-pointer border-t border-cyan-400/50 bg-cyan-500/10 hover:bg-cyan-500/20'
-                : 'cursor-pointer border-t border-zinc-800 hover:bg-zinc-700/40';
+                ? 'ui-table-row ui-table-row-interactive ui-table-row-selected'
+                : 'ui-table-row ui-table-row-interactive';
 
               return `<tr class="${rowClass}" onclick="openProjectDetail(${project.id})">
-                <td class="p-2 text-zinc-300">${renderProjectStatusPill(project.status, project.id)}</td>
+                <td class="ui-text-secondary p-2">${renderProjectStatusPill(project.status, project.id)}</td>
                 <td class="p-2">
-                  <div class="font-medium text-zinc-100">${project.name}</div>
+                  <div class="ui-section-title font-medium">${project.name}</div>
                 </td>
-                <td class="p-2 text-zinc-300">${project.client_name}</td>
-                <td class="p-2 text-zinc-300">${formatEuroWhole(project.budget_cents)}</td>
-                <td class="p-2 text-zinc-300">${renderPriorityPill(project.priority_name, project.priority_color_hex)}</td>
-                <td class="p-2 text-zinc-300">${ownerPills}</td>
-                <td class="p-2 text-zinc-300">${leaderPills}</td>
+                <td class="ui-text-secondary p-2">${project.client_name}</td>
+                <td class="ui-text-secondary p-2">${formatEuroWhole(project.budget_cents)}</td>
+                <td class="ui-text-secondary p-2">${renderPriorityPill(project.priority_name, project.priority_color_hex)}</td>
+                <td class="ui-text-secondary p-2">${ownerPills}</td>
+                <td class="ui-text-secondary p-2">${leaderPills}</td>
               </tr>`;
             })
             .join('');
@@ -192,40 +192,40 @@
               const statusPresentation = getProjectStatusPresentation(project.status);
               const priorityPresentation = getPriorityPresentation(project.priority_name, project.priority_color_hex);
               const cardClass = hasCurrentUserAssignment
-                ? 'border-cyan-400/60 bg-cyan-500/10'
-                : 'border-zinc-800 bg-zinc-950/60';
-              return `<button type="button" class="w-full rounded-xl border p-4 text-left shadow-sm transition hover:border-zinc-600 hover:bg-zinc-900/80 focus:outline-none focus:ring-2 focus:ring-[#00d8ff] ${cardClass}" onclick="openProjectDetail(${project.id})">
+                ? 'ui-mobile-card ui-table-row-selected'
+                : 'ui-mobile-card';
+              return `<button type="button" class="w-full p-4 text-left transition ${cardClass}" onclick="openProjectDetail(${project.id})">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div class="min-w-0 flex-1">
-                    <p class="truncate text-base font-semibold text-zinc-50">${project.name}</p>
-                    <p class="mt-1 truncate text-sm text-zinc-400">${project.client_name}</p>
+                    <p class="ui-section-title truncate text-base font-semibold">${project.name}</p>
+                    <p class="ui-text-muted mt-1 truncate text-sm">${project.client_name}</p>
                   </div>
                   <div class="shrink-0">${renderPriorityPill(project.priority_name, project.priority_color_hex)}</div>
                 </div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('clientTeams.columns.status')}</p>
-                    <div class="mt-1 flex items-center gap-2 text-sm text-zinc-200">
+                  <div class="ui-stat-card px-3 py-2">
+                    <p class="ui-text-muted text-[11px] font-semibold uppercase tracking-[0.16em]">${i18n.t('clientTeams.columns.status')}</p>
+                    <div class="mt-1 flex items-center gap-2 text-sm">
                       ${renderProjectStatusPill(project.status, project.id)}
                       <span class="min-w-0 break-words">${statusPresentation.label}</span>
                     </div>
                   </div>
-                  <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('clientTeams.columns.budget')}</p>
-                    <p class="mt-1 break-words text-sm font-medium text-zinc-100">${formatEuroWhole(project.budget_cents)}</p>
+                  <div class="ui-stat-card px-3 py-2">
+                    <p class="ui-text-muted text-[11px] font-semibold uppercase tracking-[0.16em]">${i18n.t('clientTeams.columns.budget')}</p>
+                    <p class="ui-section-title mt-1 break-words text-sm font-medium">${formatEuroWhole(project.budget_cents)}</p>
                   </div>
-                  <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('clientTeams.columns.owner')}</p>
+                  <div class="ui-stat-card px-3 py-2">
+                    <p class="ui-text-muted text-[11px] font-semibold uppercase tracking-[0.16em]">${i18n.t('clientTeams.columns.owner')}</p>
                     <div class="mt-2 flex flex-wrap gap-2">${renderOwnerPills(project)}</div>
                   </div>
-                  <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('clientTeams.columns.leaders')}</p>
+                  <div class="ui-stat-card px-3 py-2">
+                    <p class="ui-text-muted text-[11px] font-semibold uppercase tracking-[0.16em]">${i18n.t('clientTeams.columns.leaders')}</p>
                     <div class="mt-2 flex flex-wrap gap-2">${renderLeaderPills(project)}</div>
                   </div>
                 </div>
-                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-                  <span class="font-semibold uppercase tracking-[0.16em] text-zinc-500">${i18n.t('clientTeams.columns.priority')}</span>
-                  <span class="min-w-0 break-words text-zinc-300">${priorityPresentation.label}</span>
+                <div class="ui-text-muted mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  <span class="ui-help-text font-semibold uppercase tracking-[0.16em]">${i18n.t('clientTeams.columns.priority')}</span>
+                  <span class="ui-text-secondary min-w-0 break-words">${priorityPresentation.label}</span>
                 </div>
               </button>`;
             })
@@ -248,10 +248,10 @@
             'leaders_desc'
           ].map((sortValue) => `<option value="${sortValue}" ${state.clientTeamsSort === sortValue ? 'selected' : ''}>${clientTeamsSortOptionLabel(sortValue)}</option>`).join('');
 
-          return `<div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+          return `<div class="ui-panel p-4">
             <div class="mb-3">
               <h3 class="text-lg font-semibold">${i18n.t('clientTeams.title')}</h3>
-              <p class="text-xs text-zinc-400">${i18n.t('clientTeams.subtitle')}</p>
+              <p class="ui-section-subtitle text-xs">${i18n.t('clientTeams.subtitle')}</p>
             </div>
             <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
@@ -260,33 +260,33 @@
                 value="${state.clientTeamsSearch || ''}"
                 oninput="setClientTeamsSearch(this.value)"
                 placeholder="${i18n.t('clientTeams.searchPlaceholder')}"
-                class="w-full rounded border border-zinc-700 bg-zinc-950 p-2 text-sm"
+                class="ui-input text-sm"
               />
               <select
                 id="client-teams-sort-select"
                 onchange="setClientTeamsSort(this.value)"
-                class="w-full rounded border border-zinc-700 bg-zinc-950 p-2 text-sm text-zinc-200 sm:w-64"
+                class="ui-select text-sm sm:w-64"
                 aria-label="${i18n.t('clientTeams.sort.label')}"
               >${sortOptions}</select>
               <button
-                class="rounded border border-zinc-600 px-3 py-2 text-sm hover:bg-zinc-700 ${state.clientTeamsSearch ? '' : 'opacity-50'}"
+                class="ui-btn ui-btn-secondary px-3 py-2 text-sm ${state.clientTeamsSearch ? '' : 'opacity-50'}"
                 onclick="clearClientTeamsSearch()"
                 ${state.clientTeamsSearch ? '' : 'disabled'}
                 title="Clear search"
               >✕</button>
             </div>
             <div id="client-teams-mobile-list" class="space-y-3 md:hidden">${mobileCards}</div>
-            <div class="mt-4 hidden overflow-x-auto md:block">
+            <div class="ui-table-shell mt-4 hidden overflow-x-auto md:block">
               <table id="onboarding-project-overview-table" class="min-w-[860px] w-full table-fixed text-left text-sm">
                 <thead>
-                  <tr class="text-zinc-400">
-                    <th class="w-[7%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[23%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[8%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[11%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[14%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
-                    <th class="w-[30%] p-2"><button class="inline-flex items-center gap-1 whitespace-nowrap hover:text-zinc-100" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                  <tr class="ui-table-head">
+                    <th class="w-[7%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setClientTeamsSortField('status')">${i18n.t('clientTeams.columns.status')} ${state.clientTeamsSort.startsWith('status_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[23%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setClientTeamsSortField('product')">${i18n.t('clientTeams.columns.product')} ${state.clientTeamsSort.startsWith('product_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[14%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setClientTeamsSortField('client')">${i18n.t('clientTeams.columns.client')} ${state.clientTeamsSort.startsWith('client_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[8%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setClientTeamsSortField('budget')">${i18n.t('clientTeams.columns.budget')} ${state.clientTeamsSort.startsWith('budget_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[11%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setClientTeamsSortField('priority')">${i18n.t('clientTeams.columns.priority')} ${state.clientTeamsSort.startsWith('priority_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[14%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setClientTeamsSortField('owner')">${i18n.t('clientTeams.columns.owner')} ${state.clientTeamsSort.startsWith('owner_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
+                    <th class="w-[30%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setClientTeamsSortField('leaders')">${i18n.t('clientTeams.columns.leaders')} ${state.clientTeamsSort.startsWith('leaders_') ? (state.clientTeamsSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
                   </tr>
                 </thead>
                 <tbody>${projectRows}</tbody>
@@ -2362,4 +2362,3 @@ function filteredPeople() {
         else if (isOwner) next = { isOwner: false, isLeader: true };
         await handleMutation(() => api(`/api/assignments/${id}`, { method: 'PUT', body: JSON.stringify(next) }), 'Assignment role updated.');
       };
-
