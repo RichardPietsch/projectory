@@ -619,7 +619,7 @@
             </div>
           </div>
 
-          <div id="onboarding-challenge-overview" class="rounded-2xl bg-zinc-800 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.24)] lg:p-6">
+          <div id="onboarding-challenge-overview" class="rounded-2xl bg-zinc-800 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.24)] ring-1 ring-zinc-700/60 lg:p-6">
               <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
                   <h3 class="text-2xl font-semibold tracking-tight text-zinc-50">${i18n.t('projectDetail.challengeOverview.title')}</h3>
@@ -638,9 +638,9 @@
                   </div>
                 </div>
               </div>
-            <div class="mt-5 space-y-4 lg:hidden">${mobileChallengeCards}</div>
+            <div id="project-detail-challenge-mobile-list" class="mt-5 space-y-4 lg:hidden">${mobileChallengeCards}</div>
             <div class="mt-5 hidden lg:block">
-              <div class="space-y-4">${challengeRows}</div>
+              <div id="project-detail-challenge-desktop-list" class="space-y-4">${challengeRows}</div>
             </div>
           </div>
 

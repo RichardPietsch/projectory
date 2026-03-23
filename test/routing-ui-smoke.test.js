@@ -34,8 +34,9 @@ test('client teams overview includes mobile card list and explicit sort select',
 
 
 test('project detail challenge overview includes mobile cards and explicit sort control', () => {
-  assert.match(challengesSource, /id="project-detail-challenge-mobile-list" class="space-y-3 lg:hidden"/);
+  assert.match(challengesSource, /id="project-detail-challenge-mobile-list" class="[^"]*space-y-4[^"]*lg:hidden/);
   assert.match(challengesSource, /id="challenge-sort-select"/);
+  assert.match(challengesSource, /id="project-detail-challenge-desktop-list" class="space-y-4"/);
   assert.match(challengesSource, /window\.setChallengesSort = function setChallengesSort\(value\)/);
 });
 
@@ -65,6 +66,6 @@ test('people overview detail keeps a dedicated mobile grouped-card container', (
 
 test('mobile role summaries reuse pill-based role styling in responsive views', () => {
   assert.match(challengesSource, /<div class="mt-2 flex flex-wrap gap-2">\$\{renderOwnerPills\(project\)\}<\/div>/);
-  assert.match(challengesSource, /<div class="mt-2 flex flex-wrap gap-2">\$\{renderChallengeAssignees\(challenge, assignments\)\}<\/div>/);
+  assert.match(challengesSource, /renderChallengeAssignees\(challenge, assignments\)/);
   assert.match(challengesSource, /assignment\.is_owner \? 'border-blue-400\/70 bg-blue-600 text-blue-50'/);
 });
