@@ -4,7 +4,7 @@
         const viewerPersonId = currentPersonId();
 
         if (projects.length === 0) {
-          return `<div class="rounded-xl border border-zinc-800 bg-zinc-900 p-6 text-sm text-zinc-300">${i18n.t('clientTeams.emptyState')}</div>`;
+          return `<div class="ui-panel p-6 text-sm ui-text-secondary">${i18n.t('clientTeams.emptyState')}</div>`;
         }
 
         const hasSelectedProject = state.selectedProjectId && projects.some((project) => String(project.id) === String(state.selectedProjectId));
@@ -114,30 +114,30 @@
           }
 
           function renderOwnerPills(project) {
-            if (!project.ownerEntries.length) return `<span class="text-zinc-400">${i18n.t('clientTeams.noOwnerAssigned')}</span>`;
+            if (!project.ownerEntries.length) return `<span class="ui-text-muted">${i18n.t('clientTeams.noOwnerAssigned')}</span>`;
             return project.ownerEntries
               .map((person) => {
                 const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
                 const ownerClass = isSelf
-                  ? 'border-blue-300 bg-blue-500 text-blue-50'
-                  : 'border-blue-400/70 bg-blue-600 text-blue-50';
+                  ? 'ui-pill-owner-self'
+                  : 'ui-pill-owner';
                 return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${ownerClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
               })
               .join('');
           }
 
           function renderLeaderPills(project) {
-            if (!project.leaderEntries.length) return `<span class="text-zinc-400">${i18n.t('clientTeams.noLeaderAssigned')}</span>`;
+            if (!project.leaderEntries.length) return `<span class="ui-text-muted">${i18n.t('clientTeams.noLeaderAssigned')}</span>`;
             return project.leaderEntries
               .map((person) => {
                 const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
                 const leaderClass = person.owner
                   ? (isSelf
-                      ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100'
-                      : 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200')
+                      ? 'ui-pill-leader-secondary-self'
+                      : 'ui-pill-leader-secondary')
                   : (isSelf
-                      ? 'border-emerald-300 bg-emerald-500 text-emerald-50'
-                      : 'border-emerald-400/70 bg-emerald-600 text-emerald-50');
+                      ? 'ui-pill-leader-self'
+                      : 'ui-pill-leader');
                 return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${leaderClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
               })
               .join('');
@@ -357,15 +357,15 @@
               let tierClass = isSecondaryRole(personId) ? secondaryTierClass : primaryTierClass;
               if (isSelf) {
                 if (tierLabel.includes('owner')) {
-                  tierClass = 'border-blue-300 bg-blue-500 text-blue-50';
+                  tierClass = 'ui-pill-owner-self';
                 } else if (tierLabel.includes('leader')) {
                   tierClass = isSecondaryRole(personId)
-                    ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100'
-                    : 'border-emerald-300 bg-emerald-500 text-emerald-50';
+                    ? 'ui-pill-leader-secondary-self'
+                    : 'ui-pill-leader-self';
                 } else {
                   tierClass = isSecondaryRole(personId)
-                    ? 'border-zinc-300 border-dotted bg-zinc-200/10 text-zinc-100'
-                    : 'border-zinc-300 bg-zinc-100 text-zinc-900';
+                    ? 'ui-pill-contributor-secondary-self'
+                    : 'ui-pill-contributor-self';
                 }
               }
               const tierLabelWithMeta = `${selfRoleIcon(isSelf)}<span>${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</span>`;
@@ -377,19 +377,19 @@
             .filter(Boolean)
             .join(' ');
 
-          return `<div ${containerId ? `id="${containerId}"` : ''} class="rounded border border-zinc-700 bg-zinc-950/60 p-3">
-            <h4 class="mb-2 text-sm font-semibold text-zinc-200">${tierLabel}</h4>
-            <div class="flex flex-wrap gap-2">${entries || `<span class="text-xs text-zinc-400">${i18n.t('common.none')}</span>`}</div>
+          return `<div ${containerId ? `id="${containerId}"` : ''} class="ui-panel-muted rounded p-3">
+            <h4 class="ui-text-secondary mb-2 text-sm font-semibold">${tierLabel}</h4>
+            <div class="flex flex-wrap gap-2">${entries || `<span class="ui-empty-state text-xs">${i18n.t('common.none')}</span>`}</div>
           </div>`;
         }
 
-        const projectPeopleOverview = `<div id="onboarding-project-team-overview" class="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+        const projectPeopleOverview = `<div id="onboarding-project-team-overview" class="ui-panel p-4">
           <h3 class="mb-3 text-lg font-semibold">${i18n.t('projectDetail.teamOverview.title')}</h3>
-          <p class="mb-3 text-xs text-zinc-400">${i18n.t('projectDetail.teamOverview.subtitle')}</p>
+          <p class="ui-section-subtitle mb-3 text-xs">${i18n.t('projectDetail.teamOverview.subtitle')}</p>
           <div class="space-y-3">
-            ${renderTierPeople(ownerIds, 'Client owner(s)', 'border-blue-400/70 bg-blue-600 text-blue-50', 'border-blue-400/70 bg-blue-600 text-blue-50', () => false, 'onboarding-client-owners')}
-            ${renderTierPeople(leaderIds, 'Client leader(s)', 'border-emerald-400/70 bg-emerald-600 text-emerald-50', 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200', (personId) => ownerIds.has(personId), 'onboarding-client-leaders')}
-            ${renderTierPeople(contributorIds, 'Contributors', 'border-zinc-500 bg-zinc-700 text-zinc-100', 'border-zinc-500 border-dotted bg-transparent text-zinc-300', (personId) => ownerIds.has(personId) || leaderIds.has(personId), 'onboarding-contributors')}
+            ${renderTierPeople(ownerIds, 'Client owner(s)', 'ui-pill-owner', 'ui-pill-owner', () => false, 'onboarding-client-owners')}
+            ${renderTierPeople(leaderIds, 'Client leader(s)', 'ui-pill-leader', 'ui-pill-leader-secondary', (personId) => ownerIds.has(personId), 'onboarding-client-leaders')}
+            ${renderTierPeople(contributorIds, 'Contributors', 'ui-pill-contributor', 'ui-pill-contributor-secondary', (personId) => ownerIds.has(personId) || leaderIds.has(personId), 'onboarding-contributors')}
           </div>
         </div>`;
 

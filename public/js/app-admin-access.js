@@ -346,11 +346,11 @@
       }
 
       function personLeaverBadge(person) {
-        return person.is_leaver ? `<span class="ml-2 rounded border border-amber-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">${i18n.t('people.flags.leaver')}</span>` : '';
+        return person.is_leaver ? `<span class="ui-badge-warning ml-2 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide">${i18n.t('people.flags.leaver')}</span>` : '';
       }
 
       function personHiddenBadge(person) {
-        return person.is_hidden ? `<span class="ml-2 rounded border border-zinc-500/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-300">${i18n.t('people.flags.hidden')}</span>` : '';
+        return person.is_hidden ? `<span class="ui-badge-muted ml-2 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide">${i18n.t('people.flags.hidden')}</span>` : '';
       }
 
       function leaverRunIcon(isLeaver) {
@@ -381,24 +381,24 @@
 
       function peopleOverviewView() {
         function assignmentsWarningClass(count) {
-          if (count === 0) return 'text-zinc-100';
-          if (count <= 5) return 'text-[#00d8ff]';
-          if (count <= 8) return 'text-amber-300';
-          return 'text-rose-300';
+          if (count === 0) return 'ui-section-title';
+          if (count <= 5) return 'ui-text-accent';
+          if (count <= 8) return 'ui-text-warning';
+          return 'ui-text-danger';
         }
 
         function roleCountWarningClass(count) {
-          if (count === 0) return 'text-zinc-100';
-          if (count <= 2) return 'text-[#00d8ff]';
-          if (count <= 4) return 'text-amber-300';
-          return 'text-rose-300';
+          if (count === 0) return 'ui-section-title';
+          if (count <= 2) return 'ui-text-accent';
+          if (count <= 4) return 'ui-text-warning';
+          return 'ui-text-danger';
         }
 
         function workloadWarningClass(workload) {
-          if (workload === 0) return 'text-zinc-100';
-          if (workload < 100) return 'text-amber-300';
-          if (workload === 100) return 'text-green-300';
-          return 'text-rose-300';
+          if (workload === 0) return 'ui-section-title';
+          if (workload < 100) return 'ui-text-warning';
+          if (workload === 100) return 'ui-text-success';
+          return 'ui-text-danger';
         }
 
         const byPerson = new Map();
@@ -558,7 +558,7 @@ function clientsView() {
           const swatches = CONFIGURATION_COLOR_OPTIONS.map((option) => {
             const hex = option.hex;
             const isSelected = normalizedSelected === hex.toLowerCase();
-            const selectedClass = isSelected ? 'ring-2 ring-[#00d8ff] ring-offset-1 ring-offset-zinc-900' : 'ring-1 ring-zinc-700';
+            const selectedClass = isSelected ? 'ui-color-swatch-ring-active' : 'ui-color-swatch-ring';
             const swatchStyle = option.style || `background:${hex};`;
             return `<button type="button" class="h-5 w-5 rounded-full ${selectedClass}" style="${swatchStyle}" data-config-action="pick-color" data-kind="${kind}" data-item-key="${itemKey}" data-color="${hex}" title="${hex}" aria-label="${i18n.t('admin.configuration.selectColorAria', { color: hex })}"></button>`;
           }).join('');
@@ -570,10 +570,10 @@ function clientsView() {
           if (useMetallicSwatch) {
             const preset = getPriorityPresetFromHex(selected);
             if (preset !== 'custom' && PRIORITY_PRESET_MAP[preset]) {
-              return `<button type="button" class="inline-flex h-6 w-6 rounded-full border border-zinc-700" style="${PRIORITY_PRESET_MAP[preset].style}" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${preset}"></button>`;
+              return `<button type="button" class="ui-color-swatch-ring inline-flex h-6 w-6 rounded-full" style="${PRIORITY_PRESET_MAP[preset].style}" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${preset}"></button>`;
             }
           }
-          return `<button type="button" class="inline-flex h-6 w-6 rounded-full border border-zinc-700" style="background:${selected};" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${selected}"></button>`;
+          return `<button type="button" class="ui-color-swatch-ring inline-flex h-6 w-6 rounded-full" style="background:${selected};" data-config-action="open-color-modal" data-kind="${kind}" data-item-key="${itemKey}" data-selected-hex="${selected}" title="${selected}"></button>`;
         }
 
         function renderCard(kind, label, options = {}) {
@@ -599,7 +599,7 @@ function clientsView() {
                 ? `class="ui-table-row ui-table-row-interactive${dropHighlightClass}" data-config-action="drag-drop-target" data-kind="${kind}" data-item-key="${escapedItemKey}"`
                 : 'class="ui-table-row"';
               const handleCell = supportsSort
-                ? `<button type="button" aria-label="Drag to reorder" class="cursor-grab active:cursor-grabbing rounded p-1 text-zinc-500 hover:text-zinc-300" draggable="true" data-config-action="drag-handle" data-kind="${kind}" data-item-key="${escapedItemKey}"><span class="grid grid-cols-2 gap-0.5"><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span></span></button>`
+                ? `<button type="button" aria-label="Drag to reorder" class="ui-drag-handle cursor-grab active:cursor-grabbing rounded p-1" draggable="true" data-config-action="drag-handle" data-kind="${kind}" data-item-key="${escapedItemKey}"><span class="grid grid-cols-2 gap-0.5"><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span><span class="h-1 w-1 rounded-full bg-current"></span></span></button>`
                 : '';
               return `<tr ${rowAttrs}><td class="w-8 p-2 align-middle">${handleCell}</td><td class="ui-section-title p-2">${nameInput}</td><td class="p-2">${colorCell}</td><td class="p-2"><span class="ui-btn ${usageClass} px-2 py-0.5 text-xs">${usage}</span></td><td class="p-2 text-right"><button class="ui-btn ui-btn-danger px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-40" data-config-action="remove-item" data-kind="${kind}" data-item-key="${escapedItemKey}" ${removeDisabled}>${i18n.t('common.delete')}</button></td></tr>`;
             })
