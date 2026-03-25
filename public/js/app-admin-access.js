@@ -593,7 +593,7 @@ function clientsView() {
                 ? renderSelectedColorSwatch(kind, escapedItemKey, item.colorHex || '#64748B', kind === 'priorities')
                 : '—';
               const dropHighlightClass = supportsSort && state.configurationDrag?.kind === kind && state.configurationDrag?.lastOverKey === String(itemKey)
-                ? ' bg-zinc-800/60'
+                ? ' ui-drop-highlight'
                 : '';
               const rowAttrs = supportsSort
                 ? `class="ui-table-row ui-table-row-interactive${dropHighlightClass}" data-config-action="drag-drop-target" data-kind="${kind}" data-item-key="${escapedItemKey}"`

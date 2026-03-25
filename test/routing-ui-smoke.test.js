@@ -67,5 +67,5 @@ test('people overview detail keeps a dedicated mobile grouped-card container', (
 test('mobile role summaries reuse pill-based role styling in responsive views', () => {
   assert.match(challengesSource, /<div class="mt-2 flex flex-wrap gap-2">\$\{renderOwnerPills\(project\)\}<\/div>/);
   assert.match(challengesSource, /renderChallengeAssignees\(challenge, assignments\)/);
-  assert.match(challengesSource, /assignment\.is_owner \? 'border-blue-400\/70 bg-blue-600 text-blue-50'/);
+  assert.match(challengesSource, /assignment\.is_owner \? 'ui-pill-info'/);
 });

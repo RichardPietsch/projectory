@@ -444,8 +444,8 @@
         function renderChallengeAssignees(challenge, assignments) {
           if (!assignments.length) {
             return viewerMode
-              ? `<span class="text-zinc-400">—</span>`
-              : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff]" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('assign.assign')}</button>`;
+              ? `<span class="ui-empty-state">—</span>`
+              : `<button class="ui-btn ui-btn-accent rounded px-2 py-1 text-xs" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${i18n.t('assign.assign')}</button>`;
           }
 
           return [...assignments]
@@ -456,20 +456,20 @@
               const hasLeaderRole = leaderIds.has(personId);
               const isSelf = viewerPersonId && personId === viewerPersonId;
               const roleClass = assignment.is_owner
-                ? (isSelf ? 'border-blue-300 bg-blue-500 text-blue-50' : 'border-blue-400/70 bg-blue-600 text-blue-50')
+                ? (isSelf ? 'ui-pill-info-self' : 'ui-pill-info')
                 : assignment.is_leader
                   ? hasOwnerRole
-                    ? (isSelf ? 'border-emerald-300 border-dotted bg-emerald-500/20 text-emerald-100' : 'border-emerald-400/70 border-dotted bg-transparent text-emerald-200')
-                    : (isSelf ? 'border-emerald-300 bg-emerald-500 text-emerald-50' : 'border-emerald-400/70 bg-emerald-600 text-emerald-50')
+                    ? (isSelf ? 'ui-pill-success-secondary-self' : 'ui-pill-success-secondary')
+                    : (isSelf ? 'ui-pill-success-self' : 'ui-pill-success')
                   : hasOwnerRole || hasLeaderRole
-                    ? (isSelf ? 'border-zinc-300 border-dotted bg-zinc-200/10 text-zinc-100' : 'border-zinc-500 border-dotted bg-transparent text-zinc-300')
-                    : (isSelf ? 'border-zinc-300 bg-zinc-100 text-zinc-900' : 'border-zinc-500 bg-zinc-700 text-zinc-100');
+                    ? (isSelf ? 'ui-pill-neutral-secondary-self' : 'ui-pill-neutral-secondary')
+                    : (isSelf ? 'ui-pill-neutral-self' : 'ui-pill-neutral');
               const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
               const assignmentLabel = `${selfRoleIcon(isSelf)}<span>${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})</span>`;
               if (viewerMode) {
-                return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${roleClass}">${assignmentLabel}</span>`;
+                return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded px-2 py-1 text-xs ${roleClass}">${assignmentLabel}</span>`;
               }
-              return `<button class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignmentLabel}</button>`;
+              return `<button class="mb-1 mr-1 inline-flex items-center gap-1 rounded px-2 py-1 text-xs ${roleClass} hover:brightness-110" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)}, ${JSON.stringify(assignment)})'>${assignmentLabel}</button>`;
             })
             .join('');
         }
@@ -488,7 +488,7 @@
 
         function renderChallengeDeleteButton(challengeId) {
           if (viewerMode) return '';
-          return `<button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-600/70 text-zinc-700 transition hover:border-rose-500/70 hover:text-rose-600" onclick="openChallengeDeleteModal(${challengeId})" aria-label="${i18n.t('common.delete')}">
+          return `<button type="button" class="ui-btn ui-btn-danger inline-flex h-9 w-9 items-center justify-center rounded-xl" onclick="openChallengeDeleteModal(${challengeId})" aria-label="${i18n.t('common.delete')}">
             <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M9 4.75h6l.55 1.5H19a.75.75 0 1 1 0 1.5h-.52l-.68 10.24A2 2 0 0 1 15.81 20H8.19a2 2 0 0 1-1.99-2.01L5.52 7.75H5a.75.75 0 1 1 0-1.5h3.45L9 4.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
               <path d="M10 10v5.5M14 10v5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -506,18 +506,18 @@
           if (!isEditing) {
             return `<button type="button" class="block w-full ${frameClass}" onclick="startInlineChallengeEdit(${challenge.id}, '${field}')">
               ${field === 'title'
-                ? `<span class="block text-lg font-semibold leading-7 text-zinc-950 break-words">${value}</span>`
-                : `<span class="block text-sm leading-7 text-zinc-800 break-words">${value}</span>`}
+                ? `<span class="block text-lg font-semibold leading-7 ui-text-stronger break-words">${value}</span>`
+                : `<span class="block text-sm leading-7 ui-text-body break-words">${value}</span>`}
             </button>`;
           }
 
           return `<div class="${frameClass}">
             ${field === 'title'
-              ? `<input type="text" class="w-full bg-transparent p-0 text-lg font-semibold text-zinc-950 outline-none" value="${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus />`
-              : `<textarea class="min-h-[7rem] w-full resize-none bg-transparent p-0 text-sm leading-7 text-zinc-900 outline-none" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus>${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}</textarea>`}
+              ? `<input type="text" class="w-full bg-transparent p-0 text-lg font-semibold ui-text-stronger outline-none" value="${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus />`
+              : `<textarea class="min-h-[7rem] w-full resize-none bg-transparent p-0 text-sm leading-7 ui-text-strong outline-none" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus>${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}</textarea>`}
             <div class="mt-2 flex justify-end gap-2">
-              <button type="button" class="rounded-lg border border-zinc-600/70 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-300/70" onclick="cancelInlineChallengeEdit()">${i18n.t('common.cancel')}</button>
-              <button type="button" class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800" onclick="saveInlineChallengeEdit(${challenge.id}, '${field}')" ${state.inlineChallengeEdit.submitting ? 'disabled' : ''}>${i18n.t('common.save')}</button>
+              <button type="button" class="rounded-lg border ui-border-strong px-3 py-1.5 text-xs font-medium ui-text-body ui-btn-ghost-soft" onclick="cancelInlineChallengeEdit()">${i18n.t('common.cancel')}</button>
+              <button type="button" class="rounded-lg ui-bg-surface-1 px-3 py-1.5 text-xs font-medium text-white ui-hover-surface-2" onclick="saveInlineChallengeEdit(${challenge.id}, '${field}')" ${state.inlineChallengeEdit.submitting ? 'disabled' : ''}>${i18n.t('common.save')}</button>
             </div>
           </div>`;
         }
@@ -525,12 +525,12 @@
         function renderChallengeCardActions(challenge, assignments) {
           if (viewerMode) return '';
           const buttons = [];
-          buttons.push(`<button type="button" class="rounded-xl border border-[#0284c7]/40 bg-[#e0f2fe] px-3 py-2 text-xs font-medium text-sky-800 hover:bg-[#d3ecfd]" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${assignments.length ? i18n.t('projectDetail.actions.addAssignee') : i18n.t('assign.assign')}</button>`);
+          buttons.push(`<button type="button" class="ui-btn ui-btn-accent rounded-xl px-3 py-2 text-xs font-medium" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${assignments.length ? i18n.t('projectDetail.actions.addAssignee') : i18n.t('assign.assign')}</button>`);
 
           if (assignments.length === 1) {
-            buttons.push(`<button type="button" class="rounded-xl border border-rose-400/60 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100" onclick='deleteAssignment(${assignments[0].id})'>${i18n.t('projectDetail.actions.unassignNamed', { name: assignments[0].first_name })}</button>`);
+            buttons.push(`<button type="button" class="ui-btn ui-btn-danger rounded-xl px-3 py-2 text-xs font-medium" onclick='deleteAssignment(${assignments[0].id})'>${i18n.t('projectDetail.actions.unassignNamed', { name: assignments[0].first_name })}</button>`);
           } else if (assignments.length > 1) {
-            buttons.push(`<button type="button" class="rounded-xl border border-rose-400/60 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100" onclick='openUnassignModal(${challenge.id})'>${i18n.t('projectDetail.actions.unassign')}</button>`);
+            buttons.push(`<button type="button" class="ui-btn ui-btn-danger rounded-xl px-3 py-2 text-xs font-medium" onclick='openUnassignModal(${challenge.id})'>${i18n.t('projectDetail.actions.unassign')}</button>`);
           }
 
           return buttons.join('');
@@ -564,8 +564,8 @@
               <div class="mt-4">
                 ${renderInlineChallengeField(challenge, 'description')}
               </div>
-              <div class="mt-5 flex items-start justify-between gap-4 border-t border-zinc-600/70 pt-4">
-                <p class="min-w-0 flex-1 text-sm leading-6 text-zinc-800">${assignees}</p>
+              <div class="mt-5 flex items-start justify-between gap-4 border-t ui-border-strong pt-4">
+                <p class="min-w-0 flex-1 text-sm leading-6 ui-text-body">${assignees}</p>
                 ${viewerMode ? '' : `<div class="flex shrink-0 flex-wrap justify-end gap-2">${cardActions}</div>`}
               </div>
             </article>`;
@@ -587,9 +587,9 @@
               <div class="mt-4">
                 ${renderInlineChallengeField(challenge, 'description')}
               </div>
-              <div class="mt-5 border-t border-zinc-600/70 pt-4">
+              <div class="mt-5 border-t ui-border-strong pt-4">
                 <div class="flex items-start justify-between gap-4">
-                  <p class="min-w-0 flex-1 text-sm leading-6 text-zinc-800 break-words">${renderChallengeAssignees(challenge, assignments)}</p>
+                  <p class="min-w-0 flex-1 text-sm leading-6 ui-text-body break-words">${renderChallengeAssignees(challenge, assignments)}</p>
                   ${viewerMode ? '' : `<div class="flex shrink-0 flex-col gap-2">${cardActions}</div>`}
                 </div>
               </div>
@@ -599,40 +599,40 @@
 
         const statusPresentation = getProjectStatusPresentation(selectedProject.status);
         const statusControl = viewerMode
-          ? `<div class="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-700 bg-zinc-700/50 px-3"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold text-zinc-100">${statusPresentation.label}</span></div>`
-          : `<button class="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-700 bg-zinc-700/50 px-3 hover:bg-zinc-700" onclick="openProjectStatusModal(${selectedProject.id}, '${String(selectedProject.status || 'white').toLowerCase()}')"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold text-zinc-100">${statusPresentation.label}</span></button>`;
+          ? `<div class="inline-flex h-9 items-center gap-2 rounded-md border ui-border-default ui-bg-surface-2-soft px-3"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold ui-section-title">${statusPresentation.label}</span></div>`
+          : `<button class="inline-flex h-9 items-center gap-2 rounded-md border ui-border-default ui-bg-surface-2-soft px-3 ui-hover-surface-2" onclick="openProjectStatusModal(${selectedProject.id}, '${String(selectedProject.status || 'white').toLowerCase()}')"><span class="h-2.5 w-2.5 rounded-full" style="background:${statusPresentation.colorHex};"></span><span class="text-xs font-semibold ui-section-title">${statusPresentation.label}</span></button>`;
 
         const priorityControl = viewerMode || isTeammateMode()
           ? `<div class="inline-flex h-9 items-center">${renderPriorityPill(selectedProject.priority_name, selectedProject.priority_color_hex)}</div>`
           : `<button class="inline-flex h-9 items-center" onclick="openProjectPriorityModal(${selectedProject.client_id}, ${selectedProject.priority_id})">${renderPriorityPill(selectedProject.priority_name, selectedProject.priority_color_hex)}</button>`;
 
-        return `<div class="mb-6 rounded-xl bg-zinc-800 p-4">
-            <div class="grid grid-cols-1 gap-3 text-sm text-zinc-300 lg:grid-cols-6 lg:items-center">
+        return `<div class="mb-6 rounded-xl ui-bg-surface-2 p-4">
+            <div class="grid grid-cols-1 gap-3 text-sm ui-text-secondary lg:grid-cols-6 lg:items-center">
               <div class="flex min-w-0 flex-wrap items-center gap-2 lg:col-span-3">
-                <button class="rounded border border-zinc-600 px-2 py-1 hover:bg-zinc-700" onclick='goToProjectOverview()'>${i18n.t('clientTeams.title')}</button>
+                <button class="rounded border ui-border-strong px-2 py-1 ui-hover-surface-2" onclick='goToProjectOverview()'>${i18n.t('clientTeams.title')}</button>
                 <span>/</span>
-                <span class="font-semibold text-zinc-100">${selectedProject.name} (${selectedProject.client_name})</span>
+                <span class="font-semibold ui-section-title">${selectedProject.name} (${selectedProject.client_name})</span>
               </div>
-              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-zinc-400">${i18n.t('common.status')}</span><div class="flex h-9 items-center">${statusControl}</div></div>
-              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-zinc-400">${i18n.t('clientTeams.columns.priority')}</span><div class="flex h-9 items-center">${priorityControl}</div></div>
-              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 text-zinc-400">${i18n.t('clientTeams.columns.budget')}</span><div class="flex h-9 items-center px-1 text-xs font-semibold text-zinc-100">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 ui-text-muted">${i18n.t('common.status')}</span><div class="flex h-9 items-center">${statusControl}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 ui-text-muted">${i18n.t('clientTeams.columns.priority')}</span><div class="flex h-9 items-center">${priorityControl}</div></div>
+              <div class="flex min-w-0 flex-col justify-center text-xs"><span class="mb-1 ui-text-muted">${i18n.t('clientTeams.columns.budget')}</span><div class="flex h-9 items-center px-1 text-xs font-semibold ui-section-title">${formatEuroWhole(selectedProject.budget_cents)}</div></div>
             </div>
           </div>
 
-          <div id="onboarding-challenge-overview" class="rounded-2xl bg-zinc-800 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.24)] ring-1 ring-zinc-700/60 lg:p-6">
+          <div id="onboarding-challenge-overview" class="rounded-2xl ui-bg-surface-2 p-5 shadow-[0_24px_60px_rgba(2,6,23,0.24)] ui-ring-subtle lg:p-6">
               <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
-                  <h3 class="text-2xl font-semibold tracking-tight text-zinc-50">${i18n.t('projectDetail.challengeOverview.title')}</h3>
-                  <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-300">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
+                  <h3 class="text-2xl font-semibold tracking-tight ui-section-title">${i18n.t('projectDetail.challengeOverview.title')}</h3>
+                  <p class="mt-2 max-w-2xl text-sm leading-6 ui-text-secondary">${i18n.t('projectDetail.challengeOverview.subtitle')}</p>
                 </div>
                 <div class="flex flex-col items-stretch gap-3 lg:min-w-[14rem] lg:items-end">
-                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#00d8ff] px-4 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-[#33e1ff]" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
+                  ${viewerMode ? '' : `<button id="onboarding-add-challenge" class="ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition" onclick='openChallengeModal()'><svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-3V8a2 2 0 0 0-2-2h-1V5a2 2 0 1 0-4 0v1H8a2 2 0 0 0-2 2v3H5a2 2 0 1 0 0 4h1v3a2 2 0 0 0 2 2h3v-1a2 2 0 1 1 4 0v1h3a2 2 0 0 0 2-2v-3h1a2 2 0 1 0 0-4Zm-5 2h-2v2h-2v-2H8v-2h2V9h2v2h2Z"/></svg><span>${i18n.t('challenge.add')}</span></button>`}
                   <div class="w-full lg:w-[14rem]">
-                    <label for="challenge-sort-select" class="mb-1 block text-xs text-zinc-400 capitalize">${i18n.t('projectDetail.challengeSort.label')}</label>
+                    <label for="challenge-sort-select" class="mb-1 block text-xs ui-text-muted capitalize">${i18n.t('projectDetail.challengeSort.label')}</label>
                     <select
                       id="challenge-sort-select"
                       onchange="setChallengesSort(this.value)"
-                      class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100"
+                      class="w-full rounded-xl border ui-border-default ui-bg-surface-1 px-3 py-2.5 text-sm ui-section-title"
                       aria-label="${i18n.t('projectDetail.challengeSort.label')}"
                     >${['title_asc','title_desc','description_asc','description_desc','assignees_asc','assignees_desc'].map((sortValue) => `<option value="${sortValue}" ${state.challengesSort === sortValue ? 'selected' : ''}>${challengeSortOptionLabel(sortValue)}</option>`).join('')}</select>
                   </div>
@@ -680,7 +680,7 @@ const safeDom = window.ProjectorySafeDom || {};
 
         if (people.length === 0) {
           const empty = document.createElement('p');
-          empty.className = 'p-2 text-sm text-zinc-400';
+          empty.className = 'p-2 text-sm ui-text-muted';
           if (typeof safeDom.setText === 'function') {
             safeDom.setText(empty, i18n.t('assign.noMatches'));
           } else {
@@ -697,7 +697,7 @@ const safeDom = window.ProjectorySafeDom || {};
 
         for (const person of people) {
           const label = document.createElement('label');
-          label.className = 'mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-zinc-900';
+          label.className = 'mb-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1 ui-hover-surface-1';
 
           const input = document.createElement('input');
           input.type = 'radio';
@@ -710,7 +710,7 @@ const safeDom = window.ProjectorySafeDom || {};
 
           if (person.is_leaver) {
             const leaverBadge = document.createElement('span');
-            leaverBadge.className = 'ml-1 rounded border border-amber-500/60 px-1 py-0.5 text-[10px] uppercase tracking-wide text-amber-300';
+            leaverBadge.className = 'ui-badge-warning ml-1 rounded px-1 py-0.5 text-[10px] uppercase tracking-wide';
             if (typeof safeDom.setText === 'function') {
               safeDom.setText(leaverBadge, i18n.t('people.flags.leaver'));
             } else {
@@ -721,7 +721,7 @@ const safeDom = window.ProjectorySafeDom || {};
           }
 
           const trade = document.createElement('span');
-          trade.className = 'text-xs text-zinc-400';
+          trade.className = 'text-xs ui-text-muted';
           if (typeof safeDom.setText === 'function') {
             safeDom.setText(trade, `(${String(person.trade_name || '')})`);
           } else {
@@ -894,7 +894,7 @@ function filteredPeople() {
         const root = document.getElementById('admin-tabs');
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
         root.innerHTML = adminTabs
-          .map((tab) => `<button class="rounded-lg border px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'border-[#00d8ff] bg-[#00d8ff]/15 text-[#7cecff]' : 'border-zinc-700 bg-zinc-900 text-zinc-300'}" data-admin-tab="${tab.id}">${tab.label}</button>`)
+          .map((tab) => `<button class="ui-tab rounded-lg px-4 py-2 text-sm font-semibold ${state.adminTab === tab.id ? 'ui-tab-active' : ''}" data-admin-tab="${tab.id}">${tab.label}</button>`)
           .join('');
 
         root.querySelectorAll('button').forEach((button) => {
@@ -1014,7 +1014,7 @@ function filteredPeople() {
         const list = document.getElementById('export-scope-list');
         if (!list) return;
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-        list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-zinc-700 bg-zinc-950/40 p-2"><span class="text-sm text-zinc-200">${i18n.t(scope.labelKey)}</span><button class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-700" data-export-scope="${scope.key}" data-export-format="json">${i18n.t('portability.exportJson')}</button><button class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-700" data-export-scope="${scope.key}" data-export-format="csv">${i18n.t('portability.exportCsv')}</button></div>`).join('');
+        list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border ui-border-default ui-bg-surface-1-soft p-2"><span class="text-sm ui-text-secondary">${i18n.t(scope.labelKey)}</span><button class="rounded border ui-border-strong px-2 py-1 text-xs ui-hover-surface-2" data-export-scope="${scope.key}" data-export-format="json">${i18n.t('portability.exportJson')}</button><button class="rounded border ui-border-strong px-2 py-1 text-xs ui-hover-surface-2" data-export-scope="${scope.key}" data-export-format="csv">${i18n.t('portability.exportCsv')}</button></div>`).join('');
       }
 
       function closeExportModal() {
@@ -1035,7 +1035,7 @@ function filteredPeople() {
         const list = document.getElementById('import-scope-list');
         if (list) {
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-          list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-zinc-700 bg-zinc-950/40 p-2"><span class="text-sm text-zinc-200">${i18n.t(scope.labelKey)}</span><button class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-700" data-import-scope="${scope.key}" data-import-format="json">${i18n.t('portability.importJson')}</button><button class="rounded border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-700" data-import-scope="${scope.key}" data-import-format="csv">${i18n.t('portability.importCsv')}</button></div>`).join('');
+          list.innerHTML = portabilityScopes.map((scope) => `<div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border ui-border-default ui-bg-surface-1-soft p-2"><span class="text-sm ui-text-secondary">${i18n.t(scope.labelKey)}</span><button class="rounded border ui-border-strong px-2 py-1 text-xs ui-hover-surface-2" data-import-scope="${scope.key}" data-import-format="json">${i18n.t('portability.importJson')}</button><button class="rounded border ui-border-strong px-2 py-1 text-xs ui-hover-surface-2" data-import-scope="${scope.key}" data-import-format="csv">${i18n.t('portability.importCsv')}</button></div>`).join('');
         }
 
         const preview = document.getElementById('import-preview');
@@ -1204,7 +1204,7 @@ function filteredPeople() {
 
       function clearOnboardingHighlight() {
         if (!onboardingDemo.highlightedElement) return;
-        onboardingDemo.highlightedElement.classList.remove('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-zinc-950', 'relative', 'z-[81]');
+        onboardingDemo.highlightedElement.classList.remove('ui-onboarding-highlight', 'relative', 'z-[81]');
         onboardingDemo.highlightedElement = null;
       }
 
@@ -1254,7 +1254,7 @@ function filteredPeople() {
 
         clearOnboardingHighlight();
         if (target) {
-          target.classList.add('ring-4', 'ring-indigo-400', 'ring-offset-2', 'ring-offset-zinc-950', 'relative', 'z-[81]');
+          target.classList.add('ui-onboarding-highlight', 'relative', 'z-[81]');
           onboardingDemo.highlightedElement = target;
         }
 
@@ -1586,7 +1586,7 @@ function filteredPeople() {
           .map((assignment) => {
             const checked = state.unassignModal.selectedAssignmentIds.includes(String(assignment.id)) ? 'checked' : '';
             const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
-            return `<label class="mb-1 flex items-center gap-2 rounded px-2 py-1 hover:bg-zinc-900">
+            return `<label class="mb-1 flex items-center gap-2 rounded px-2 py-1 ui-hover-surface-1">
               <input type="checkbox" data-unassign-id="${assignment.id}" ${checked} />
               <span>${assignment.first_name} ${assignment.last_name} (${roleLabel})</span>
             </label>`;
@@ -2058,7 +2058,7 @@ function filteredPeople() {
         if (!person) {
           document.getElementById('people-overview-modal-title').textContent = i18n.t('peopleOverview.modal.title');
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-          document.getElementById('people-overview-modal-body').innerHTML = `<p class="text-zinc-300">${i18n.t('peopleOverview.modal.noAssignmentsFound')}</p>`;
+          document.getElementById('people-overview-modal-body').innerHTML = `<p class="ui-text-secondary">${i18n.t('peopleOverview.modal.noAssignmentsFound')}</p>`;
           return;
         }
 
@@ -2067,7 +2067,7 @@ function filteredPeople() {
 
         if (assignments.length === 0) {
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-          document.getElementById('people-overview-modal-body').innerHTML = `<p class="text-zinc-300">${i18n.t('peopleOverview.modal.noAssignmentsForPerson')}</p>`;
+          document.getElementById('people-overview-modal-body').innerHTML = `<p class="ui-text-secondary">${i18n.t('peopleOverview.modal.noAssignmentsForPerson')}</p>`;
           return;
         }
 
@@ -2084,46 +2084,46 @@ function filteredPeople() {
           .map(([projectId, projectAssignments]) => {
             const project = projectById.get(projectId);
             const projectName = project ? `${project.name} (${project.client_name})` : `Project ${projectId}`;
-            const adjustControl = isViewerMode() ? '' : `<button class="rounded border border-[#00d8ff]/50 px-2 py-1 text-xs text-[#00d8ff] hover:bg-zinc-700" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">${i18n.t('peopleOverview.adjustWorkload')}</button>`;
+            const adjustControl = isViewerMode() ? '' : `<button class="ui-btn ui-btn-accent rounded px-2 py-1 text-xs" onclick="adjustProjectPersonQuantity(${projectId}, ${person.id}, true)">${i18n.t('peopleOverview.adjustWorkload')}</button>`;
 
             const assignmentRows = projectAssignments
               .map((assignment) => {
                 const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
-                const roleClass = assignment.is_owner ? 'text-blue-300' : assignment.is_leader ? 'text-emerald-300' : 'text-zinc-100';
+                const roleClass = assignment.is_owner ? 'ui-text-accent' : assignment.is_leader ? 'ui-text-success' : 'ui-section-title';
                 const challenge = challengeById.get(String(assignment.challenge_id));
                 const challengeDescription = challenge?.description || 'No description available.';
                 const quantity = Math.round(Number(assignment.quantity || 0));
-                const barColor = assignment.is_owner ? 'bg-blue-500' : assignment.is_leader ? 'bg-emerald-500' : 'bg-zinc-100';
+                const barColor = assignment.is_owner ? 'ui-progress-fill-info' : assignment.is_leader ? 'ui-progress-fill-success' : 'ui-progress-fill-neutral';
                 const challengePayload = JSON.stringify(challenge || { id: assignment.challenge_id, title: assignment.challenge_title, description: challengeDescription, project_id: assignment.project_id });
 
-                const tableRow = `<tr class="border-t border-zinc-800">
+                const tableRow = `<tr class="border-t ui-border-subtle">
                   <td class="p-2 pl-6">
                     <button class="w-full text-left hover:opacity-90" onclick='openChallengeFromPeopleOverviewModal(${challengePayload})'>
-                      <div class="font-medium text-zinc-100 underline decoration-zinc-600 underline-offset-2">${assignment.challenge_title}</div>
-                      <div class="text-zinc-400">${challengeDescription}</div>
+                      <div class="font-medium ui-section-title underline decoration-zinc-600 underline-offset-2">${assignment.challenge_title}</div>
+                      <div class="ui-text-muted">${challengeDescription}</div>
                     </button>
                   </td>
                   <td class="p-2"><span class="font-semibold ${roleClass}">${roleLabel}</span></td>
                   <td class="p-2 text-right">
                     <div class="font-semibold">${quantity}% (${formatWorkloadDuration(quantity, person.working_hours)})</div>
-                    <div class="mt-1 ml-auto h-2 w-32 overflow-hidden rounded bg-zinc-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
+                    <div class="ui-progress-track mt-1 ml-auto h-2 w-32 overflow-hidden rounded"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
                   </td>
                 </tr>`;
 
-                const mobileCard = `<article class="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 shadow-sm">
+                const mobileCard = `<article class="rounded-xl border ui-border-subtle ui-bg-surface-1 p-4 shadow-sm">
                   <button class="w-full text-left" onclick='openChallengeFromPeopleOverviewModal(${challengePayload})'>
-                    <div class="text-base font-semibold text-zinc-100 break-words underline decoration-zinc-600 underline-offset-2">${assignment.challenge_title}</div>
-                    <p class="mt-2 text-sm leading-6 text-zinc-400 break-words">${challengeDescription}</p>
+                    <div class="text-base font-semibold ui-section-title break-words underline decoration-zinc-600 underline-offset-2">${assignment.challenge_title}</div>
+                    <p class="mt-2 text-sm leading-6 ui-text-muted break-words">${challengeDescription}</p>
                   </button>
                   <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
-                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('assign.role')}</div>
-                      <div class="mt-2"><span class="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${assignment.is_owner ? 'border-blue-400/70 bg-blue-600 text-blue-50' : assignment.is_leader ? 'border-emerald-400/70 bg-emerald-600 text-emerald-50' : 'border-zinc-500 bg-zinc-700 text-zinc-100'}">${roleLabel}</span></div>
+                    <div class="rounded-lg border ui-border-subtle ui-bg-surface-muted px-3 py-2">
+                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] ui-text-muted">${i18n.t('assign.role')}</div>
+                      <div class="mt-2"><span class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs ${assignment.is_owner ? 'ui-pill-info' : assignment.is_leader ? 'ui-pill-success' : 'ui-pill-neutral'}">${roleLabel}</span></div>
                     </div>
-                    <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
-                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">${i18n.t('peopleOverview.columns.workload')}</div>
-                      <div class="mt-1 font-semibold text-zinc-100">${quantity}% (${formatWorkloadDuration(quantity, person.working_hours)})</div>
-                      <div class="mt-2 h-2 overflow-hidden rounded bg-zinc-800"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
+                    <div class="rounded-lg border ui-border-subtle ui-bg-surface-muted px-3 py-2">
+                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] ui-text-muted">${i18n.t('peopleOverview.columns.workload')}</div>
+                      <div class="mt-1 font-semibold ui-section-title">${quantity}% (${formatWorkloadDuration(quantity, person.working_hours)})</div>
+                      <div class="ui-progress-track mt-2 h-2 overflow-hidden rounded"><div class="h-full ${barColor}" style="width:${Math.max(0, Math.min(100, quantity))}%"></div></div>
                     </div>
                   </div>
                 </article>`;
@@ -2131,8 +2131,8 @@ function filteredPeople() {
                 return { tableRow, mobileCard };
               });
 
-            const tableGroup = `<tr class="border-t border-zinc-700 bg-zinc-900/70"><td class="p-2 font-semibold text-zinc-100" colspan="2">${projectName}</td><td class="p-2 text-right">${adjustControl}</td></tr>${assignmentRows.map((entry) => entry.tableRow).join('')}`;
-            const mobileGroup = `<section class="rounded-2xl border border-zinc-700 bg-zinc-900/70 p-3"><div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h4 class="text-sm font-semibold text-zinc-100 break-words">${projectName}</h4>${adjustControl}</div><div class="space-y-3">${assignmentRows.map((entry) => entry.mobileCard).join('')}</div></section>`;
+            const tableGroup = `<tr class="border-t ui-border-default ui-bg-surface-muted"><td class="p-2 font-semibold ui-section-title" colspan="2">${projectName}</td><td class="p-2 text-right">${adjustControl}</td></tr>${assignmentRows.map((entry) => entry.tableRow).join('')}`;
+            const mobileGroup = `<section class="rounded-2xl border ui-border-default ui-bg-surface-muted p-3"><div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h4 class="text-sm font-semibold ui-section-title break-words">${projectName}</h4>${adjustControl}</div><div class="space-y-3">${assignmentRows.map((entry) => entry.mobileCard).join('')}</div></section>`;
             return { tableGroup, mobileGroup };
           });
 
@@ -2140,9 +2140,9 @@ function filteredPeople() {
         const mobileGroups = detailGroups.map((group) => group.mobileGroup).join('');
 
         // dom-safety-allow: reviewed template rendering path; follow-up refactor tracked in XSS hardening plan.
-        document.getElementById('people-overview-modal-body').innerHTML = `<div id="people-overview-mobile-detail-list" class="space-y-4 md:hidden">${mobileGroups}</div><div class="hidden md:block"><table class="w-full text-left text-xs rounded border border-zinc-700 overflow-hidden">
+        document.getElementById('people-overview-modal-body').innerHTML = `<div id="people-overview-mobile-detail-list" class="space-y-4 md:hidden">${mobileGroups}</div><div class="hidden md:block"><table class="ui-table-shell w-full text-left text-xs rounded overflow-hidden">
           <thead>
-            <tr class="text-zinc-400 bg-zinc-950/70">
+            <tr class="ui-table-head ui-bg-surface-1">
               <th class="p-2">${i18n.t('entity.challenges')}</th>
               <th class="p-2">${i18n.t('assign.role')}</th>
               <th class="p-2">${i18n.t('peopleOverview.columns.workload')}</th>

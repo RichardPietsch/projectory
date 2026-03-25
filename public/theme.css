@@ -44,6 +44,18 @@ body[data-theme='dark'] {
   color: var(--color-text-secondary);
 }
 
+.ui-text-body {
+  color: #3f3f46;
+}
+
+.ui-text-strong {
+  color: #18181b;
+}
+
+.ui-text-stronger {
+  color: #09090b;
+}
+
 .ui-text-subtle {
   color: var(--color-text-subtle);
 }
@@ -78,6 +90,50 @@ body[data-theme='dark'] {
   border: 1px solid rgba(63, 63, 70, 0.9);
   background: rgba(39, 39, 42, 0.92);
   box-shadow: var(--shadow-elevated);
+}
+
+.ui-bg-surface-1 {
+  background: #09090b;
+}
+
+.ui-bg-surface-1-soft {
+  background: rgba(9, 9, 11, 0.4);
+}
+
+.ui-bg-surface-2 {
+  background: var(--color-surface-2);
+}
+
+.ui-bg-surface-2-soft {
+  background: rgba(63, 63, 70, 0.5);
+}
+
+.ui-bg-surface-muted {
+  background: rgba(39, 39, 42, 0.72);
+}
+
+.ui-hover-surface-1:hover {
+  background: #09090b;
+}
+
+.ui-hover-surface-2:hover {
+  background: var(--color-surface-2);
+}
+
+.ui-border-default {
+  border-color: var(--color-border-default);
+}
+
+.ui-border-strong {
+  border-color: var(--color-border-strong);
+}
+
+.ui-border-subtle {
+  border-color: rgba(63, 63, 70, 0.6);
+}
+
+.ui-ring-subtle {
+  box-shadow: inset 0 0 0 1px rgba(63, 63, 70, 0.6);
 }
 
 .ui-card,
@@ -207,6 +263,10 @@ body[data-theme='dark'] {
   background: rgba(0, 216, 255, 0.16);
 }
 
+.ui-btn-ghost-soft:hover {
+  background: rgba(212, 212, 216, 0.5);
+}
+
 .ui-tab {
   border: 1px solid var(--color-border-default);
   background: var(--color-surface-1);
@@ -318,6 +378,10 @@ body[data-theme='dark'] {
   color: var(--color-text-secondary);
 }
 
+.ui-drop-highlight {
+  background: rgba(39, 39, 42, 0.6);
+}
+
 .ui-pill-info {
   border: 1px solid rgba(96, 165, 250, 0.7);
   background: #2563eb;
@@ -376,4 +440,24 @@ body[data-theme='dark'] {
   border: 1px dotted #d4d4d8;
   color: #f4f4f5;
   background: rgba(228, 228, 231, 0.1);
+}
+
+.ui-progress-track {
+  background: rgba(39, 39, 42, 0.8);
+}
+
+.ui-progress-fill-info {
+  background: #3b82f6;
+}
+
+.ui-progress-fill-success {
+  background: #10b981;
+}
+
+.ui-progress-fill-neutral {
+  background: #f4f4f5;
+}
+
+.ui-onboarding-highlight {
+  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.95), 0 0 0 6px #09090b;
 }
