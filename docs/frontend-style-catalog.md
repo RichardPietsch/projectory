@@ -85,3 +85,8 @@ PY
 - Targeted templates now compose semantic `ui-*` classes for visual presentation and keep utility classes primarily for layout/spacing.
 - Focus/selection/highlight behavior remains token-backed (`ui-input`/`ui-btn` focus ring + `ui-onboarding-highlight`).
 - Remaining visual color literals in targeted JS are limited to configuration data defaults, documented above.
+
+## Automated enforcement (new)
+- Added `scripts/check-frontend-visual-policy.js` and wired it into `npm run lint:boundaries` via `npm run frontend:style-policy:check`.
+- Current enforcement scope is the auth login screen section in `public/js/app-shared-auth.js` (`loginScreenView`) to prevent regressions where visual Tailwind classes are reintroduced.
+- As additional screens are migrated, expand checker scope markers to enforce semantic-only visual classes project-wide.

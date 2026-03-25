@@ -331,72 +331,72 @@ const sharedI18n = window.ProjectoryI18n;
             ? sharedI18n.t('auth.register.submitBusy')
             : sharedI18n.t('auth.register.submit');
           const registerError = sharedState.initialRegistration.error
-            ? `<p class="mt-2 text-xs text-rose-300">${sharedState.initialRegistration.error}</p>`
+            ? `<p class="ui-text-danger mt-2 text-xs">${sharedState.initialRegistration.error}</p>`
             : '';
 
-          return `<div class="mx-auto mt-8 max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-900/80 p-8 shadow-2xl">
+          return `<div class="ui-panel mx-auto mt-8 max-w-3xl rounded-2xl p-8 shadow-2xl">
             <h2 class="text-3xl font-bold">${sharedI18n.t('auth.register.title')}</h2>
-            <p class="mt-2 text-zinc-300">${sharedI18n.t('auth.register.subtitle')}</p>
-            <div class="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">${sharedI18n.t('auth.register.requirementsHint')}</div>
-            <form id="initial-register-form" class="mt-4 rounded-xl border border-zinc-800 bg-zinc-800 p-4">
+            <p class="ui-text-secondary mt-2">${sharedI18n.t('auth.register.subtitle')}</p>
+            <div class="ui-alert-info mt-4 rounded-lg px-3 py-2 text-xs">${sharedI18n.t('auth.register.requirementsHint')}</div>
+            <form id="initial-register-form" class="ui-panel-muted mt-4 rounded-xl p-4">
               <div class="grid gap-3 md:grid-cols-2">
-                <label class="block text-sm text-zinc-300">${sharedI18n.t('auth.register.displayName')}
-                  <input id="register-display-name" type="text" class="mt-1 w-full rounded bg-zinc-950 p-2" required />
+                <label class="ui-text-secondary block text-sm">${sharedI18n.t('auth.register.displayName')}
+                  <input id="register-display-name" type="text" class="ui-input mt-1 w-full" required />
                 </label>
-                <label class="block text-sm text-zinc-300">${sharedI18n.t('auth.login.email')}
-                  <input id="register-email" type="email" class="mt-1 w-full rounded bg-zinc-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.email')}" required />
+                <label class="ui-text-secondary block text-sm">${sharedI18n.t('auth.login.email')}
+                  <input id="register-email" type="email" class="ui-input mt-1 w-full" placeholder="${sharedI18n.t('auth.login.placeholders.email')}" required />
                 </label>
-                <label class="block text-sm text-zinc-300">${sharedI18n.t('auth.login.password')}
-                  <input id="register-password" type="password" minlength="12" class="mt-1 w-full rounded bg-zinc-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.password')}" required />
+                <label class="ui-text-secondary block text-sm">${sharedI18n.t('auth.login.password')}
+                  <input id="register-password" type="password" minlength="12" class="ui-input mt-1 w-full" placeholder="${sharedI18n.t('auth.login.placeholders.password')}" required />
                 </label>
-                <label class="block text-sm text-zinc-300">${sharedI18n.t('auth.register.confirmPassword')}
-                  <input id="register-password-confirm" type="password" minlength="12" class="mt-1 w-full rounded bg-zinc-950 p-2" required />
+                <label class="ui-text-secondary block text-sm">${sharedI18n.t('auth.register.confirmPassword')}
+                  <input id="register-password-confirm" type="password" minlength="12" class="ui-input mt-1 w-full" required />
                 </label>
               </div>
-              <button type="submit" class="mt-4 rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-60" ${sharedState.initialRegistration.submitting ? 'disabled' : ''}>${registerBusy}</button>
+              <button type="submit" class="ui-btn ui-btn-primary mt-4 px-3 py-2 text-sm font-semibold disabled:opacity-60" ${sharedState.initialRegistration.submitting ? 'disabled' : ''}>${registerBusy}</button>
               ${registerError}
             </form>
           </div>`;
         }
 
         const forgotBusy = sharedState.forgotPassword.submitting ? sharedI18n.t('auth.forgot.submitBusy') : sharedI18n.t('auth.forgot.submit');
-        const forgotError = sharedState.forgotPassword.error ? `<p class="mt-2 text-xs text-rose-300">${sharedState.forgotPassword.error}</p>` : '';
+        const forgotError = sharedState.forgotPassword.error ? `<p class="ui-text-danger mt-2 text-xs">${sharedState.forgotPassword.error}</p>` : '';
         const forgotSuccess = sharedState.forgotPassword.submitted
-          ? `<p class="mt-2 text-xs text-emerald-300">${sharedI18n.t('auth.forgot.success')}</p>`
+          ? `<p class="ui-text-success mt-2 text-xs">${sharedI18n.t('auth.forgot.success')}</p>`
           : '';
 
-        return `<div class="mx-auto mt-8 max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-900/80 p-8 shadow-2xl">
+        return `<div class="ui-panel mx-auto mt-8 max-w-4xl rounded-2xl p-8 shadow-2xl">
           <div class="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
               <h2 class="text-3xl font-bold">${sharedI18n.t('auth.login.title')}</h2>
-              <p class="mt-2 text-zinc-300">${sharedI18n.t('auth.login.subtitle')}</p>
-              <ul class="mt-4 list-disc space-y-1 pl-5 text-sm text-zinc-400">
+              <p class="ui-text-secondary mt-2">${sharedI18n.t('auth.login.subtitle')}</p>
+              <ul class="ui-text-muted mt-4 list-disc space-y-1 pl-5 text-sm">
                 <li>${sharedI18n.t('auth.login.bullet.permissions')}</li>
                 <li>${sharedI18n.t('auth.login.bullet.session')}</li>
                 <li>${sharedI18n.t('auth.login.bullet.audit')}</li>
               </ul>
             </div>
             <div class="space-y-4">
-              <form id="login-form" class="rounded-xl border border-zinc-800 bg-zinc-800 p-4">
+              <form id="login-form" class="ui-panel-muted rounded-xl p-4">
                 <h3 class="mb-3 text-lg font-semibold">${sharedI18n.t('auth.login.formTitle')}</h3>
-                <label class="mb-2 block text-sm text-zinc-300">${sharedI18n.t('auth.login.email')}
-                  <input id="login-email" type="email" class="mt-1 w-full rounded bg-zinc-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.email')}" required />
+                <label class="ui-text-secondary mb-2 block text-sm">${sharedI18n.t('auth.login.email')}
+                  <input id="login-email" type="email" class="ui-input mt-1 w-full" placeholder="${sharedI18n.t('auth.login.placeholders.email')}" required />
                 </label>
-                <label class="mb-3 block text-sm text-zinc-300">${sharedI18n.t('auth.login.password')}
-                  <input id="login-password" type="password" class="mt-1 w-full rounded bg-zinc-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.password')}" required />
+                <label class="ui-text-secondary mb-3 block text-sm">${sharedI18n.t('auth.login.password')}
+                  <input id="login-password" type="password" class="ui-input mt-1 w-full" placeholder="${sharedI18n.t('auth.login.placeholders.password')}" required />
                 </label>
                 <div class="flex gap-2">
-                  <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-zinc-950">${sharedI18n.t('auth.login.submit')}</button>
+                  <button type="submit" class="ui-btn ui-btn-primary px-3 py-2 text-sm font-semibold">${sharedI18n.t('auth.login.submit')}</button>
                 </div>
               </form>
 
-              <form id="forgot-password-form" class="rounded-xl border border-zinc-800 bg-zinc-800 p-4">
-                <h3 class="mb-2 text-sm font-semibold text-zinc-200">${sharedI18n.t('auth.forgot.title')}</h3>
-                <label class="block text-sm text-zinc-300">${sharedI18n.t('auth.forgot.emailLabel')}
-                  <input id="forgot-password-email" type="email" class="mt-1 w-full rounded bg-zinc-950 p-2" placeholder="${sharedI18n.t('auth.login.placeholders.email')}" required />
+              <form id="forgot-password-form" class="ui-panel-muted rounded-xl p-4">
+                <h3 class="ui-text-secondary mb-2 text-sm font-semibold">${sharedI18n.t('auth.forgot.title')}</h3>
+                <label class="ui-text-secondary block text-sm">${sharedI18n.t('auth.forgot.emailLabel')}
+                  <input id="forgot-password-email" type="email" class="ui-input mt-1 w-full" placeholder="${sharedI18n.t('auth.login.placeholders.email')}" required />
                 </label>
                 <div class="mt-3">
-                  <button type="submit" class="rounded border border-zinc-600 px-3 py-2 text-xs hover:bg-zinc-800 disabled:opacity-60" ${sharedState.forgotPassword.submitting ? 'disabled' : ''}>${forgotBusy}</button>
+                  <button type="submit" class="ui-btn ui-btn-secondary px-3 py-2 text-xs disabled:opacity-60" ${sharedState.forgotPassword.submitting ? 'disabled' : ''}>${forgotBusy}</button>
                 </div>
                 ${forgotSuccess}
                 ${forgotError}
@@ -602,4 +602,3 @@ const sharedI18n = window.ProjectoryI18n;
           render();
         }
       };
-
