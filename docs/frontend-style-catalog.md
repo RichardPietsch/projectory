@@ -87,7 +87,7 @@ Examples requiring migration or explicit exception handling:
 | Action buttons | `ui-btn` + variant (`primary/secondary/danger/success/accent`) |
 | Warning/muted badges | `ui-badge-warning`, `ui-badge-muted` |
 | Swatch ring visuals | `ui-color-swatch-ring`, `ui-color-swatch-ring-active` |
-| Role pills | `ui-pill-owner*`, `ui-pill-leader*`, `ui-pill-contributor*` |
+| Role pills | `ui-pill-info*`, `ui-pill-success*`, `ui-pill-neutral*` |
 
 ## 5) Keep-as-layout utility guidance
 These should remain in templates:

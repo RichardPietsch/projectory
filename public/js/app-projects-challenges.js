@@ -119,8 +119,8 @@
               .map((person) => {
                 const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
                 const ownerClass = isSelf
-                  ? 'ui-pill-owner-self'
-                  : 'ui-pill-owner';
+                  ? 'ui-pill-info-self'
+                  : 'ui-pill-info';
                 return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${ownerClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
               })
               .join('');
@@ -133,11 +133,11 @@
                 const isSelf = viewerPersonId && String(person.id) === viewerPersonId;
                 const leaderClass = person.owner
                   ? (isSelf
-                      ? 'ui-pill-leader-secondary-self'
-                      : 'ui-pill-leader-secondary')
+                      ? 'ui-pill-success-secondary-self'
+                      : 'ui-pill-success-secondary')
                   : (isSelf
-                      ? 'ui-pill-leader-self'
-                      : 'ui-pill-leader');
+                      ? 'ui-pill-success-self'
+                      : 'ui-pill-success');
                 return `<span class="mb-1 mr-1 inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${leaderClass}">${selfRoleIcon(isSelf)}<span>${person.name}${leaverRunIcon(person.isLeaver)}</span></span>`;
               })
               .join('');
@@ -357,15 +357,15 @@
               let tierClass = isSecondaryRole(personId) ? secondaryTierClass : primaryTierClass;
               if (isSelf) {
                 if (tierLabel.includes('owner')) {
-                  tierClass = 'ui-pill-owner-self';
+                  tierClass = 'ui-pill-info-self';
                 } else if (tierLabel.includes('leader')) {
                   tierClass = isSecondaryRole(personId)
-                    ? 'ui-pill-leader-secondary-self'
-                    : 'ui-pill-leader-self';
+                    ? 'ui-pill-success-secondary-self'
+                    : 'ui-pill-success-self';
                 } else {
                   tierClass = isSecondaryRole(personId)
-                    ? 'ui-pill-contributor-secondary-self'
-                    : 'ui-pill-contributor-self';
+                    ? 'ui-pill-neutral-secondary-self'
+                    : 'ui-pill-neutral-self';
                 }
               }
               const tierLabelWithMeta = `${selfRoleIcon(isSelf)}<span>${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</span>`;
@@ -387,9 +387,9 @@
           <h3 class="mb-3 text-lg font-semibold">${i18n.t('projectDetail.teamOverview.title')}</h3>
           <p class="ui-section-subtitle mb-3 text-xs">${i18n.t('projectDetail.teamOverview.subtitle')}</p>
           <div class="space-y-3">
-            ${renderTierPeople(ownerIds, 'Client owner(s)', 'ui-pill-owner', 'ui-pill-owner', () => false, 'onboarding-client-owners')}
-            ${renderTierPeople(leaderIds, 'Client leader(s)', 'ui-pill-leader', 'ui-pill-leader-secondary', (personId) => ownerIds.has(personId), 'onboarding-client-leaders')}
-            ${renderTierPeople(contributorIds, 'Contributors', 'ui-pill-contributor', 'ui-pill-contributor-secondary', (personId) => ownerIds.has(personId) || leaderIds.has(personId), 'onboarding-contributors')}
+            ${renderTierPeople(ownerIds, 'Client owner(s)', 'ui-pill-info', 'ui-pill-info', () => false, 'onboarding-client-owners')}
+            ${renderTierPeople(leaderIds, 'Client leader(s)', 'ui-pill-success', 'ui-pill-success-secondary', (personId) => ownerIds.has(personId), 'onboarding-client-leaders')}
+            ${renderTierPeople(contributorIds, 'Contributors', 'ui-pill-neutral', 'ui-pill-neutral-secondary', (personId) => ownerIds.has(personId) || leaderIds.has(personId), 'onboarding-contributors')}
           </div>
         </div>`;
 
