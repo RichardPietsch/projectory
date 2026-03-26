@@ -501,6 +501,31 @@
           })
           .join('');
 
+        const mobileCards = sorted
+          .map((person) => {
+            const isCurrentUser = viewerPersonId && String(person.id) === viewerPersonId;
+            const cardClass = isCurrentUser
+              ? 'ui-mobile-card ui-table-row-selected p-4'
+              : 'ui-mobile-card p-4';
+            return `<article class="${cardClass}" onclick="openPeopleOverviewModal(${person.id})">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                  <h4 class="ui-section-title text-base font-semibold break-words">${person.first_name} ${person.last_name}${personLeaverBadge(person)}</h4>
+                  <p class="ui-text-muted mt-1 text-sm">${person.trade_name} · ${person.level_name}</p>
+                </div>
+                <div class="ui-section-title text-right text-sm font-semibold">${person.workloadTotal}%</div>
+              </div>
+              <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div class="ui-stat-card px-3 py-2"><dt class="ui-text-muted text-[11px] font-semibold uppercase tracking-[0.16em]">${i18n.t('peopleOverview.columns.assignments')}</dt><dd class="mt-1 font-semibold ${assignmentsWarningClass(person.assignmentCount)}">${person.assignmentCount}</dd></div>
+                <div class="ui-stat-card px-3 py-2"><dt class="ui-text-muted text-[11px] font-semibold uppercase tracking-[0.16em]">${i18n.t('peopleOverview.columns.workload')}</dt><dd class="mt-1 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}% (${formatWorkloadDuration(person.workloadTotal, person.working_hours)})</dd></div>
+                <div class="ui-stat-card px-3 py-2"><dt class="ui-text-muted text-[11px] font-semibold uppercase tracking-[0.16em]">${i18n.t('peopleOverview.columns.ownerships')}</dt><dd class="mt-1 font-semibold ${roleCountWarningClass(person.ownershipCount)}">${person.ownershipCount}</dd></div>
+                <div class="ui-stat-card px-3 py-2"><dt class="ui-text-muted text-[11px] font-semibold uppercase tracking-[0.16em]">${i18n.t('peopleOverview.columns.leaderships')}</dt><dd class="mt-1 font-semibold ${roleCountWarningClass(person.leadershipCount)}">${person.leadershipCount}</dd></div>
+              </dl>
+              <div class="ui-text-secondary mt-3 text-xs">${i18n.t('peopleOverview.columns.contributions')}: <span class="font-semibold ${assignmentsWarningClass(person.contributionsCount)}">${person.contributionsCount}</span></div>
+            </article>`;
+          })
+          .join('');
+
         return `<div class="ui-panel p-4">
           <div class="mb-3">
             <h3 class="text-lg font-semibold">${i18n.t('home.peopleOverview')}</h3>
@@ -522,6 +547,8 @@
               title="Clear search"
             >✕</button>
           </div>
+          <div id="onboarding-people-overview-mobile-list" class="space-y-3 md:hidden">${mobileCards}</div>
+          <div class="hidden md:block overflow-x-auto">
           <table id="onboarding-people-overview-table" class="w-full table-fixed text-left text-sm">
             <thead><tr class="ui-table-head">
               <th class="w-[20%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setPeopleOverviewSortField('name')">${i18n.t('people.columns.name')} ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
@@ -535,6 +562,7 @@
             </tr></thead>
             <tbody>${rows}</tbody>
           </table>
+          </div>
         </div>`;
       }
 

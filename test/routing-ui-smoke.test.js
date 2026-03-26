@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const routingUiSource = fs.readFileSync(path.join(__dirname, '../public/js/app-routing-ui.js'), 'utf8');
 const challengesSource = fs.readFileSync(path.join(__dirname, '../public/js/app-projects-challenges.js'), 'utf8');
+const adminAccessSource = fs.readFileSync(path.join(__dirname, '../public/js/app-admin-access.js'), 'utf8');
 
 test('home tab nav includes keyboard listener and tab semantics', () => {
   assert.match(routingUiSource, /setAttribute\('role', 'tablist'\)/);
@@ -61,6 +62,11 @@ test('admin CRUD modals use bottom-sheet friendly mobile layout classes', () => 
 test('people overview detail keeps a dedicated mobile grouped-card container', () => {
   assert.match(challengesSource, /id="people-overview-mobile-detail-list" class="space-y-4 md:hidden"/);
   assert.match(challengesSource, /adjustProjectPersonQuantity\(\$\{projectId\}, \$\{person\.id\}, true\)/);
+});
+
+test('people overview home tab includes mobile card list', () => {
+  assert.match(adminAccessSource, /id="onboarding-people-overview-mobile-list" class="space-y-3 md:hidden"/);
+  assert.match(adminAccessSource, /id="onboarding-people-overview-table" class="w-full table-fixed text-left text-sm"/);
 });
 
 
