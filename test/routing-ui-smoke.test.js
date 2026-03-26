@@ -66,7 +66,7 @@ test('people overview detail keeps a dedicated mobile grouped-card container', (
 
 test('people overview home tab includes mobile card list', () => {
   assert.match(adminAccessSource, /id="onboarding-people-overview-mobile-list" class="space-y-3 md:hidden"/);
-  assert.match(adminAccessSource, /id="onboarding-people-overview-table" class="w-full table-fixed text-left text-sm"/);
+  assert.match(adminAccessSource, /id="onboarding-people-overview-table" class="[^"]*table-fixed[^"]*text-left[^"]*text-sm"/);
 });
 
 

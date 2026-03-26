@@ -490,13 +490,13 @@
               : 'ui-table-row ui-table-row-interactive';
             return `<tr class="${rowClass}" onclick="openPeopleOverviewModal(${person.id})">
             <td class="p-2">${person.first_name} ${person.last_name}${personLeaverBadge(person)}</td>
-            <td class="p-2">${person.trade_name}</td>
-            <td class="p-2">${person.level_name}</td>
-            <td class="p-2 font-semibold ${assignmentsWarningClass(person.assignmentCount)}">${person.assignmentCount}</td>
-            <td class="p-2 font-semibold ${roleCountWarningClass(person.ownershipCount)}">${person.ownershipCount}</td>
-            <td class="p-2 font-semibold ${roleCountWarningClass(person.leadershipCount)}">${person.leadershipCount}</td>
-            <td class="p-2 font-semibold ${assignmentsWarningClass(person.contributionsCount)}">${person.contributionsCount}</td>
-            <td class="p-2 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}% (${formatWorkloadDuration(person.workloadTotal, person.working_hours)})</td>
+            <td class="ui-text-secondary p-2">${person.trade_name}</td>
+            <td class="ui-text-secondary p-2">${person.level_name}</td>
+            <td class="ui-text-secondary p-2 font-semibold ${assignmentsWarningClass(person.assignmentCount)}">${person.assignmentCount}</td>
+            <td class="ui-text-secondary p-2 font-semibold ${roleCountWarningClass(person.ownershipCount)}">${person.ownershipCount}</td>
+            <td class="ui-text-secondary p-2 font-semibold ${roleCountWarningClass(person.leadershipCount)}">${person.leadershipCount}</td>
+            <td class="ui-text-secondary p-2 font-semibold ${assignmentsWarningClass(person.contributionsCount)}">${person.contributionsCount}</td>
+            <td class="ui-text-secondary p-2 font-semibold ${workloadWarningClass(person.workloadTotal)}">${person.workloadTotal}% (${formatWorkloadDuration(person.workloadTotal, person.working_hours)})</td>
           </tr>`;
           })
           .join('');
@@ -548,8 +548,8 @@
             >✕</button>
           </div>
           <div id="onboarding-people-overview-mobile-list" class="space-y-3 md:hidden">${mobileCards}</div>
-          <div class="hidden md:block overflow-x-auto">
-          <table id="onboarding-people-overview-table" class="w-full table-fixed text-left text-sm">
+          <div class="ui-table-shell mt-4 hidden overflow-x-auto md:block">
+          <table id="onboarding-people-overview-table" class="min-w-[860px] w-full table-fixed text-left text-sm">
             <thead><tr class="ui-table-head">
               <th class="w-[20%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setPeopleOverviewSortField('name')">${i18n.t('people.columns.name')} ${state.peopleOverviewSort.startsWith('name_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
               <th class="w-[15%] p-2"><button class="ui-sort-button inline-flex items-center gap-1 whitespace-nowrap" onclick="setPeopleOverviewSortField('trade')">${i18n.t('people.columns.trade')} ${state.peopleOverviewSort.startsWith('trade_') ? (state.peopleOverviewSort.endsWith('_asc') ? '↑' : '↓') : ''}</button></th>
