@@ -236,7 +236,7 @@
 
       function renderHomeTabs(container) {
         const tabsWrap = document.createElement('div');
-        tabsWrap.className = 'mb-4 overflow-x-auto border-b ui-border-subtle';
+        tabsWrap.className = 'mb-4 overflow-x-auto overflow-y-hidden border-b ui-border-subtle';
 
         const nav = document.createElement('nav');
         nav.className = '-mb-px flex min-w-max gap-4 sm:gap-6';
