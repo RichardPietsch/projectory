@@ -4,18 +4,32 @@ const path = require('node:path');
 
 const repoRoot = path.resolve(__dirname, '..');
 
-// Start with auth screen scope; expand this list as more screens are migrated.
+// Scope is expanded incrementally as surfaces are migrated.
 const scopedFiles = [
   {
     path: 'public/js/app-shared-auth.js',
     startMarker: 'function loginScreenView() {',
-    endMarker: 'function inviteFlowView() {'
+    endMarker: 'window.submitForgotPassword = async function submitForgotPassword(event) {'
+  },
+  {
+    path: 'public/js/views-people.js'
+  },
+  {
+    path: 'public/js/views-admin-projects.js'
+  },
+  {
+    path: 'public/js/views-clients.js'
+  },
+  {
+    path: 'public/js/app-routing-ui.js',
+    startMarker: 'function adminStandaloneView() {',
+    endMarker: 'window.setAdminTab = function setAdminTab(tabId)'
   }
 ];
 
 const prohibitedClassPatterns = [
   /^(?:text|bg|border|ring|shadow|decoration|outline|placeholder|from|to|via|fill|stroke)-(?:zinc|slate|gray|stone|neutral|red|rose|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink)-/,
-  /^(?:text|bg|border|ring)-\[[^\]]+\]$/,
+  /^(?:text|bg|border|ring)-\[(?:#|rgb|hsl)[^\]]+\]$/,
   /^(?:text|bg|border)-(?:white|black)$/
 ];
 

@@ -88,5 +88,10 @@ PY
 
 ## Automated enforcement (new)
 - Added `scripts/check-frontend-visual-policy.js` and wired it into `npm run lint:boundaries` via `npm run frontend:style-policy:check`.
-- Current enforcement scope is the auth login screen section in `public/js/app-shared-auth.js` (`loginScreenView`) to prevent regressions where visual Tailwind classes are reintroduced.
-- As additional screens are migrated, expand checker scope markers to enforce semantic-only visual classes project-wide.
+- Checker scope now enforces semantic visual classes for:
+  - auth views (`loginScreenView` through reset-password view scope) in `public/js/app-shared-auth.js`,
+  - `public/js/views-clients.js`,
+  - `public/js/views-people.js`,
+  - `public/js/views-admin-projects.js`,
+  - admin standalone shell/tab scope in `public/js/app-routing-ui.js`.
+- Remaining pages (especially `public/index.html` modal/header primitives and onboarding shell) remain in phased migration and are tracked as follow-up scope expansion.

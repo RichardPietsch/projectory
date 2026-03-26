@@ -412,20 +412,20 @@ const sharedI18n = window.ProjectoryI18n;
         const title = profile.displayName ? sharedI18n.t('auth.invite.welcomeNamed', { name: profile.displayName }) : sharedI18n.t('auth.invite.welcome');
         const subtitle = profile.email ? sharedI18n.t('auth.invite.subtitleNamed', { email: profile.email }) : sharedI18n.t('auth.invite.subtitle');
         const busyLabel = sharedState.inviteFlow.submitting ? sharedI18n.t('auth.invite.submitBusy') : sharedI18n.t('auth.invite.submit');
-        const errorHtml = sharedState.inviteFlow.error ? `<p class="mt-3 text-sm text-rose-300">${sharedState.inviteFlow.error}</p>` : '';
+        const errorHtml = sharedState.inviteFlow.error ? `<p class="ui-text-danger mt-3 text-sm">${sharedState.inviteFlow.error}</p>` : '';
 
-        return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-zinc-800 bg-zinc-800 p-8 shadow-2xl">
+        return `<div class="ui-panel mx-auto mt-8 max-w-xl rounded-2xl p-8 shadow-2xl">
           <h2 class="text-3xl font-bold">${title}</h2>
-          <p class="mt-2 text-zinc-300">${subtitle}</p>
-          <p class="mt-1 text-xs text-zinc-500">${sharedI18n.t('auth.invite.tokenState', { state: sharedState.inviteFlow.token ? sharedI18n.t('common.loaded') : sharedI18n.t('common.missing') })}</p>
-          <form id="invite-activate-form" class="mt-6 rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
-            <label class="mb-3 block text-sm text-zinc-300" >${sharedI18n.t('auth.login.password')}
-              <input id="invite-password" type="password" class="mt-1 w-full rounded bg-zinc-950 p-2" minlength="12" required />
+          <p class="ui-text-secondary mt-2">${subtitle}</p>
+          <p class="ui-text-subtle mt-1 text-xs">${sharedI18n.t('auth.invite.tokenState', { state: sharedState.inviteFlow.token ? sharedI18n.t('common.loaded') : sharedI18n.t('common.missing') })}</p>
+          <form id="invite-activate-form" class="ui-panel-muted mt-6 rounded-xl p-4">
+            <label class="ui-text-secondary mb-3 block text-sm" >${sharedI18n.t('auth.login.password')}
+              <input id="invite-password" type="password" class="ui-input mt-1 w-full" minlength="12" required />
             </label>
-            <label class="mb-3 block text-sm text-zinc-300" >${sharedI18n.t('auth.register.confirmPassword')}
-              <input id="invite-password-confirm" type="password" class="mt-1 w-full rounded bg-zinc-950 p-2" minlength="12" required />
+            <label class="ui-text-secondary mb-3 block text-sm" >${sharedI18n.t('auth.register.confirmPassword')}
+              <input id="invite-password-confirm" type="password" class="ui-input mt-1 w-full" minlength="12" required />
             </label>
-            <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-60" ${sharedState.inviteFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
+            <button type="submit" class="ui-btn ui-btn-primary px-3 py-2 text-sm font-semibold disabled:opacity-60" ${sharedState.inviteFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
           </form>
           ${errorHtml}
         </div>`;
@@ -485,23 +485,23 @@ const sharedI18n = window.ProjectoryI18n;
 
       function resetPasswordFlowView() {
         const busyLabel = sharedState.resetPasswordFlow.submitting ? sharedI18n.t('auth.reset.submitBusy') : sharedI18n.t('auth.reset.submit');
-        const errorHtml = sharedState.resetPasswordFlow.error ? `<p class="mt-3 text-sm text-rose-300">${sharedState.resetPasswordFlow.error}</p>` : '';
-        const doneHtml = sharedState.resetPasswordFlow.done ? `<p class="mt-3 text-sm text-emerald-300">${sharedI18n.t('auth.reset.success')}</p>` : '';
+        const errorHtml = sharedState.resetPasswordFlow.error ? `<p class="ui-text-danger mt-3 text-sm">${sharedState.resetPasswordFlow.error}</p>` : '';
+        const doneHtml = sharedState.resetPasswordFlow.done ? `<p class="ui-text-success mt-3 text-sm">${sharedI18n.t('auth.reset.success')}</p>` : '';
 
-        return `<div class="mx-auto mt-8 max-w-xl rounded-2xl border border-zinc-800 bg-zinc-800 p-8 shadow-2xl">
+        return `<div class="ui-panel mx-auto mt-8 max-w-xl rounded-2xl p-8 shadow-2xl">
           <h2 class="text-3xl font-bold">${sharedI18n.t('auth.reset.title')}</h2>
-          <p class="mt-2 text-zinc-300">${sharedI18n.t('auth.reset.subtitle')}</p>
-          <p class="mt-1 text-xs text-zinc-500">${sharedI18n.t('auth.reset.tokenStatus', { status: sharedState.resetPasswordFlow.token ? sharedI18n.t('auth.reset.tokenLoaded') : sharedI18n.t('auth.reset.tokenMissing') })}</p>
-          <form id="reset-password-form" class="mt-6 rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
-            <label class="mb-3 block text-sm text-zinc-300">${sharedI18n.t('auth.reset.newPassword')}
-              <input id="reset-password" type="password" class="mt-1 w-full rounded bg-zinc-950 p-2" minlength="12" required />
+          <p class="ui-text-secondary mt-2">${sharedI18n.t('auth.reset.subtitle')}</p>
+          <p class="ui-text-subtle mt-1 text-xs">${sharedI18n.t('auth.reset.tokenStatus', { status: sharedState.resetPasswordFlow.token ? sharedI18n.t('auth.reset.tokenLoaded') : sharedI18n.t('auth.reset.tokenMissing') })}</p>
+          <form id="reset-password-form" class="ui-panel-muted mt-6 rounded-xl p-4">
+            <label class="ui-text-secondary mb-3 block text-sm">${sharedI18n.t('auth.reset.newPassword')}
+              <input id="reset-password" type="password" class="ui-input mt-1 w-full" minlength="12" required />
             </label>
-            <label class="mb-3 block text-sm text-zinc-300">${sharedI18n.t('auth.reset.confirmPassword')}
-              <input id="reset-password-confirm" type="password" class="mt-1 w-full rounded bg-zinc-950 p-2" minlength="12" required />
+            <label class="ui-text-secondary mb-3 block text-sm">${sharedI18n.t('auth.reset.confirmPassword')}
+              <input id="reset-password-confirm" type="password" class="ui-input mt-1 w-full" minlength="12" required />
             </label>
             <div class="flex items-center gap-3">
-              <button type="submit" class="rounded bg-[#00d8ff] px-3 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-60" ${sharedState.resetPasswordFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
-              <a href="/teams" class="text-xs text-sky-300 hover:text-sky-200">${sharedI18n.t('auth.reset.backToLogin')}</a>
+              <button type="submit" class="ui-btn ui-btn-primary px-3 py-2 text-sm font-semibold disabled:opacity-60" ${sharedState.resetPasswordFlow.submitting ? 'disabled' : ''}>${busyLabel}</button>
+              <a href="/teams" class="ui-text-accent text-xs">${sharedI18n.t('auth.reset.backToLogin')}</a>
             </div>
           </form>
           ${doneHtml}
