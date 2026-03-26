@@ -85,6 +85,9 @@ PY
 - Targeted templates now compose semantic `ui-*` classes for visual presentation and keep utility classes primarily for layout/spacing.
 - Focus/selection/highlight behavior remains token-backed (`ui-input`/`ui-btn` focus ring + `ui-onboarding-highlight`).
 - Remaining visual color literals in targeted JS are limited to configuration data defaults, documented above.
+- Copy scale was simplified to a reduced semantic set in `theme.css`: `ui-copy-lg`, `ui-copy-md`, `ui-copy-sm`, `ui-copy-xs`.
+- Secondary actions now follow a stronger ghost-button style (`ui-btn-secondary`) with transparent fill and stronger borders for improved card contrast/readability.
+- Text state colors are now sourced from a smaller token group (`--color-text-accent|danger|success|warning`) to reduce near-duplicate color variants.
 
 ## Automated enforcement (new)
 - Added `scripts/check-frontend-visual-policy.js` and wired it into `npm run lint:boundaries` via `npm run frontend:style-policy:check`.

@@ -370,22 +370,22 @@
               }
               const tierLabelWithMeta = `${selfRoleIcon(isSelf)}<span>${name} (${quantity}% · ${formatWorkloadDuration(quantity, sample.working_hours)})</span>`;
               if (viewerMode) {
-                return `<span class="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${tierClass}">${tierLabelWithMeta}</span>`;
+                return `<span class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs ${tierClass}">${tierLabelWithMeta}</span>`;
               }
-              return `<button class="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${tierLabelWithMeta}</button>`;
+              return `<button class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs ${tierClass} hover:brightness-110" onclick="adjustProjectPersonQuantity(${selectedProject.id}, ${sample.person_id})">${tierLabelWithMeta}</button>`;
             })
             .filter(Boolean)
             .join(' ');
 
-          return `<div ${containerId ? `id="${containerId}"` : ''} class="ui-panel-muted rounded p-3">
-            <h4 class="ui-text-secondary mb-2 text-sm font-semibold">${tierLabel}</h4>
+          return `<div ${containerId ? `id="${containerId}"` : ''} class="ui-stat-card rounded p-3">
+            <h4 class="ui-copy-sm ui-text-secondary mb-2">${tierLabel}</h4>
             <div class="flex flex-wrap gap-2">${entries || `<span class="ui-empty-state text-xs">${i18n.t('common.none')}</span>`}</div>
           </div>`;
         }
 
-        const projectPeopleOverview = `<div id="onboarding-project-team-overview" class="ui-panel p-4">
-          <h3 class="mb-3 text-lg font-semibold">${i18n.t('projectDetail.teamOverview.title')}</h3>
-          <p class="ui-section-subtitle mb-3 text-xs">${i18n.t('projectDetail.teamOverview.subtitle')}</p>
+        const projectPeopleOverview = `<div id="onboarding-project-team-overview" class="ui-panel mt-3 p-4">
+          <h3 class="ui-copy-lg mb-3">${i18n.t('projectDetail.teamOverview.title')}</h3>
+          <p class="ui-copy-xs ui-section-subtitle mb-3">${i18n.t('projectDetail.teamOverview.subtitle')}</p>
           <div class="space-y-3">
             ${renderTierPeople(ownerIds, 'Client owner(s)', 'ui-pill-info', 'ui-pill-info', () => false, 'onboarding-client-owners')}
             ${renderTierPeople(leaderIds, 'Client leader(s)', 'ui-pill-success', 'ui-pill-success-secondary', (personId) => ownerIds.has(personId), 'onboarding-client-leaders')}

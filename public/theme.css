@@ -15,6 +15,10 @@ body[data-theme='dark'] {
   --color-accent-hover: #33e1ff;
   --color-accent-soft: rgba(0, 216, 255, 0.1);
   --color-accent-border: rgba(0, 216, 255, 0.5);
+  --color-text-accent: #7cecff;
+  --color-text-danger: #fda4af;
+  --color-text-success: #86efac;
+  --color-text-warning: #fcd34d;
   --color-danger: #e11d48;
   --color-danger-hover: #f43f5e;
   --color-danger-soft: rgba(244, 63, 94, 0.12);
@@ -73,19 +77,41 @@ body[data-theme='dark'] {
 }
 
 .ui-text-accent {
-  color: #7cecff;
+  color: var(--color-text-accent);
 }
 
 .ui-text-warning {
-  color: #fcd34d;
+  color: var(--color-text-warning);
 }
 
 .ui-text-danger {
-  color: #fda4af;
+  color: var(--color-text-danger);
 }
 
 .ui-text-success {
-  color: #86efac;
+  color: var(--color-text-success);
+}
+
+.ui-copy-lg {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+}
+
+.ui-copy-md {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.ui-copy-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+}
+
+.ui-copy-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
 }
 
 .ui-surface {
@@ -241,12 +267,13 @@ body[data-theme='dark'] {
 
 .ui-btn-secondary {
   border-color: var(--color-border-strong);
-  background: #09090b;
-  color: var(--color-text-secondary);
+  background: transparent;
+  color: var(--color-text-primary);
 }
 
 .ui-btn-secondary:hover {
-  background: #27272a;
+  background: rgba(39, 39, 42, 0.24);
+  border-color: var(--color-text-secondary);
 }
 
 .ui-btn-danger {
