@@ -431,6 +431,10 @@ body[data-theme='dark'] {
   background: var(--color-table-row-hover);
 }
 
+.ui-table-shell tbody tr:hover > td {
+  background: var(--color-table-row-hover);
+}
+
 .ui-table-row-interactive {
   cursor: pointer;
   transition: background-color 140ms ease, border-color 140ms ease;
@@ -446,6 +450,10 @@ body[data-theme='dark'] {
 }
 
 .ui-table-row-selected:hover {
+  background: var(--color-table-row-selected-hover-bg);
+}
+
+.ui-table-shell tbody tr.ui-table-row-selected:hover > td {
   background: var(--color-table-row-selected-hover-bg);
 }
 
