@@ -242,9 +242,18 @@
           <input type="hidden" name="id" />
           <label class="mb-2 block text-sm"><span data-i18n="challenge.title">Title</span><input required name="title" class="ui-input mt-1 w-full" /></label>
           <label class="mb-2 block text-sm"><span data-i18n="challenge.description">Description</span><textarea required name="description" class="ui-input mt-1 w-full"></textarea></label>
+          <div id="challenge-modal-management" class="mt-4 hidden rounded-lg border ui-border-subtle ui-bg-surface-muted p-3">
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide ui-text-muted">Challenge actions</p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" id="challenge-modal-assign" class="ui-btn ui-btn-accent px-3 py-2 text-xs">Assign / update person</button>
+              <button type="button" id="challenge-modal-unassign" class="ui-btn ui-btn-secondary px-3 py-2 text-xs">Unassign person</button>
+              <button type="button" id="challenge-modal-delete" class="ui-btn ui-btn-danger px-3 py-2 text-xs">Delete challenge</button>
+            </div>
+            <p id="challenge-modal-assignee-summary" class="mt-2 text-xs ui-text-secondary"></p>
+          </div>
           <div class="mt-4 flex justify-end gap-2">
             <button type="button" id="challenge-cancel" class="ui-btn ui-btn-secondary px-3 py-2 text-sm" data-i18n="common.cancel">Cancel</button>
-            <button class="ui-btn ui-btn-primary px-3 py-2 text-sm font-semibold" data-i18n="challenge.save">Save Challenge</button>
+            <button id="challenge-modal-save" class="ui-btn ui-btn-primary px-3 py-2 text-sm font-semibold" data-i18n="challenge.save">Save Challenge</button>
           </div>
         </form>
       </div>
