@@ -537,10 +537,10 @@
         const challengeCards = sortedChallenges
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
-            return `<article class="mb-4 break-inside-avoid rounded-2xl bg-stone-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+            return `<article class="mb-4 break-inside-avoid rounded-lg bg-stone-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
               <button type="button" class="block w-full text-left" onclick="openChallengeCardModal(${challenge.id})" aria-label="${safeDom.escapeHtml ? safeDom.escapeHtml(challenge.title || i18n.t('entity.challenges')) : String(challenge.title || i18n.t('entity.challenges'))}">
                 <div class="min-w-0">
-                  <h4 class="text-lg font-semibold leading-7 ui-section-title break-words">${safeDom.escapeHtml ? safeDom.escapeHtml(String(challenge.title || '—')) : String(challenge.title || '—')}</h4>
+                  <h4 class="text-lg font-semibold leading-7 ui-text-body break-words">${safeDom.escapeHtml ? safeDom.escapeHtml(String(challenge.title || '—')) : String(challenge.title || '—')}</h4>
                 </div>
                 <p class="mt-3 text-sm leading-7 ui-text-body break-words">${safeDom.escapeHtml ? safeDom.escapeHtml(getChallengeDescriptionPreview(challenge.description)) : getChallengeDescriptionPreview(challenge.description)}</p>
                 <div class="mt-4 border-t ui-border-strong pt-3">
