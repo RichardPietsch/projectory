@@ -473,18 +473,6 @@
           return renderChallengeAssigneePills(assignments);
         }
 
-        function renderChallengeAssigneeSummary(assignments) {
-          if (!assignments.length) return viewerMode ? '—' : i18n.t('common.none');
-          return [...assignments]
-            .sort((a, b) => String(a.first_name || '').localeCompare(String(b.first_name || '')) || String(a.last_name || '').localeCompare(String(b.last_name || '')))
-            .map((assignment) => {
-              const isSelf = viewerPersonId && String(assignment.person_id) === viewerPersonId;
-              const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
-              return `${selfRoleIcon(isSelf)}${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})`;
-            })
-            .join(', ');
-        }
-
         function renderChallengeDeleteButton(challengeId) {
           if (viewerMode) return '';
           return `<button type="button" class="ui-btn ui-btn-danger inline-flex h-9 w-9 items-center justify-center rounded-xl" onclick="openChallengeDeleteModal(${challengeId})" aria-label="${i18n.t('common.delete')}">
@@ -549,7 +537,7 @@
         const challengeCards = sortedChallenges
           .map((challenge) => {
             const assignments = assignmentsByChallenge.get(String(challenge.id)) || [];
-            return `<article class="ui-card mb-4 break-inside-avoid rounded-2xl p-5 transition hover:ui-bg-surface-muted">
+            return `<article class="mb-4 break-inside-avoid rounded-2xl bg-stone-300 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
               <button type="button" class="block w-full text-left" onclick="openChallengeCardModal(${challenge.id})" aria-label="${safeDom.escapeHtml ? safeDom.escapeHtml(challenge.title || i18n.t('entity.challenges')) : String(challenge.title || i18n.t('entity.challenges'))}">
                 <div class="min-w-0">
                   <h4 class="text-lg font-semibold leading-7 ui-section-title break-words">${safeDom.escapeHtml ? safeDom.escapeHtml(String(challenge.title || '—')) : String(challenge.title || '—')}</h4>
@@ -586,7 +574,7 @@
             </div>
           </div>
 
-          <div id="onboarding-challenge-overview" class="ui-panel mx-auto max-w-6xl p-5 lg:p-6">
+          <div id="onboarding-challenge-overview" class="ui-panel p-5 lg:p-6">
               <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
                   <h3 class="text-2xl font-semibold tracking-tight ui-section-title">${i18n.t('projectDetail.challengeOverview.title')}</h3>
@@ -2173,7 +2161,16 @@ function filteredPeople() {
         }
 
         const assignments = state.projectsPayload.assignments.filter((assignment) => String(assignment.challenge_id) === String(challenge.id));
-        summary.textContent = renderChallengeAssigneeSummary(assignments);
+        summary.textContent = assignments.length
+          ? assignments
+            .sort((a, b) => String(a.first_name || '').localeCompare(String(b.first_name || '')) || String(a.last_name || '').localeCompare(String(b.last_name || '')))
+            .map((assignment) => {
+              const isSelf = currentPersonId() && String(assignment.person_id) === currentPersonId();
+              const roleLabel = assignment.is_owner ? i18n.t('assign.roleOwner') : assignment.is_leader ? i18n.t('assign.roleLeader') : i18n.t('assign.roleContributor');
+              return `${selfRoleIcon(isSelf)}${assignment.first_name} ${assignment.last_name}${leaverRunIcon(assignment.is_leaver)} (${roleLabel})`;
+            })
+            .join(', ')
+          : i18n.t('common.none');
 
         assignButton.textContent = assignments.length ? i18n.t('projectDetail.actions.addAssignee') : i18n.t('assign.assign');
         unassignButton.disabled = assignments.length === 0;
