@@ -19,16 +19,11 @@ body[data-theme='dark'] {
   --color-text-danger: #fda4af;
   --color-text-success: #86efac;
   --color-text-warning: #fcd34d;
-  --color-danger: #e11d48;
-  --color-danger-hover: #f43f5e;
   --color-danger-soft: rgba(244, 63, 94, 0.12);
   --color-danger-border: rgba(244, 63, 94, 0.5);
-  --color-success: #10b981;
   --color-success-soft: rgba(16, 185, 129, 0.12);
   --color-success-border: rgba(16, 185, 129, 0.5);
   --color-focus-ring: rgba(0, 216, 255, 0.45);
-  --color-text-body: #3f3f46;
-  --color-text-strong: #18181b;
   --color-text-stronger: #09090b;
   --color-border-default-95: rgba(63, 63, 70, 0.95);
   --color-border-default-90: rgba(63, 63, 70, 0.9);
@@ -59,7 +54,6 @@ body[data-theme='dark'] {
   --color-info-bg: rgba(14, 165, 233, 0.12);
   --color-info-text: #e0f2fe;
   --color-muted-border: rgba(113, 113, 122, 0.6);
-  --color-swatch-ring: #3f3f46;
   --color-swatch-ring-active-outline: #27272a;
   --color-pill-info-border: rgba(96, 165, 250, 0.7);
   --color-pill-info-bg: #2563eb;
@@ -72,26 +66,16 @@ body[data-theme='dark'] {
   --color-pill-success-self-bg: #10b981;
   --color-pill-success-text: #ecfdf5;
   --color-pill-success-secondary-border: rgba(52, 211, 153, 0.75);
-  --color-pill-success-secondary-text: #a7f3d0;
   --color-pill-success-secondary-self-text: #d1fae5;
   --color-pill-success-secondary-self-bg: rgba(16, 185, 129, 0.2);
   --color-pill-neutral-border: #71717a;
-  --color-pill-neutral-bg: #3f3f46;
-  --color-pill-neutral-text: #f4f4f5;
   --color-pill-neutral-self-border: #d4d4d8;
-  --color-pill-neutral-self-bg: #f4f4f5;
-  --color-pill-neutral-self-text: #18181b;
-  --color-pill-neutral-secondary-border: #71717a;
   --color-pill-neutral-secondary-text: #d4d4d8;
-  --color-pill-neutral-secondary-self-border: #d4d4d8;
-  --color-pill-neutral-secondary-self-text: #f4f4f5;
   --color-pill-neutral-secondary-self-bg: rgba(228, 228, 231, 0.1);
   --shadow-card: 0 18px 40px rgba(15, 23, 42, 0.08);
   --shadow-elevated: 0 24px 60px rgba(2, 6, 23, 0.24);
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
 }
 
 .ui-app-shell {
@@ -120,11 +104,11 @@ body[data-theme='dark'] {
 }
 
 .ui-text-body {
-  color: var(--color-text-body);
+  color: var(--color-border-default);
 }
 
 .ui-text-strong {
-  color: var(--color-text-strong);
+  color: var(--color-bg-app);
 }
 
 .ui-text-stronger {
@@ -499,7 +483,7 @@ body[data-theme='dark'] {
 }
 
 .ui-color-swatch-ring {
-  box-shadow: 0 0 0 1px var(--color-swatch-ring);
+  box-shadow: 0 0 0 1px var(--color-border-default);
 }
 
 .ui-color-swatch-ring-active {
@@ -556,25 +540,25 @@ body[data-theme='dark'] {
 
 .ui-pill-neutral {
   border: 1px solid var(--color-pill-neutral-border);
-  background: var(--color-pill-neutral-bg);
-  color: var(--color-pill-neutral-text);
+  background: var(--color-border-default);
+  color: var(--color-text-primary);
 }
 
 .ui-pill-neutral-self {
   border: 1px solid var(--color-pill-neutral-self-border);
-  background: var(--color-pill-neutral-self-bg);
-  color: var(--color-text-strong);
+  background: var(--color-text-primary);
+  color: var(--color-bg-app);
 }
 
 .ui-pill-neutral-secondary {
-  border: 1px dotted var(--color-pill-neutral-secondary-border);
+  border: 1px dotted var(--color-pill-neutral-border);
   color: var(--color-pill-neutral-secondary-text);
   background: transparent;
 }
 
 .ui-pill-neutral-secondary-self {
-  border: 1px dotted var(--color-pill-neutral-secondary-self-border);
-  color: var(--color-pill-neutral-text);
+  border: 1px dotted var(--color-pill-neutral-self-border);
+  color: var(--color-text-primary);
   background: var(--color-pill-neutral-secondary-self-bg);
 }
 
@@ -591,7 +575,7 @@ body[data-theme='dark'] {
 }
 
 .ui-progress-fill-neutral {
-  background: var(--color-pill-neutral-self-bg);
+  background: var(--color-text-primary);
 }
 
 .ui-onboarding-highlight {
