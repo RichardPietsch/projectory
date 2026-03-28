@@ -31,12 +31,6 @@
         returnToPeopleOverview: false,
         returnPersonId: null
       },
-      inlineChallengeEdit: {
-        challengeId: null,
-        field: '',
-        value: '',
-        submitting: false
-      },
       challengeDeleteModal: {
         open: false,
         challengeId: null

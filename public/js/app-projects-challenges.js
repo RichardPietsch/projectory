@@ -473,55 +473,6 @@
           return renderChallengeAssigneePills(assignments);
         }
 
-        function renderChallengeDeleteButton(challengeId) {
-          if (viewerMode) return '';
-          return `<button type="button" class="ui-btn ui-btn-danger inline-flex h-9 w-9 items-center justify-center rounded-xl" onclick="openChallengeDeleteModal(${challengeId})" aria-label="${i18n.t('common.delete')}">
-            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 4.75h6l.55 1.5H19a.75.75 0 1 1 0 1.5h-.52l-.68 10.24A2 2 0 0 1 15.81 20H8.19a2 2 0 0 1-1.99-2.01L5.52 7.75H5a.75.75 0 1 1 0-1.5h3.45L9 4.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-              <path d="M10 10v5.5M14 10v5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </button>`;
-        }
-
-        function renderInlineChallengeField(challenge, field) {
-          const isEditing = String(state.inlineChallengeEdit.challengeId || '') === String(challenge.id) && state.inlineChallengeEdit.field === field;
-          const value = isEditing ? state.inlineChallengeEdit.value : String(challenge[field] || '');
-          const frameClass = field === 'title'
-            ? 'rounded-xl bg-stone-200 px-3 py-2 text-left transition hover:bg-stone-300'
-            : 'rounded-xl bg-stone-200 px-3 py-2.5 text-left transition hover:bg-stone-300';
-
-          if (!isEditing) {
-            return `<button type="button" class="block w-full ${frameClass}" onclick="startInlineChallengeEdit(${challenge.id}, '${field}')">
-              ${field === 'title'
-                ? `<span class="block text-lg font-semibold leading-7 ui-text-stronger break-words">${value}</span>`
-                : `<span class="block text-sm leading-7 ui-text-body break-words">${value}</span>`}
-            </button>`;
-          }
-
-          return `<div class="${frameClass}">
-            ${field === 'title'
-              ? `<input type="text" class="w-full bg-transparent p-0 text-lg font-semibold ui-text-stronger outline-none" value="${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus />`
-              : `<textarea class="min-h-[7rem] w-full resize-none bg-transparent p-0 text-sm leading-7 ui-text-strong outline-none" oninput="updateInlineChallengeEditValue(this.value)" onkeydown="handleInlineChallengeEditKeydown(event, ${challenge.id}, '${field}')" autofocus>${safeDom.escapeHtml ? safeDom.escapeHtml(value) : String(value)}</textarea>`}
-            <div class="mt-2 flex justify-end gap-2">
-              <button type="button" class="rounded-lg border ui-border-strong px-3 py-1.5 text-xs font-medium ui-text-body ui-btn-ghost-soft" onclick="cancelInlineChallengeEdit()">${i18n.t('common.cancel')}</button>
-              <button type="button" class="rounded-lg ui-bg-surface-1 px-3 py-1.5 text-xs font-medium text-white ui-hover-surface-2" onclick="saveInlineChallengeEdit(${challenge.id}, '${field}')" ${state.inlineChallengeEdit.submitting ? 'disabled' : ''}>${i18n.t('common.save')}</button>
-            </div>
-          </div>`;
-        }
-
-        function renderChallengeCardActions(challenge, assignments) {
-          if (viewerMode) return '';
-          const buttons = [];
-          buttons.push(`<button type="button" class="ui-btn ui-btn-accent rounded-xl px-3 py-2 text-xs font-medium" onclick='openAssignModal(${challenge.id}, ${JSON.stringify(challenge.title)})'>${assignments.length ? i18n.t('projectDetail.actions.addAssignee') : i18n.t('assign.assign')}</button>`);
-
-          if (assignments.length === 1) {
-            buttons.push(`<button type="button" class="ui-btn ui-btn-danger rounded-xl px-3 py-2 text-xs font-medium" onclick='deleteAssignment(${assignments[0].id})'>${i18n.t('projectDetail.actions.unassignNamed', { name: assignments[0].first_name })}</button>`);
-          } else if (assignments.length > 1) {
-            buttons.push(`<button type="button" class="ui-btn ui-btn-danger rounded-xl px-3 py-2 text-xs font-medium" onclick='openUnassignModal(${challenge.id})'>${i18n.t('projectDetail.actions.unassign')}</button>`);
-          }
-
-          return buttons.join('');
-        }
         function challengeSortOptionLabel(sortValue) {
           const labels = {
             title_asc: i18n.t('projectDetail.challengeSort.titleAsc'),
@@ -2255,83 +2206,6 @@ function filteredPeople() {
         state.peopleOverviewModal.open = false;
         renderPeopleOverviewModal();
         window.openChallengeModal(challenge, { preserveReturnTarget: true });
-      };
-
-      window.editChallenge = function editChallenge(challenge) {
-        window.openChallengeModal(challenge);
-      };
-
-      window.startInlineChallengeEdit = function startInlineChallengeEdit(challengeId, field) {
-        if (isViewerMode()) return;
-        const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(challengeId));
-        if (!challenge) return;
-        state.inlineChallengeEdit.challengeId = String(challengeId);
-        state.inlineChallengeEdit.field = field;
-        state.inlineChallengeEdit.value = String(challenge[field] || '');
-        state.inlineChallengeEdit.submitting = false;
-        render();
-      };
-
-      window.updateInlineChallengeEditValue = function updateInlineChallengeEditValue(value) {
-        state.inlineChallengeEdit.value = value;
-      };
-
-      window.cancelInlineChallengeEdit = function cancelInlineChallengeEdit() {
-        state.inlineChallengeEdit.challengeId = null;
-        state.inlineChallengeEdit.field = '';
-        state.inlineChallengeEdit.value = '';
-        state.inlineChallengeEdit.submitting = false;
-        render();
-      };
-
-      window.handleInlineChallengeEditKeydown = function handleInlineChallengeEditKeydown(event, challengeId, field) {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          window.cancelInlineChallengeEdit();
-          return;
-        }
-        if (field === 'title' && event.key === 'Enter') {
-          event.preventDefault();
-          window.saveInlineChallengeEdit(challengeId, field);
-          return;
-        }
-        if (field === 'description' && event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-          event.preventDefault();
-          window.saveInlineChallengeEdit(challengeId, field);
-        }
-      };
-
-      window.saveInlineChallengeEdit = async function saveInlineChallengeEdit(challengeId, field) {
-        if (state.inlineChallengeEdit.submitting) return;
-        const challenge = state.projectsPayload.challenges.find((item) => String(item.id) === String(challengeId));
-        if (!challenge) {
-          showMessage(i18n.t('challenge.notFound'), 'error');
-          return;
-        }
-        const nextValue = String(state.inlineChallengeEdit.value || '').trim();
-        if (!nextValue) {
-          showMessage('Please provide a value.', 'warning');
-          return;
-        }
-        const payload = {
-          title: field === 'title' ? nextValue : challenge.title,
-          description: field === 'description' ? nextValue : challenge.description
-        };
-        state.inlineChallengeEdit.submitting = true;
-        render();
-        try {
-          await handleMutation(() => api(`/api/challenges/${challengeId}`, { method: 'PUT', body: JSON.stringify(payload) }), 'Challenge saved.');
-          state.inlineChallengeEdit.challengeId = null;
-          state.inlineChallengeEdit.field = '';
-          state.inlineChallengeEdit.value = '';
-          state.inlineChallengeEdit.submitting = false;
-          render();
-        } finally {
-          if (state.inlineChallengeEdit.challengeId) {
-            state.inlineChallengeEdit.submitting = false;
-            render();
-          }
-        }
       };
 
       window.openChallengeDeleteModal = function openChallengeDeleteModal(challengeId) {

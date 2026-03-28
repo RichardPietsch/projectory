@@ -41,8 +41,7 @@ body[data-theme='dark'] {
   --color-overlay-panel-muted: rgba(9, 9, 11, 0.52);
   --color-overlay-hover-muted: rgba(39, 39, 42, 0.24);
   --color-overlay-hover-soft: rgba(212, 212, 216, 0.5);
-  --color-table-row-hover: rgba(39, 39, 42, 0.4);
-  --color-table-row-hover-strong: rgba(0, 216, 255, 0.12);
+  --color-table-row-hover: rgba(0, 216, 255, 0.12);
   --color-table-row-selected-border: rgba(34, 211, 238, 0.5);
   --color-table-row-selected-bg: rgba(6, 182, 212, 0.1);
   --color-table-row-selected-hover-bg: rgba(6, 182, 212, 0.18);
@@ -429,11 +428,11 @@ body[data-theme='dark'] {
 }
 
 .ui-table-shell tbody tr:hover {
-  background: var(--color-table-row-hover-strong);
+  background: var(--color-table-row-hover);
 }
 
 .ui-table-shell tbody tr:hover > td {
-  background: var(--color-table-row-hover-strong) !important;
+  background: var(--color-table-row-hover);
 }
 
 .ui-table-row-interactive {
