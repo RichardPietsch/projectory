@@ -19,6 +19,7 @@
     "frontend:i18n:check": "node scripts/check-frontend-i18n.js",
     "frontend:style-policy:check": "node scripts/check-frontend-visual-policy.js",
     "frontend:class-contract:check": "node scripts/check-frontend-class-contract.js",
+    "frontend:deprecated-css:check": "node scripts/check-deprecated-css-classes.js",
     "ci:deps:lockfile": "node scripts/check-lockfile-sync.js",
     "ci:deps:repeatability": "node scripts/check-npm-ci-repeatability.js",
     "release:readiness-check": "node scripts/check-release-readiness.js && npm run ops:readiness-check",
