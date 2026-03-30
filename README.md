@@ -221,7 +221,12 @@ Operational tuning:
 - Route-specific windows remain configurable (for example `AUTH_FORGOT_PASSWORD_RATE_LIMIT_*`, `SPA_SHELL_RATE_LIMIT_*`).
 - Sensitive auth routes also support dedicated limiters (`AUTH_LOGIN_RATE_LIMIT_*`, `AUTH_REGISTER_INITIAL_ADMIN_RATE_LIMIT_*`) to reduce brute-force and bootstrap abuse risk.
 - Bootstrap readiness discovery is separately bounded via `AUTH_BOOTSTRAP_STATUS_RATE_LIMIT_*`.
+- Import throughput is controlled independently via `IMPORT_RATE_LIMIT_MAX`, `IMPORT_RATE_LIMIT_WINDOW_MS`, `IMPORT_PREVIEW_RATE_LIMIT_MAX`, `IMPORT_PREVIEW_RATE_LIMIT_WINDOW_MS`, `IMPORT_CONFIG_RATE_LIMIT_MAX`, and `IMPORT_CONFIG_RATE_LIMIT_WINDOW_MS`.
 - `RATE_LIMIT_DISTRIBUTED_RETENTION_MS` controls bucket retention/cleanup horizon for shared buckets.
+
+For larger restores/imports, tune both request limits and payload size together:
+- `REQUEST_BODY_LIMIT` controls max JSON/URL-encoded payload size (default `2mb`).
+- For datasets with 1000+ entities, start with batched imports and increase `REQUEST_BODY_LIMIT` (for example `8mb`–`16mb`) only as needed based on observed payload size.
 
 If shared bucket writes are temporarily unavailable, the app falls back to process-local buckets to preserve protection and retry headers.
 

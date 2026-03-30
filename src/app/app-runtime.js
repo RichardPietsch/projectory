@@ -88,7 +88,7 @@ const TRADE_CATALOG = [
 const LEVEL_CATALOG = ['—', 'JUNIOR', 'MIDWEIGHT', 'SENIOR', 'DIRECTOR', 'C-LEVEL'];
 const PROJECT_STATUS_VALUES = ['done', 'in_progress', 'rework_needed'];
 const PEOPLE_STATUS_VALUES = ['active', 'paused', 'leaver'];
-const REQUEST_BODY_LIMIT = process.env.REQUEST_BODY_LIMIT || '100kb';
+const REQUEST_BODY_LIMIT = process.env.REQUEST_BODY_LIMIT || '2mb';
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 15000);
 const CORRELATION_ID_HEADER = 'x-correlation-id';
 
